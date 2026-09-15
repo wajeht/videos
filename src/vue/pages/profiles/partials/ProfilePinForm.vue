@@ -43,7 +43,7 @@ function submit(): void {
         autocomplete="new-password"
         required
       />
-      <div class="flex flex-wrap gap-3">
+      <div class="mt-4 flex flex-wrap justify-end gap-3">
         <AppButton type="submit" :loading="busy">Set PIN</AppButton
         ><AppButton
           v-if="props.profile.role === 'member' && props.profile.isLocked"

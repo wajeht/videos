@@ -64,7 +64,7 @@ const pin = shallowRef("");
         autocomplete="new-password"
         help-text="Use exactly 4 digits. Optional for members."
       />
-      <div class="flex gap-3">
+      <div class="mt-4 flex flex-wrap justify-end gap-3">
         <AppButton type="submit" :loading="busy">{{
           profile ? "Save profile" : "Create profile"
         }}</AppButton
