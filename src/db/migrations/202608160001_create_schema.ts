@@ -93,8 +93,22 @@ export async function up(knex: Knex): Promise<void> {
     table.unique(["video_id", "start_seconds"]);
   });
 
+  await knex.schema.createTable("profiles", (table) => {
+    table.text("id").primary();
+    table.text("name").notNullable();
+    table.text("avatar_key").notNullable();
+    table.text("role").notNullable().defaultTo("member").checkIn(["admin", "member"]);
+    table.text("password_hash");
+    table.integer("sort_order").notNullable();
+    table.text("created_at").notNullable();
+    table.text("updated_at").notNullable();
+    table.check("role != 'admin' OR password_hash IS NOT NULL");
+  });
+
   await knex.schema.createTable("progress", (table) => {
-    table.text("video_id").primary().references("id").inTable("videos").onDelete("CASCADE");
+    table.text("profile_id").notNullable().references("id").inTable("profiles").onDelete("CASCADE");
+    table.text("video_id").notNullable().references("id").inTable("videos").onDelete("CASCADE");
+    table.primary(["profile_id", "video_id"]);
     table.float("position_seconds").notNullable().defaultTo(0);
     table.boolean("completed").notNullable().defaultTo(false);
     table.text("updated_at").notNullable();
@@ -107,16 +121,12 @@ export async function up(knex: Knex): Promise<void> {
     table.text("error");
   });
 
-  await knex.schema.createTable("settings", (table) => {
-    table.text("key").primary();
+  await knex.schema.createTable("profile_settings", (table) => {
+    table.text("profile_id").notNullable().references("id").inTable("profiles").onDelete("CASCADE");
+    table.text("key").notNullable();
+    table.primary(["profile_id", "key"]);
     table.text("value").notNullable();
     table.text("updated_at").notNullable();
-  });
-
-  await knex("settings").insert({
-    key: "library_page_size",
-    value: "24",
-    updated_at: new Date().toISOString(),
   });
 
   await knex.schema.createTable("auth_credentials", (table) => {
@@ -127,6 +137,8 @@ export async function up(knex: Knex): Promise<void> {
 
   await knex.schema.createTable("auth_sessions", (table) => {
     table.text("session_key").primary();
+    table.text("profile_id").references("id").inTable("profiles").onDelete("SET NULL");
+    table.text("profile_selection_key");
     table.bigInteger("created_at").notNullable();
     table.bigInteger("active_at").notNullable();
   });
@@ -137,12 +149,24 @@ export async function up(knex: Knex): Promise<void> {
     table.bigInteger("reset_at").notNullable();
   });
 
+  await knex.schema.createTable("profile_unlock_attempts", (table) => {
+    table.text("profile_id").notNullable().references("id").inTable("profiles").onDelete("CASCADE");
+    table.text("client_key").notNullable();
+    table.primary(["profile_id", "client_key"]);
+    table.integer("failures").notNullable();
+    table.bigInteger("reset_at").notNullable();
+  });
+  await knex.schema.raw(
+    "CREATE INDEX profile_unlock_attempts_reset_idx ON profile_unlock_attempts(reset_at)",
+  );
+  await knex.schema.raw("CREATE INDEX auth_sessions_profile_idx ON auth_sessions(profile_id)");
+
   await knex.schema.raw("CREATE INDEX videos_playlist_sort_idx ON videos(playlist_id, sort_order)");
   await knex.schema.raw(
     "CREATE INDEX playlist_sections_sort_idx ON playlist_sections(playlist_id, sort_order)",
   );
   await knex.schema.raw("CREATE INDEX chapters_video_sort_idx ON chapters(video_id, sort_order)");
-  await knex.schema.raw("CREATE INDEX progress_updated_idx ON progress(updated_at)");
+  await knex.schema.raw("CREATE INDEX progress_updated_idx ON progress(profile_id, updated_at)");
   await knex.schema.raw("CREATE INDEX conversions_status_idx ON conversions(status)");
   await knex.schema.raw("CREATE INDEX auth_sessions_created_at_idx ON auth_sessions(created_at)");
   await knex.schema.raw("CREATE INDEX auth_sessions_active_at_idx ON auth_sessions(active_at)");
@@ -152,12 +176,14 @@ export async function up(knex: Knex): Promise<void> {
 }
 
 export async function down(knex: Knex): Promise<void> {
+  await knex.schema.dropTableIfExists("profile_unlock_attempts");
   await knex.schema.dropTableIfExists("auth_login_attempts");
   await knex.schema.dropTableIfExists("auth_sessions");
   await knex.schema.dropTableIfExists("auth_credentials");
-  await knex.schema.dropTableIfExists("settings");
+  await knex.schema.dropTableIfExists("profile_settings");
   await knex.schema.dropTableIfExists("conversions");
   await knex.schema.dropTableIfExists("progress");
+  await knex.schema.dropTableIfExists("profiles");
   await knex.schema.dropTableIfExists("chapters");
   await knex.schema.dropTableIfExists("video_authors");
   await knex.schema.dropTableIfExists("playlist_authors");

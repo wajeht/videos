@@ -127,7 +127,7 @@ function stringList(value: string | null): string[] {
   return stringListSchema.parse(JSON.parse(value ?? "[]"));
 }
 
-export function createLibraryApiRepository(database: Knex): LibraryRepository {
+export function createLibraryApiRepository(database: Knex, profileId: string): LibraryRepository {
   const videoAuthorsJson = database.raw(`
     COALESCE((
       SELECT json_group_array(name)
@@ -157,14 +157,18 @@ export function createLibraryApiRepository(database: Knex): LibraryRepository {
     return database<VideoRow>("videos")
       .leftJoin("playlists", "playlists.id", "videos.playlist_id")
       .leftJoin("playlist_sections", "playlist_sections.id", "videos.playlist_section_id")
-      .leftJoin("progress", "progress.video_id", "videos.id")
+      .leftJoin("progress", (join) => {
+        join.on("progress.video_id", "videos.id").andOnVal("progress.profile_id", profileId);
+      })
       .select([...videoSelect, videoAuthorsJson, playlistAuthorsJson]);
   }
 
   function createPlaylistsQuery() {
     return database<PlaylistRow>("playlists")
       .leftJoin("videos", "videos.playlist_id", "playlists.id")
-      .leftJoin("progress", "progress.video_id", "videos.id")
+      .leftJoin("progress", (join) => {
+        join.on("progress.video_id", "videos.id").andOnVal("progress.profile_id", profileId);
+      })
       .select(
         "playlists.id",
         "playlists.title",
@@ -190,12 +194,14 @@ export function createLibraryApiRepository(database: Knex): LibraryRepository {
           "COUNT(DISTINCT CASE WHEN progress.completed = 1 THEN videos.id END) as completed_count",
         ),
         database.raw("COALESCE(SUM(videos.duration_seconds), 0) as total_duration"),
-        database.raw(`
+        database.raw(
+          `
           COALESCE(
             (
               SELECT candidate.id
               FROM videos AS candidate
               LEFT JOIN progress AS candidate_progress ON candidate_progress.video_id = candidate.id
+                AND candidate_progress.profile_id = ?
               WHERE candidate.playlist_id = playlists.id
                 AND COALESCE(candidate_progress.completed, 0) = 0
               ORDER BY candidate.sort_order
@@ -209,7 +215,9 @@ export function createLibraryApiRepository(database: Knex): LibraryRepository {
               LIMIT 1
             )
           ) AS next_video_id
-        `),
+        `,
+          [profileId],
+        ),
         database.raw(`
           (
             SELECT candidate.id

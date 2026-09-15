@@ -58,7 +58,7 @@ export default defineConfig({
   },
   overrides: [
     {
-      files: ["**/*.test.ts"],
+      files: ["**/*.test.ts", "src/test/**", "src/vue/test/**"],
       rules: {
         "sonarjs/no-hardcoded-passwords": "off",
       },

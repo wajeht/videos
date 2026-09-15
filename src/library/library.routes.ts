@@ -14,7 +14,11 @@ export function createLibraryRouter(context: AppContext) {
   return new Hono()
     .basePath("/library")
     .get("/", zValidator("query", libraryQuerySchema), async (c) =>
-      c.json(libraryResponseSchema.parse(await context.library.getLibrary(c.req.valid("query")))),
+      c.json(
+        libraryResponseSchema.parse(
+          await context.forProfile(c.get("profile").id).library.getLibrary(c.req.valid("query")),
+        ),
+      ),
     );
 }
 
@@ -27,7 +31,9 @@ export function createVideoRouter(context: AppContext) {
         if (!result.success) return c.json({ message: "Video not found" }, 404);
       }),
       async (c) => {
-        const video = await context.library.getVideo(c.req.valid("param").videoId);
+        const video = await context
+          .forProfile(c.get("profile").id)
+          .library.getVideo(c.req.valid("param").videoId);
         return video
           ? c.json(videoDetailEnvelopeSchema.parse(video))
           : c.json({ message: "Video not found" }, 404);
@@ -42,7 +48,9 @@ export function createVideoRouter(context: AppContext) {
         const videoId = c.req.valid("param").videoId;
         const video = await context.scannerLibraryRepository.getVideo(videoId);
         if (!video) return c.json({ message: "Video not found" }, 404);
-        const chapters = await context.libraryRepository.listVideoChapters(videoId);
+        const chapters = await context
+          .forProfile(c.get("profile").id)
+          .libraryRepository.listVideoChapters(videoId);
         const status = context.thumbnails.startRegeneration(
           video,
           chapters.map((chapter) => ({

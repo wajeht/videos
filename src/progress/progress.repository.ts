@@ -8,11 +8,11 @@ export interface ProgressRepository {
   resetPlaylist(playlistId: string): Promise<void>;
 }
 
-export function createProgressRepository(database: Knex): ProgressRepository {
+export function createProgressRepository(database: Knex, profileId: string): ProgressRepository {
   return {
     async markOpened(videoId) {
       await database("progress")
-        .where({ video_id: videoId, completed: false })
+        .where({ profile_id: profileId, video_id: videoId, completed: false })
         .where("position_seconds", ">", 0)
         .update({ updated_at: new Date().toISOString() });
     },
@@ -21,12 +21,13 @@ export function createProgressRepository(database: Knex): ProgressRepository {
       const now = new Date().toISOString();
       await database("progress")
         .insert({
+          profile_id: profileId,
           video_id: videoId,
           position_seconds: positionSeconds,
           completed: false,
           updated_at: now,
         })
-        .onConflict("video_id")
+        .onConflict(["profile_id", "video_id"])
         .merge({
           position_seconds: database.raw(
             "CASE WHEN progress.completed = 1 THEN progress.position_seconds ELSE excluded.position_seconds END",
@@ -39,21 +40,23 @@ export function createProgressRepository(database: Knex): ProgressRepository {
       const now = new Date().toISOString();
       await database("progress")
         .insert({
+          profile_id: profileId,
           video_id: videoId,
           position_seconds: positionSeconds,
           completed: true,
           updated_at: now,
         })
-        .onConflict("video_id")
+        .onConflict(["profile_id", "video_id"])
         .merge({ position_seconds: positionSeconds, completed: true, updated_at: now });
     },
 
     async resetVideo(videoId) {
-      await database("progress").where({ video_id: videoId }).delete();
+      await database("progress").where({ profile_id: profileId, video_id: videoId }).delete();
     },
 
     async resetPlaylist(playlistId) {
       await database("progress")
+        .where({ profile_id: profileId })
         .whereIn("video_id", database("videos").select("id").where({ playlist_id: playlistId }))
         .delete();
     },

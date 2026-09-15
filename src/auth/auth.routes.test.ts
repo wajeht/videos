@@ -1,3 +1,4 @@
+import { selectTestAdmin, testAdminPassword } from "../test/auth.js";
 import path from "node:path";
 
 import bcrypt from "bcryptjs";
@@ -36,8 +37,16 @@ async function closeContext(context: AppContext): Promise<void> {
   await closeTestDatabase(context.database);
 }
 
-function jsonRequest(method: string, body: JsonRequestBody, cookie?: string): RequestInit {
+function jsonRequest(
+  method: string,
+  body: JsonRequestBody,
+  cookie?: string,
+  selectionKey?: string,
+): RequestInit {
   const headers = new Headers({ "content-type": "application/json" });
+  if (selectionKey) headers.set("x-profile-selection", selectionKey);
+  if (method === "POST" && "confirmPassword" in body)
+    body = { adminName: "Admin", adminPassword: testAdminPassword, ...body };
   if (cookie) headers.set("cookie", cookie);
   return {
     method,
@@ -52,6 +61,8 @@ describe("password authentication", () => {
 
     expect(await (await app.request("/api/auth/me")).json()).toEqual({
       authenticated: false,
+      profile: null,
+      profileSelectionKey: null,
       passwordConfigured: false,
       setupEnabled: true,
       setupTokenRequired: false,
@@ -83,21 +94,32 @@ describe("password authentication", () => {
     expect(login.status).toBe(200);
     const cookie = login.headers.get("set-cookie")?.split(";")[0];
     expect(cookie).toMatch(/^videos_session=/);
+    const selectionKey = await selectTestAdmin(app, cookie!);
 
-    const library = await app.request("/api/library", { headers: { cookie: cookie! } });
+    const library = await app.request("/api/library", {
+      headers: { cookie: cookie!, "x-profile-selection": selectionKey },
+    });
     expect(library.status).toBe(200);
     const playbackPath = "/api/playback/000000000000000000000000";
     expect(
       (
         await app.request(playbackPath, {
-          headers: { cookie: cookie!, "sec-fetch-site": "same-site" },
+          headers: {
+            cookie: cookie!,
+            "x-profile-selection": selectionKey,
+            "sec-fetch-site": "same-site",
+          },
         })
       ).status,
     ).toBe(403);
     expect(
       (
         await app.request(playbackPath, {
-          headers: { cookie: cookie!, "sec-fetch-site": "same-origin" },
+          headers: {
+            cookie: cookie!,
+            "x-profile-selection": selectionKey,
+            "sec-fetch-site": "same-origin",
+          },
         })
       ).status,
     ).toBe(404);
@@ -119,27 +141,47 @@ describe("password authentication", () => {
           confirmPassword: "new-test-password",
         },
         cookie,
+        selectionKey,
       ),
     );
     expect(change.status).toBe(200);
     const refreshedCookie = change.headers.get("set-cookie")?.split(";")[0];
     expect(refreshedCookie).toMatch(/^videos_session=/);
-    expect((await app.request("/api/library", { headers: { cookie: cookie! } })).status).toBe(401);
+    const refreshedSelection = await selectTestAdmin(app, refreshedCookie!);
+    expect(
+      (
+        await app.request("/api/library", {
+          headers: { cookie: cookie!, "x-profile-selection": selectionKey },
+        })
+      ).status,
+    ).toBe(401);
     expect((await app.request("/api/library", { headers: { cookie: otherCookie! } })).status).toBe(
       401,
     );
     expect(
-      (await app.request("/api/library", { headers: { cookie: refreshedCookie! } })).status,
+      (
+        await app.request("/api/library", {
+          headers: { cookie: refreshedCookie!, "x-profile-selection": refreshedSelection },
+        })
+      ).status,
     ).toBe(200);
 
     const logout = await app.request("/api/auth/logout", {
       method: "POST",
-      headers: { cookie: refreshedCookie!, origin: "http://localhost" },
+      headers: {
+        cookie: refreshedCookie!,
+        "x-profile-selection": refreshedSelection,
+        origin: "http://localhost",
+      },
     });
     expect(logout.status).toBe(200);
     expect(logout.headers.get("set-cookie")).toContain("Max-Age=0");
     expect(
-      (await app.request("/api/library", { headers: { cookie: refreshedCookie! } })).status,
+      (
+        await app.request("/api/library", {
+          headers: { cookie: refreshedCookie!, "x-profile-selection": refreshedSelection },
+        })
+      ).status,
     ).toBe(401);
 
     expect(
@@ -154,7 +196,7 @@ describe("password authentication", () => {
 
   it("blocks repeated failed logins", async () => {
     const { app, context } = await testApp({ maxAttempts: 2 });
-    await context.auth.setupPassword("test-videos-password");
+    await context.auth.setupPassword("test-videos-password", "Admin", testAdminPassword);
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
       expect(
@@ -173,7 +215,7 @@ describe("password authentication", () => {
 
   it("clears persisted failures after a successful login", async () => {
     const { app, context } = await testApp({ maxAttempts: 2 });
-    await context.auth.setupPassword("test-videos-password");
+    await context.auth.setupPassword("test-videos-password", "Admin", testAdminPassword);
 
     expect(
       (await app.request("/api/auth", jsonRequest("POST", { password: "wrong-videos-password" })))
@@ -196,7 +238,7 @@ describe("password authentication", () => {
   it("preserves blocked logins across application restarts", async () => {
     const dataDirectory = await createTemporaryDirectory("videos-auth-test-");
     const first = await testApp({ maxAttempts: 2, dataDirectory });
-    await first.context.auth.setupPassword("test-videos-password");
+    await first.context.auth.setupPassword("test-videos-password", "Admin", testAdminPassword);
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
       expect(
@@ -222,24 +264,29 @@ describe("password authentication", () => {
   it("preserves active sessions across application restarts", async () => {
     const dataDirectory = await createTemporaryDirectory("videos-session-test-");
     const first = await testApp({ dataDirectory });
-    await first.context.auth.setupPassword("test-videos-password");
+    await first.context.auth.setupPassword("test-videos-password", "Admin", testAdminPassword);
     const login = await first.app.request(
       "/api/auth",
       jsonRequest("POST", { password: "test-videos-password" }),
     );
     const cookie = login.headers.get("set-cookie")?.split(";")[0];
+    const selectionKey = await selectTestAdmin(first.app, cookie!);
     await closeContext(first.context);
 
     const second = await testApp({ dataDirectory });
 
     expect(
-      (await second.app.request("/api/library", { headers: { cookie: cookie! } })).status,
+      (
+        await second.app.request("/api/library", {
+          headers: { cookie: cookie!, "x-profile-selection": selectionKey },
+        })
+      ).status,
     ).toBe(200);
   });
 
   it("rejects unsigned or expired session cookies", async () => {
     const { app, context } = await testApp({ idleTimeoutMs: 1 });
-    await context.auth.setupPassword("test-videos-password");
+    await context.auth.setupPassword("test-videos-password", "Admin", testAdminPassword);
 
     expect(
       (

@@ -62,6 +62,9 @@ export interface LibraryRepository {
     rootOrder: RootEntryOrder[],
   ): Promise<void>;
   getRootEntries(): Promise<StoredRootEntry[]>;
+  getPlaylistCover(
+    playlistId: string,
+  ): Promise<{ id: string; cover_path: string | null; first_video_id: string | null } | undefined>;
   getPlaylists(): Promise<PlaylistRecord[]>;
   getVideos(): Promise<VideoRecord[]>;
   getVideo(videoId: string): Promise<VideoRecord | undefined>;
@@ -163,6 +166,18 @@ export function createLibraryRepository(database: Knex): LibraryRepository {
       return rows.map(videoRecord);
     },
 
+    async getPlaylistCover(playlistId) {
+      return database("playlists")
+        .where({ id: playlistId })
+        .select(
+          "id",
+          "cover_path",
+          database.raw(
+            "(SELECT id FROM videos WHERE playlist_id = playlists.id ORDER BY sort_order LIMIT 1) AS first_video_id",
+          ),
+        )
+        .first();
+    },
     async getPlaylists() {
       const rows = await database<StoredPlaylistRow>("playlists").select();
       return rows.map(playlistRecord);

@@ -88,7 +88,7 @@ export function createMediaRouter(context: AppContext) {
   const requireAuth = createRequireAuth(context);
 
   app.get("/media/:videoId", requireAuth, zValidator("param", videoParametersSchema), async (c) => {
-    const video = await context.library.findVideoRecord(c.req.valid("param").videoId);
+    const video = await context.scannerLibraryRepository.getVideo(c.req.valid("param").videoId);
     if (!video) return c.json({ message: "Video not found" }, 404);
     const filename = await resolveContainedPath(
       context.configuration.media.videosDirectory,
@@ -122,7 +122,7 @@ export function createMediaRouter(context: AppContext) {
     requireAuth,
     zValidator("param", playlistParametersSchema),
     async (c) => {
-      const playlist = await context.libraryRepository.findPlaylist(
+      const playlist = await context.scannerLibraryRepository.getPlaylistCover(
         c.req.valid("param").playlistId,
       );
       if (!playlist) return c.body(null, 404);
@@ -154,7 +154,7 @@ export function createMediaRouter(context: AppContext) {
     zValidator("param", chapterCoverParametersSchema),
     async (c) => {
       const { videoId, startSeconds } = c.req.valid("param");
-      const video = await context.libraryRepository.findVideo(videoId);
+      const video = await context.scannerLibraryRepository.getVideo(videoId);
       if (!video) return c.body(null, 404);
       const revision = thumbnailRevision(c.req.query("t"));
       if (revision === null) return c.body(null, 404);
@@ -173,7 +173,7 @@ export function createMediaRouter(context: AppContext) {
     requireAuth,
     zValidator("param", videoParametersSchema),
     async (c) => {
-      const video = await context.libraryRepository.findVideo(c.req.valid("param").videoId);
+      const video = await context.scannerLibraryRepository.getVideo(c.req.valid("param").videoId);
       if (!video) return c.body(null, 404);
       const revision = thumbnailRevision(c.req.query("t"));
       if (revision === null) return c.body(null, 404);

@@ -1,3 +1,4 @@
+import { insertProfile } from "../profiles/profiles.repository.js";
 import type { Knex } from "knex";
 
 const credentialsId = 1;
@@ -11,11 +12,17 @@ export interface StoredSession {
   activeAt: number;
   createdAt: number;
   sessionKey: string;
+  profileId: string | null;
+  profileSelectionKey: string | null;
 }
 
 export interface AuthRepository {
   getPasswordHash(): Promise<string | null>;
-  setPasswordHash(passwordHash: string): Promise<void>;
+  setupCredentials(
+    passwordHash: string,
+    adminName: string,
+    adminPasswordHash: string,
+  ): Promise<boolean>;
   changePasswordHash(passwordHash: string): Promise<void>;
   getLoginAttempt(clientKey: string, now: number): Promise<LoginAttempt | null>;
   recordLoginFailure(clientKey: string, now: number, windowMs: number): Promise<void>;
@@ -36,11 +43,20 @@ export function createAuthRepository(database: Knex): AuthRepository {
       return credentials?.password_hash ?? null;
     },
 
-    async setPasswordHash(passwordHash: string): Promise<void> {
-      await database("auth_credentials")
-        .insert({ id: credentialsId, password_hash: passwordHash })
-        .onConflict("id")
-        .merge({ password_hash: passwordHash });
+    async setupCredentials(passwordHash, adminName, adminPasswordHash) {
+      return database.transaction(async (transaction) => {
+        if (await transaction("auth_credentials").first()) return false;
+        await transaction("auth_credentials").insert({
+          id: credentialsId,
+          password_hash: passwordHash,
+        });
+        await insertProfile(
+          transaction,
+          { name: adminName, avatarKey: "pine", role: "admin" },
+          adminPasswordHash,
+        );
+        return true;
+      });
     },
 
     async changePasswordHash(passwordHash: string): Promise<void> {
@@ -99,18 +115,26 @@ export function createAuthRepository(database: Knex): AuthRepository {
         session_key: session.sessionKey,
         created_at: session.createdAt,
         active_at: session.activeAt,
+        profile_id: session.profileId,
+        profile_selection_key: session.profileSelectionKey,
       });
     },
 
     async getSession(sessionKey: string): Promise<StoredSession | null> {
-      const session = await database("auth_sessions")
-        .where({ session_key: sessionKey })
-        .first<{ active_at: number; created_at: number; session_key: string }>();
+      const session = await database("auth_sessions").where({ session_key: sessionKey }).first<{
+        active_at: number;
+        created_at: number;
+        session_key: string;
+        profile_id: string | null;
+        profile_selection_key: string | null;
+      }>();
       return session
         ? {
             activeAt: Number(session.active_at),
             createdAt: Number(session.created_at),
             sessionKey: session.session_key,
+            profileId: session.profile_id,
+            profileSelectionKey: session.profile_selection_key,
           }
         : null;
     },

@@ -12,7 +12,9 @@ export function createProgressRouter(context: AppContext) {
   return new Hono()
     .basePath("/progress")
     .post("/videos/:videoId/open", zValidator("param", progressParametersSchema), async (c) => {
-      const opened = await context.progress.openVideo(c.req.valid("param").videoId);
+      const opened = await context
+        .forProfile(c.get("profile").id)
+        .progress.openVideo(c.req.valid("param").videoId);
       return opened ? c.json({ opened: true }) : c.json({ message: "Video not found" }, 404);
     })
     .put(
@@ -20,26 +22,34 @@ export function createProgressRouter(context: AppContext) {
       zValidator("param", progressParametersSchema),
       zValidator("json", updateProgressSchema),
       async (c) => {
-        const saved = await context.progress.updateProgress(
-          c.req.valid("param").videoId,
-          c.req.valid("json").positionSeconds,
-        );
+        const saved = await context
+          .forProfile(c.get("profile").id)
+          .progress.updateProgress(
+            c.req.valid("param").videoId,
+            c.req.valid("json").positionSeconds,
+          );
         return saved ? c.json({ saved: true }) : c.json({ message: "Video not found" }, 404);
       },
     )
     .post("/videos/:videoId/complete", zValidator("param", progressParametersSchema), async (c) => {
-      const saved = await context.progress.completeVideo(c.req.valid("param").videoId);
+      const saved = await context
+        .forProfile(c.get("profile").id)
+        .progress.completeVideo(c.req.valid("param").videoId);
       return saved ? c.json({ completed: true }) : c.json({ message: "Video not found" }, 404);
     })
     .delete("/videos/:videoId", zValidator("param", progressParametersSchema), async (c) => {
-      await context.progress.resetVideo(c.req.valid("param").videoId);
+      await context
+        .forProfile(c.get("profile").id)
+        .progress.resetVideo(c.req.valid("param").videoId);
       return c.json({ reset: true });
     })
     .delete(
       "/playlists/:playlistId",
       zValidator("param", playlistProgressParametersSchema),
       async (c) => {
-        await context.progress.resetPlaylist(c.req.valid("param").playlistId);
+        await context
+          .forProfile(c.get("profile").id)
+          .progress.resetPlaylist(c.req.valid("param").playlistId);
         return c.json({ reset: true });
       },
     );

@@ -4,14 +4,15 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { Configuration } from "../config.js";
-import type { LibraryRepository, VideoRow } from "../library/library.repository.js";
+import type { LibraryRepository } from "./library.repository.js";
+import type { VideoRecord } from "./types.js";
 import { logCause, type Logger } from "../logger.js";
 import type { ConversionRepository, StoredConversion } from "./conversion.repository.js";
 import { ffmpegExecutable } from "./executables.js";
 import { resolveContainedPath } from "./path.js";
 
 export type ConversionExecutor = (
-  video: VideoRow,
+  video: VideoRecord,
   onProgress: (progress: number) => Promise<void>,
 ) => Promise<void>;
 
@@ -20,8 +21,8 @@ export interface ConversionRecord extends StoredConversion {
 }
 
 export interface ConversionManager {
-  requestConversion(video: VideoRow): Promise<ConversionRecord>;
-  retryConversion(video: VideoRow): Promise<ConversionRecord>;
+  requestConversion(video: VideoRecord): Promise<ConversionRecord>;
+  retryConversion(video: VideoRecord): Promise<ConversionRecord>;
   getConversion(videoId: string): Promise<ConversionRecord | null>;
   recoverConversions(): Promise<void>;
 }
@@ -39,11 +40,11 @@ export function hlsDirectory(dataDirectory: string): string {
 }
 
 export function planConversion(
-  video: Pick<VideoRow, "video_codec" | "audio_codec">,
+  video: Pick<VideoRecord, "videoCodec" | "audioCodec">,
 ): ConversionPlan {
   return {
-    videoCodec: video.video_codec === "h264" ? "copy" : "h264_qsv",
-    audioCodec: video.audio_codec === null || video.audio_codec === "aac" ? "copy" : "aac",
+    videoCodec: video.videoCodec === "h264" ? "copy" : "h264_qsv",
+    audioCodec: video.audioCodec === null || video.audioCodec === "aac" ? "copy" : "aac",
   };
 }
 
@@ -140,7 +141,7 @@ export function createFfmpegConversionExecutor(configuration: Configuration): Co
           const microseconds = Number(line.slice("out_time_us=".length));
           const progress = Math.min(
             99,
-            Math.round((microseconds / 1_000_000 / Number(video.duration_seconds)) * 100),
+            Math.round((microseconds / 1_000_000 / Number(video.durationSeconds)) * 100),
           );
           if (progress >= lastProgress + 2) {
             lastProgress = progress;
@@ -199,7 +200,7 @@ export function createConversionManager(options: {
       while (queue.length > 0) {
         const videoId = queue.shift();
         if (!videoId) continue;
-        const video = await options.library.findVideo(videoId);
+        const video = await options.library.getVideo(videoId);
         if (!video) {
           scheduled.delete(videoId);
           continue;
@@ -221,7 +222,7 @@ export function createConversionManager(options: {
     }
   }
 
-  async function queueVideo(video: VideoRow, force: boolean): Promise<ConversionRecord> {
+  async function queueVideo(video: VideoRecord, force: boolean): Promise<ConversionRecord> {
     const stored = await options.repository.getConversion(video.id);
     if (!force && stored) {
       const existing = conversionRecord(stored);

@@ -1,3 +1,4 @@
+import { selectTestAdmin, testAdminPassword } from "./test/auth.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -93,6 +94,8 @@ describe("application", () => {
       body: JSON.stringify({
         password: "videos-test-password",
         confirmPassword: "videos-test-password",
+        adminName: "Admin",
+        adminPassword: testAdminPassword,
         setupToken: "wrong-setup-token",
       }),
     });
@@ -104,6 +107,8 @@ describe("application", () => {
       body: JSON.stringify({
         password: "videos-test-password",
         confirmPassword: "videos-test-password",
+        adminName: "Admin",
+        adminPassword: testAdminPassword,
         setupToken: "videos-app-test-setup-token",
       }),
     });
@@ -116,13 +121,14 @@ describe("application", () => {
     expect(login.status).toBe(200);
     const cookie = login.headers.get("set-cookie")?.split(";")[0];
     expect(cookie).toBeTruthy();
+    const selectionKey = await selectTestAdmin(app, cookie!);
 
     const regenerate = vi
       .spyOn(context.thumbnails, "startRegeneration")
       .mockReturnValue({ status: "running" });
     const regenerateResponse = await app.request(`/api/videos/${"b".repeat(24)}/thumbnail`, {
       method: "POST",
-      headers: { cookie: cookie!, origin: "http://localhost" },
+      headers: { cookie: cookie!, "x-profile-selection": selectionKey, origin: "http://localhost" },
     });
     expect(regenerateResponse.status).toBe(202);
     await expect(regenerateResponse.json()).resolves.toEqual({ status: "running" });
@@ -135,14 +141,14 @@ describe("application", () => {
       revision: 1,
     });
     const regenerationStatus = await app.request(`/api/videos/${"b".repeat(24)}/thumbnail`, {
-      headers: { cookie: cookie! },
+      headers: { cookie: cookie!, "x-profile-selection": selectionKey },
     });
     expect(regenerationStatus.status).toBe(200);
     await expect(regenerationStatus.json()).resolves.toEqual({ status: "complete", revision: 1 });
 
     logInfo.mockClear();
     const response = await app.request(`/media/${"b".repeat(24)}`, {
-      headers: { range: "bytes=2-5", cookie: cookie! },
+      headers: { range: "bytes=2-5", cookie: cookie!, "x-profile-selection": selectionKey },
     });
     expect(response.status).toBe(206);
     expect(response.headers.get("content-range")).toBe("bytes 2-5/10");
@@ -156,7 +162,7 @@ describe("application", () => {
     await fs.mkdir(videoHlsDirectory, { recursive: true });
     await fs.writeFile(path.join(videoHlsDirectory, conversionPlaylistFilename), "#EXTM3U");
     const hls = await app.request(`/hls/${"b".repeat(24)}/${conversionPlaylistFilename}`, {
-      headers: { cookie: cookie! },
+      headers: { cookie: cookie!, "x-profile-selection": selectionKey },
     });
     expect(hls.status).toBe(200);
     expect(await hls.text()).toBe("#EXTM3U");
@@ -177,7 +183,7 @@ describe("application", () => {
     await fs.mkdir(path.dirname(optimizedPlaylistCover), { recursive: true });
     await fs.writeFile(optimizedPlaylistCover, "optimized-cover");
     const cover = await app.request(`/covers/playlists/${"a".repeat(24)}?t=${playlistRevision}`, {
-      headers: { cookie: cookie! },
+      headers: { cookie: cookie!, "x-profile-selection": selectionKey },
     });
     expect(cover.status).toBe(200);
     expect(cover.headers.get("cache-control")).toBe("private, max-age=31536000, immutable");
@@ -185,7 +191,7 @@ describe("application", () => {
     expect(await cover.text()).toBe("optimized-cover");
 
     const missingVideoCover = await app.request(`/covers/videos/${"b".repeat(24)}`, {
-      headers: { cookie: cookie! },
+      headers: { cookie: cookie!, "x-profile-selection": selectionKey },
     });
     expect(missingVideoCover.status).toBe(404);
 
@@ -223,21 +229,20 @@ describe("application", () => {
       }),
     );
     const generated = await app.request(`/covers/videos/${videoId}?t=${revision}`, {
-      headers: { cookie: cookie! },
+      headers: { cookie: cookie!, "x-profile-selection": selectionKey },
     });
     expect(generated.status).toBe(200);
     expect(await generated.text()).toBe("thumb");
 
     const chapterThumbnail = await app.request(
       `/covers/videos/${videoId}/chapters/0?t=${revision}`,
-      { headers: { cookie: cookie! } },
+      { headers: { cookie: cookie!, "x-profile-selection": selectionKey } },
     );
     expect(chapterThumbnail.status).toBe(200);
     expect(await chapterThumbnail.text()).toBe("chapter-thumb");
 
-    const openVideo = vi.spyOn(context.progress, "openVideo");
     const videoDetail = await app.request(`/api/videos/${"b".repeat(24)}`, {
-      headers: { cookie: cookie! },
+      headers: { cookie: cookie!, "x-profile-selection": selectionKey },
     });
     expect(videoDetail.status).toBe(200);
     expect(await videoDetail.json()).toMatchObject({
@@ -257,20 +262,26 @@ describe("application", () => {
 
     const player = await app.request(`/api/playback/${"b".repeat(24)}`, {
       method: "POST",
-      headers: { cookie: cookie!, origin: "http://localhost" },
+      headers: { cookie: cookie!, "x-profile-selection": selectionKey, origin: "http://localhost" },
     });
     expect(player.status).toBe(200);
     expect(await player.json()).toEqual({ kind: "direct", url: `/media/${"b".repeat(24)}` });
-    expect(openVideo).not.toHaveBeenCalled();
+    expect(await context.database.connection("progress")).toEqual([]);
 
     const apiNotFound = await app.request("/api/does-not-exist", {
-      headers: { cookie: cookie! },
+      headers: { cookie: cookie!, "x-profile-selection": selectionKey },
     });
     expect(apiNotFound.status).toBe(404);
     expect(await apiNotFound.json()).toEqual({ message: "Resource not found" });
 
     for (const libraryPath of ["/api/videos/not-an-id", `/api/videos/${"d".repeat(24)}`]) {
-      expect((await app.request(libraryPath, { headers: { cookie: cookie! } })).status).toBe(404);
+      expect(
+        (
+          await app.request(libraryPath, {
+            headers: { cookie: cookie!, "x-profile-selection": selectionKey },
+          })
+        ).status,
+      ).toBe(404);
     }
 
     const robots = await app.request("/robots.txt");
