@@ -1,3 +1,4 @@
+import { seedTestProfile, testProfileId } from "../test/resources.js";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Database } from "../db/db.js";
@@ -15,6 +16,7 @@ const standaloneVideo = "e".repeat(24);
 
 beforeEach(async () => {
   database = await createTestDatabase();
+  await seedTestProfile(database);
   await database.connection("playlists").insert([
     {
       id: playlistA,
@@ -95,7 +97,7 @@ beforeEach(async () => {
 });
 
 function createService(pageSize = 24) {
-  return createLibraryService(createLibraryApiRepository(database.connection), {
+  return createLibraryService(createLibraryApiRepository(database.connection, testProfileId), {
     getLibraryPageSize: async () => pageSize,
   });
 }
@@ -231,6 +233,7 @@ describe("library service", () => {
       modified_at: "2026-08-21T00:00:00.000Z",
     });
     await database.connection("progress").insert({
+      profile_id: testProfileId,
       video_id: videoA,
       position_seconds: 100,
       completed: true,
@@ -266,12 +269,14 @@ describe("library service", () => {
   it("lists recent unfinished videos regardless of playlist", async () => {
     await database.connection("progress").insert([
       {
+        profile_id: testProfileId,
         video_id: videoA,
         position_seconds: 10,
         completed: false,
         updated_at: "2026-08-21T00:01:00.000Z",
       },
       {
+        profile_id: testProfileId,
         video_id: standaloneVideo,
         position_seconds: 20,
         completed: false,
@@ -280,7 +285,7 @@ describe("library service", () => {
     ]);
 
     const service = createLibraryService(
-      createLibraryApiRepository(database.connection),
+      createLibraryApiRepository(database.connection, testProfileId),
       { getLibraryPageSize: async () => 24 },
       {
         listThumbnailIndex: async () => ({
@@ -337,7 +342,7 @@ describe("library service", () => {
       cover_path: "Saved Collection/cover.jpg",
     });
     const service = createLibraryService(
-      createLibraryApiRepository(database.connection),
+      createLibraryApiRepository(database.connection, testProfileId),
       {
         getLibraryPageSize: async () => 24,
       },

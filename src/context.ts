@@ -1,3 +1,7 @@
+import {
+  createProfilesRepository,
+  type ProfilesRepository,
+} from "./profiles/profiles.repository.js";
 import fs from "node:fs/promises";
 
 import { createAuthRepository } from "./auth/auth.repository.js";
@@ -30,11 +34,14 @@ export interface AppContext {
   logger: Logger;
   database: Database;
   auth: AuthService;
-  libraryRepository: LibraryRepository;
   scannerLibraryRepository: ScannerLibraryRepository;
-  library: LibraryService;
-  progress: ProgressService;
-  settings: SettingsService;
+  profiles: ProfilesRepository;
+  forProfile(profileId: string): {
+    libraryRepository: LibraryRepository;
+    library: LibraryService;
+    progress: ProgressService;
+    settings: SettingsService;
+  };
   playback: PlaybackService;
   scanner: Scanner;
   conversions: ConversionManager;
@@ -50,15 +57,21 @@ export async function createContext(
   const database = await createDatabase(configuration, logger);
   const auth = createAuthService(createAuthRepository(database.connection), configuration);
   const scannerLibraryRepository = createLibraryRepository(database.connection);
-  const libraryRepository = createLibraryApiRepository(database.connection);
-  const settings = createSettingsService(createSettingsRepository(database.connection));
   const playlistCovers = createPlaylistCoverCache({ configuration, logger });
   const thumbnails = createThumbnailCache({ configuration, logger });
-  const library = createLibraryService(libraryRepository, settings, thumbnails, playlistCovers);
-  const progress = createProgressService(
-    createProgressRepository(database.connection),
-    libraryRepository,
-  );
+  const profiles = createProfilesRepository(database.connection);
+  function forProfile(profileId: string) {
+    const libraryRepository = createLibraryApiRepository(database.connection, profileId);
+    const settings = createSettingsService(
+      createSettingsRepository(database.connection, profileId),
+    );
+    const library = createLibraryService(libraryRepository, settings, thumbnails, playlistCovers);
+    const progress = createProgressService(
+      createProgressRepository(database.connection, profileId),
+      libraryRepository,
+    );
+    return { libraryRepository, library, progress, settings };
+  }
   const scanner = createScanner({
     configuration,
     repository: scannerLibraryRepository,
@@ -68,22 +81,20 @@ export async function createContext(
   });
   const conversions = createConversionManager({
     repository: createConversionRepository(database.connection),
-    library: libraryRepository,
+    library: scannerLibraryRepository,
     configuration,
     logger,
   });
-  const playback = createPlaybackService(library, conversions);
+  const playback = createPlaybackService(scannerLibraryRepository, conversions);
 
   return {
     configuration,
     logger,
     database,
     auth,
-    libraryRepository,
     scannerLibraryRepository,
-    library,
-    progress,
-    settings,
+    profiles,
+    forProfile,
     playback,
     scanner,
     conversions,

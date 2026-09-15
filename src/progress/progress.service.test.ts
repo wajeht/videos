@@ -1,3 +1,4 @@
+import { seedTestProfile, testProfileId } from "../test/resources.js";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Database } from "../db/db.js";
@@ -10,6 +11,7 @@ let database: Database;
 
 beforeEach(async () => {
   database = await createTestDatabase();
+  await seedTestProfile(database);
   const now = new Date().toISOString();
   await database.connection("playlists").insert({
     id: "a".repeat(24),
@@ -37,8 +39,8 @@ beforeEach(async () => {
 describe("progress service", () => {
   it("marks an in-progress video as most recently opened", async () => {
     const service = createProgressService(
-      createProgressRepository(database.connection),
-      createLibraryApiRepository(database.connection),
+      createProgressRepository(database.connection, testProfileId),
+      createLibraryApiRepository(database.connection, testProfileId),
     );
     await service.updateProgress("b".repeat(24), 25);
     await database
@@ -58,8 +60,8 @@ describe("progress service", () => {
 
   it("clamps positions and completes only through the completion action", async () => {
     const service = createProgressService(
-      createProgressRepository(database.connection),
-      createLibraryApiRepository(database.connection),
+      createProgressRepository(database.connection, testProfileId),
+      createLibraryApiRepository(database.connection, testProfileId),
     );
 
     expect(await service.updateProgress("b".repeat(24), 150)).toBe(true);
@@ -76,8 +78,8 @@ describe("progress service", () => {
 
   it("resets video and playlist progress", async () => {
     const service = createProgressService(
-      createProgressRepository(database.connection),
-      createLibraryApiRepository(database.connection),
+      createProgressRepository(database.connection, testProfileId),
+      createLibraryApiRepository(database.connection, testProfileId),
     );
     await service.updateProgress("b".repeat(24), 25);
     await service.resetVideo("b".repeat(24));
@@ -89,8 +91,8 @@ describe("progress service", () => {
 
   it("ignores zero positions instead of erasing saved progress", async () => {
     const service = createProgressService(
-      createProgressRepository(database.connection),
-      createLibraryApiRepository(database.connection),
+      createProgressRepository(database.connection, testProfileId),
+      createLibraryApiRepository(database.connection, testProfileId),
     );
 
     await service.updateProgress("b".repeat(24), 25);

@@ -1,3 +1,4 @@
+import { seedTestProfile, testProfileId } from "../test/resources.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -82,6 +83,7 @@ describe("media scanner", () => {
       DATA_DIR: dataDirectory,
     });
     const database = await createTestDatabase(configuration);
+    await seedTestProfile(database);
     const scanner = createScanner({
       configuration,
       repository: createLibraryRepository(database.connection),
@@ -165,6 +167,7 @@ describe("media scanner", () => {
       DATA_DIR: dataDirectory,
     });
     const database = await createTestDatabase(configuration);
+    await seedTestProfile(database);
     const scanner = createScanner({
       configuration,
       repository: createLibraryRepository(database.connection),
@@ -190,6 +193,7 @@ describe("media scanner", () => {
       DATA_DIR: dataDirectory,
     });
     const database = await createTestDatabase(configuration);
+    await seedTestProfile(database);
     const scanner = createScanner({
       configuration,
       repository: createLibraryRepository(database.connection),
@@ -214,6 +218,7 @@ describe("media scanner", () => {
       DATA_DIR: dataDirectory,
     });
     const database = await createTestDatabase(configuration);
+    await seedTestProfile(database);
     const generate = vi.fn(async (_source: string, destination: string) => {
       await fs.mkdir(path.dirname(destination), { recursive: true });
       await fs.writeFile(destination, "generated");
@@ -272,6 +277,7 @@ describe("media scanner", () => {
       DATA_DIR: dataDirectory,
     });
     const database = await createTestDatabase(configuration);
+    await seedTestProfile(database);
     const generate = vi.fn(async (_source: string, destination: string) => {
       await fs.mkdir(path.dirname(destination), { recursive: true });
       await fs.writeFile(destination, "optimized-cover");
@@ -335,6 +341,7 @@ describe("media scanner", () => {
       DATA_DIR: dataDirectory,
     });
     const database = await createTestDatabase(configuration);
+    await seedTestProfile(database);
     let failStable = false;
     const probeCalls = new Map<string, number>();
     const scanner = createScanner({
@@ -362,6 +369,7 @@ describe("media scanner", () => {
     const stable = await database.connection("videos").where({ title: "Stable" }).first();
     const converted = await database.connection("videos").where({ title: "Converted" }).first();
     await database.connection("progress").insert({
+      profile_id: testProfileId,
       video_id: stable.id,
       position_seconds: 30,
       completed: false,
@@ -409,6 +417,7 @@ describe("media scanner", () => {
       DATA_DIR: dataDirectory,
     });
     const database = await createTestDatabase(configuration);
+    await seedTestProfile(database);
     const probeCalls: string[] = [];
     let emitWatchEvent = (_filename: string): void => {
       throw new Error("Library monitoring has not started");
@@ -480,6 +489,7 @@ describe("media scanner", () => {
       DATA_DIR: dataDirectory,
     });
     const database = await createTestDatabase(configuration);
+    await seedTestProfile(database);
     let emitWatchEvent = (_filename: string): void => {};
     const scanner = createScanner({
       configuration,
@@ -517,6 +527,7 @@ describe("media scanner", () => {
       DATA_DIR: dataDirectory,
     });
     const database = await createTestDatabase(configuration);
+    await seedTestProfile(database);
     const scanner = createScanner({
       configuration,
       repository: createLibraryRepository(database.connection),
@@ -537,6 +548,7 @@ describe("media scanner", () => {
       DATA_DIR: dataDirectory,
     });
     const database = await createTestDatabase(configuration);
+    await seedTestProfile(database);
     let closeCount = 0;
     let failWatcher: ((error: Error) => void) | undefined;
     const logger = createLogger();

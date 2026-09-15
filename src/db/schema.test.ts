@@ -21,8 +21,10 @@ describe("database schema", () => {
       "playlist_authors",
       "playlist_sections",
       "playlists",
+      "profile_settings",
+      "profile_unlock_attempts",
+      "profiles",
       "progress",
-      "settings",
       "video_authors",
       "videos",
     ]);

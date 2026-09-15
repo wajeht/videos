@@ -1,3 +1,4 @@
+import { profilePasswordSchema } from "../profiles/profiles.schema.js";
 import crypto from "node:crypto";
 
 import bcrypt from "bcryptjs";
@@ -8,6 +9,8 @@ import type { AuthRepository, LoginAttempt } from "./auth.repository.js";
 export const MIN_PASSWORD_LENGTH = 15;
 
 export interface SessionPayload {
+  profileId: string | null;
+  profileSelectionKey: string | null;
   sessionKey: string;
   token: string;
   createdAt: number;
@@ -21,7 +24,12 @@ export type PasswordResult =
 export interface AuthService {
   isPasswordConfigured(): Promise<boolean>;
   isPasswordValid(password: string): Promise<boolean>;
-  setupPassword(password: string, setupToken?: string): Promise<PasswordResult>;
+  setupPassword(
+    password: string,
+    adminName: string,
+    adminPassword: string,
+    setupToken?: string,
+  ): Promise<PasswordResult>;
   changePassword(currentPassword: string, newPassword: string): Promise<PasswordResult>;
   getLoginAttempt(clientKey: string, now?: number): Promise<LoginAttempt | null>;
   recordLoginFailure(clientKey: string, now?: number): Promise<void>;
@@ -60,7 +68,12 @@ export function createAuthService(
       return Boolean(hash) && hasValidPasswordLength(password) && bcrypt.compare(password, hash!);
     },
 
-    async setupPassword(password: string, setupToken?: string): Promise<PasswordResult> {
+    async setupPassword(
+      password: string,
+      adminName: string,
+      adminPassword: string,
+      setupToken?: string,
+    ): Promise<PasswordResult> {
       if (await repository.getPasswordHash()) return { ok: false, reason: "already_configured" };
       if (!hasValidPasswordLength(password)) return { ok: false, reason: "invalid" };
       if (configuration.app.env === "production") {
@@ -69,10 +82,19 @@ export function createAuthService(
           return { ok: false, reason: "invalid" };
         }
       }
-      await repository.setPasswordHash(
-        await bcrypt.hash(password, configuration.app.env === "testing" ? 4 : 12),
+      if (
+        !adminName.trim() ||
+        adminName.trim().length > 40 ||
+        !profilePasswordSchema.safeParse(adminPassword).success
+      )
+        return { ok: false, reason: "invalid" };
+      const rounds = configuration.app.env === "testing" ? 4 : 12;
+      const created = await repository.setupCredentials(
+        await bcrypt.hash(password, rounds),
+        adminName.trim(),
+        await bcrypt.hash(adminPassword, rounds),
       );
-      return { ok: true };
+      return created ? { ok: true } : { ok: false, reason: "already_configured" };
     },
 
     async changePassword(currentPassword: string, newPassword: string): Promise<PasswordResult> {
@@ -108,6 +130,8 @@ export function createAuthService(
         activeAt: now,
         createdAt: now,
         sessionKey: sessionKey(token),
+        profileId: null,
+        profileSelectionKey: null,
       });
       return token;
     },

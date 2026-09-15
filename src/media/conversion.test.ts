@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { createConfiguration } from "../config.js";
 import type { Database } from "../db/db.js";
-import { createLibraryApiRepository } from "../library/library.repository.js";
+import { createLibraryRepository } from "./library.repository.js";
 import { createLogger } from "../logger.js";
 import { createTemporaryDirectory, createTestDatabase } from "../test/resources.js";
 import {
@@ -55,7 +55,7 @@ async function createFixture(executor: ConversionExecutor) {
       modified_at: now,
     });
   }
-  const library = createLibraryApiRepository(database.connection);
+  const library = createLibraryRepository(database.connection);
   const manager = createConversionManager({
     repository: createConversionRepository(database.connection),
     library,
@@ -108,7 +108,7 @@ describe("conversion plan", () => {
       expected: { videoCodec: "h264_qsv", audioCodec: "aac" },
     },
   ])("$name", ({ videoCodec, audioCodec, expected }) => {
-    expect(planConversion({ video_codec: videoCodec, audio_codec: audioCodec })).toEqual(expected);
+    expect(planConversion({ videoCodec, audioCodec })).toEqual(expected);
   });
 });
 
@@ -124,8 +124,8 @@ describe("conversion manager", () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
       active--;
     });
-    const first = (await library.findVideo("b".repeat(24)))!;
-    const second = (await library.findVideo("c".repeat(24)))!;
+    const first = (await library.getVideo("b".repeat(24)))!;
+    const second = (await library.getVideo("c".repeat(24)))!;
 
     await Promise.all([
       manager.requestConversion(first),
@@ -143,7 +143,7 @@ describe("conversion manager", () => {
     const { database, library, manager } = await createFixture(async () => {
       throw new Error("Quick Sync unavailable");
     });
-    const video = (await library.findVideo("b".repeat(24)))!;
+    const video = (await library.getVideo("b".repeat(24)))!;
     await manager.requestConversion(video);
     await waitForStatus(database, video.id, "failed");
     expect(await manager.getConversion(video.id)).toMatchObject({
@@ -157,7 +157,7 @@ describe("conversion manager", () => {
     const { configuration, database, library, manager } = await createFixture(async () => {
       calls++;
     });
-    const video = (await library.findVideo("b".repeat(24)))!;
+    const video = (await library.getVideo("b".repeat(24)))!;
 
     await manager.requestConversion(video);
     await waitForStatus(database, video.id, "ready");

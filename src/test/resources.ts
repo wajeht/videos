@@ -44,3 +44,21 @@ export async function cleanupTestResources(): Promise<void> {
   temporaryDirectories.clear();
   await Promise.all(directories.map((directory) => fs.rm(directory, { recursive: true })));
 }
+
+export const testProfileId = "00000000-0000-4000-8000-000000000001";
+export async function seedTestProfile(database: Database): Promise<void> {
+  const now = new Date().toISOString();
+  await database.connection("profiles").insert({
+    id: testProfileId,
+    name: "Test",
+    avatar_key: "pine",
+    role: "member",
+    password_hash: null,
+    sort_order: 0,
+    created_at: now,
+    updated_at: now,
+  });
+  await database
+    .connection("profile_settings")
+    .insert({ profile_id: testProfileId, key: "library_page_size", value: "24", updated_at: now });
+}

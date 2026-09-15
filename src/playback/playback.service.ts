@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 
-import type { LibraryService } from "../library/library.service.js";
+import type { LibraryRepository } from "../media/library.repository.js";
 import {
   conversionPlaylistFilename,
   type ConversionManager,
@@ -41,18 +41,18 @@ async function resolveConversionPlayback(record: ConversionRecord): Promise<Play
 }
 
 export function createPlaybackService(
-  library: LibraryService,
+  library: LibraryRepository,
   conversions: ConversionManager,
 ): PlaybackService {
   return {
     async preparePlayback(videoId) {
-      const video = await library.findVideoRecord(videoId);
+      const video = await library.getVideo(videoId);
       if (!video) return null;
-      if (video.browser_compatible !== 0) return { kind: "direct", url: `/media/${videoId}` };
+      if (video.browserCompatible) return { kind: "direct", url: `/media/${videoId}` };
       return resolveConversionPlayback(await conversions.requestConversion(video));
     },
     async retryConversion(videoId) {
-      const video = await library.findVideoRecord(videoId);
+      const video = await library.getVideo(videoId);
       return video ? resolveConversionPlayback(await conversions.retryConversion(video)) : null;
     },
     async getConversionStatus(videoId) {

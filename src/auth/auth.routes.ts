@@ -1,3 +1,6 @@
+import { profileDto } from "../profiles/profiles.repository.js";
+import { profilePasswordSchema, type ProfileDto } from "../profiles/profiles.schema.js";
+import type { SessionPayload } from "./auth.service.js";
 import crypto from "node:crypto";
 
 import { zValidator } from "@hono/zod-validator";
@@ -11,7 +14,7 @@ import type { Configuration } from "../config.js";
 import type { AppContext } from "../context.js";
 import { MIN_PASSWORD_LENGTH } from "./auth.service.js";
 
-const authBodyLimit = bodyLimit({
+export const authBodyLimit = bodyLimit({
   maxSize: 4 * 1024,
   onError: (c) => c.json({ message: "Authentication request is too large" }, 413),
 });
@@ -27,6 +30,8 @@ const loginSchema = z.object({ password: z.string() }).strict();
 const setupSchema = z
   .object({
     password: passwordSchema,
+    adminName: z.string().trim().min(1).max(40),
+    adminPassword: profilePasswordSchema,
     confirmPassword: z.string(),
     setupToken: z.string().min(16).max(256).optional(),
   })
@@ -47,7 +52,7 @@ const changePasswordSchema = z
     path: ["confirmPassword"],
   });
 
-function validationHook(
+export function validationHook(
   result: { success: boolean; error?: { issues: readonly { message: string }[] } },
   c: Context,
 ): Response | undefined {
@@ -93,12 +98,47 @@ export function createRequireAuth(context: AppContext): MiddlewareHandler {
   return async (c, next) => {
     const session = await readSession(c, context);
     if (!session) return c.json({ message: "Authentication required" }, 401);
+    c.set("session", session);
     await context.auth.touchSession(session);
     await next();
   };
 }
 
-function clientKey(c: Context, configuration: Configuration): string {
+declare module "hono" {
+  interface ContextVariableMap {
+    session: SessionPayload;
+    profile: ProfileDto;
+  }
+}
+
+export function createRequireProfile(context: AppContext): MiddlewareHandler {
+  return async (c, next) => {
+    const session = await readSession(c, context);
+    if (!session) return c.json({ message: "Authentication required" }, 401);
+    if (
+      !session.profileId ||
+      !session.profileSelectionKey ||
+      c.req.header("x-profile-selection") !== session.profileSelectionKey
+    ) {
+      return c.json({ message: "Choose your profile again", code: "PROFILE_CHANGED" }, 409);
+    }
+    const profile = await context.profiles.findProfile(session.profileId);
+    if (!profile)
+      return c.json({ message: "Choose your profile again", code: "PROFILE_CHANGED" }, 409);
+    c.set("session", session);
+    c.set("profile", profileDto(profile));
+    await context.auth.touchSession(session);
+    await next();
+  };
+}
+
+export const requireAdmin: MiddlewareHandler = async (c, next) => {
+  if (c.get("profile").role !== "admin")
+    return c.json({ message: "An admin profile is required" }, 403);
+  await next();
+};
+
+export function clientKey(c: Context, configuration: Configuration): string {
   const address =
     c.req.header("cf-connecting-ip") ??
     c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -115,10 +155,16 @@ export function createAuthRouter(context: AppContext) {
   return new Hono()
     .basePath("/auth")
     .get("/me", async (c) => {
-      const authenticated = Boolean(await readSession(c, context));
+      const session = await readSession(c, context);
+      const profile = session?.profileId
+        ? await context.profiles.findProfile(session.profileId)
+        : undefined;
+      const authenticated = Boolean(session);
       const passwordConfigured = await context.auth.isPasswordConfigured();
       return c.json({
         authenticated,
+        profile: profile ? profileDto(profile) : null,
+        profileSelectionKey: profile ? session!.profileSelectionKey : null,
         passwordConfigured,
         setupEnabled:
           !passwordConfigured &&
@@ -162,8 +208,13 @@ export function createAuthRouter(context: AppContext) {
       authBodyLimit,
       zValidator("json", setupSchema, validationHook),
       async (c) => {
-        const { password, setupToken } = c.req.valid("json");
-        const result = await context.auth.setupPassword(password, setupToken);
+        const { password, adminName, adminPassword, setupToken } = c.req.valid("json");
+        const result = await context.auth.setupPassword(
+          password,
+          adminName,
+          adminPassword,
+          setupToken,
+        );
         if (result.ok) {
           context.logger.info("Initial application password configured");
           return c.json({ passwordConfigured: true }, 201);
@@ -179,7 +230,8 @@ export function createAuthRouter(context: AppContext) {
     )
     .put(
       "/password",
-      createRequireAuth(context),
+      createRequireProfile(context),
+      requireAdmin,
       authBodyLimit,
       zValidator("json", changePasswordSchema, validationHook),
       async (c) => {

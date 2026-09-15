@@ -94,7 +94,6 @@ export interface LibraryService {
     video: VideoDetailDto;
     playlist: PlaylistDetailDto | null;
   } | null>;
-  findVideoRecord(videoId: string): Promise<VideoRow | undefined>;
 }
 
 export interface LibrarySettings {
@@ -373,6 +372,5 @@ export function createLibraryService(
         playlist,
       };
     },
-    findVideoRecord: (videoId) => repository.findVideo(videoId),
   };
 }
