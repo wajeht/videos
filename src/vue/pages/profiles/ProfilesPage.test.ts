@@ -2,7 +2,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
 import { describe, expect, it, vi } from "vitest";
-import { api } from "@/api.js";
+import { api, ApiError } from "@/api.js";
 import { authKey } from "@/composables/useAuth.js";
 import ProfilesPage from "./ProfilesPage.vue";
 
@@ -44,6 +44,35 @@ describe("profile picker", () => {
       .trigger("click");
     expect(wrapper.get("h1").text()).toBe("Who’s watching?");
     expect(wrapper.text()).toContain("Sign out");
+    wrapper.unmount();
+    queryClient.clear();
+  });
+  it("asks for a password when an open profile was locked after the list loaded", async () => {
+    vi.spyOn(api, "listProfiles").mockResolvedValue([
+      { id: "member", name: "😀 Member", role: "member", isLocked: false },
+    ]);
+    const selectProfile = vi
+      .fn(async () => {})
+      .mockRejectedValueOnce(new ApiError("Incorrect profile password", 403));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = mount(ProfilesPage, {
+      global: {
+        plugins: [[VueQueryPlugin, { queryClient }]],
+        provide: { [authKey]: { selectProfile, logout: vi.fn() } },
+      },
+    });
+    await flushPromises();
+    expect(wrapper.get('[aria-hidden="true"]').text()).toBe("😀");
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Member"))!
+      .trigger("click");
+    await flushPromises();
+    expect(wrapper.get("h1").text()).toBe("Unlock 😀 Member");
+    expect(wrapper.text()).not.toContain("Incorrect profile password");
+    await wrapper.get('input[type="password"]').setValue("member-password");
+    await wrapper.get("form").trigger("submit");
+    expect(selectProfile).toHaveBeenLastCalledWith("member", "member-password");
     wrapper.unmount();
     queryClient.clear();
   });
