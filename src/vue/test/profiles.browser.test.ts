@@ -60,6 +60,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   await page.getByLabel(/^Profile name/).fill("Browser Member");
   await page.getByRole("button", { name: "Create profile" }).click();
   await expect(page.getByRole("heading", { name: "Browser Member", exact: true })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Profile created" })).toBeVisible();
   const editLinks = page.getByRole("link", { name: "Edit", exact: true });
   const adminEditPath = (await editLinks.first().getAttribute("href"))!;
   const memberEditPath = (await editLinks.nth(1).getAttribute("href"))!;
@@ -84,11 +85,27 @@ test("selects locked profiles and limits profile management to admins", async ({
   await page.getByRole("button", { name: "Save profile", exact: true }).click();
   await expect(page).toHaveURL(/\/settings\/profiles$/);
   await expect(page.getByRole("heading", { name: "Browser Viewer", exact: true })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Profile updated" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("manage-profiles.png"), fullPage: true });
   await page.goto("/settings/profiles/missing/edit");
   await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Save profile", exact: true })).toHaveCount(0);
   await page.goto("/settings/profiles");
+  await page.getByRole("link", { name: "Add profile" }).click();
+  await page.getByLabel(/^Profile name/).fill("Temporary profile");
+  await page.getByRole("button", { name: "Create profile" }).click();
+  const temporaryProfile = page.getByRole("row").filter({ hasText: "Temporary profile" });
+  await temporaryProfile.getByRole("button", { name: "Delete", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(temporaryProfile).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Profile deleted" })).toHaveCount(0);
+  await temporaryProfile.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Delete profile", exact: true })
+    .click();
+  await expect(temporaryProfile).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: "Profile deleted" })).toBeVisible();
   const secondTab = await context.newPage();
   await secondTab.goto("/settings/profiles");
   await expect(secondTab.getByRole("link", { name: "Add profile" })).toBeVisible();
@@ -132,9 +149,15 @@ test("selects locked profiles and limits profile management to admins", async ({
     "true",
   );
   await expect(page.getByText("Passwords do not match")).toBeVisible();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Profile password updated" }),
+  ).toHaveCount(0);
   await page.getByLabel(/^Confirm profile password/).fill("member-password");
   await page.getByRole("button", { name: "Set password", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Profile password updated" }),
+  ).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
     page.getByRole("button", { name: "Renamed Member Locked", exact: true }),
@@ -152,6 +175,10 @@ test("selects locked profiles and limits profile management to admins", async ({
     path: testInfo.outputPath("member-profile-settings-mobile.png"),
     fullPage: true,
   });
+  await page.getByRole("button", { name: "Remove lock", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Profile lock removed" })).toBeVisible();
+  await page.getByRole("button", { name: "Renamed Member Open", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Profile details" })).toBeVisible();
   await page.goto("/settings/access");
   await expect(page.getByRole("link", { name: "Access", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
