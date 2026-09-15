@@ -97,9 +97,17 @@ beforeEach(async () => {
 });
 
 function createService(pageSize = 24) {
-  return createLibraryService(createLibraryApiRepository(database.connection, testProfileId), {
-    getLibraryPageSize: async () => pageSize,
-  });
+  return createLibraryService(
+    createLibraryApiRepository(database.connection, testProfileId),
+    { getLibraryPageSize: async () => pageSize },
+    {
+      listThumbnailIndex: async () => ({
+        revisions: new Map(),
+        chapterStartsByVideo: new Map(),
+      }),
+    },
+    { listPlaylistCoverIndex: async () => ({ revisions: new Map() }) },
+  );
 }
 
 describe("library service", () => {
@@ -299,6 +307,7 @@ describe("library service", () => {
           ]),
         }),
       },
+      { listPlaylistCoverIndex: async () => ({ revisions: new Map() }) },
     );
     const library = await service.getLibrary();
 
