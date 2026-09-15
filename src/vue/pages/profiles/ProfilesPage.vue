@@ -25,7 +25,13 @@ const generalError = computed(() => (passwordError.value ? "" : unlock.errorMess
 async function select(profile: ProfileDto): Promise<void> {
   unlock.clearError();
   if (profile.isLocked) selected.value = profile;
-  else await unlock.run(profile, "");
+  else {
+    await unlock.run(profile, "");
+    if (passwordError.value) {
+      selected.value = { ...profile, isLocked: true };
+      unlock.clearError();
+    }
+  }
 }
 </script>
 <template>
