@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import type { AppContext } from "../context.js";
@@ -29,12 +28,11 @@ function mutationError(result: Exclude<ProfileMutationResult, "ok">) {
 }
 
 export function createProfilesRouter(context: AppContext) {
-  const repository = context.profiles;
+  const profiles = context.profiles;
   const requireProfile = createRequireProfile(context);
-  const rounds = context.configuration.app.env === "testing" ? 4 : 12;
   return new Hono()
     .basePath("/profiles")
-    .get("/", async (c) => c.json(await repository.listProfiles()))
+    .get("/", async (c) => c.json(await profiles.listProfiles()))
     .post(
       "/",
       requireProfile,
@@ -43,18 +41,14 @@ export function createProfilesRouter(context: AppContext) {
       zValidator("json", createProfileSchema, validationHook),
       async (c) => {
         const input = c.req.valid("json");
-        const profile = await repository.createProfile(
-          c.get("profile").id,
-          input,
-          input.password === null ? null : await bcrypt.hash(input.password, rounds),
-        );
+        const profile = await profiles.createProfile(c.get("profile").id, input);
         return profile
           ? c.json(profile, 201)
           : c.json({ message: "An admin profile is required" }, 403);
       },
     )
     .post("/clear", requireProfile, async (c) => {
-      await repository.clearProfile(c.get("session").sessionKey);
+      await profiles.clearProfile(c.get("session").sessionKey);
       return c.json({ cleared: true });
     })
     .post(
@@ -63,31 +57,22 @@ export function createProfilesRouter(context: AppContext) {
       zValidator("param", profileParametersSchema),
       zValidator("json", selectProfileSchema, validationHook),
       async (c) => {
-        const profileId = c.req.valid("param").profileId;
-        const profile = await repository.findProfile(profileId);
-        if (!profile) return c.json({ message: "Profile not found" }, 404);
-        const key = clientKey(c, context.configuration);
-        const now = Date.now();
-        const attempt = await repository.getUnlockAttempt(profileId, key, now);
-        if (attempt && attempt.failures >= context.configuration.auth.loginMaxAttempts) {
-          c.header("Retry-After", String(Math.max(1, Math.ceil((attempt.reset_at - now) / 1000))));
-          return c.json({ message: "Too many attempts. Try again later." }, 429);
-        }
-        if (
-          profile.password_hash &&
-          !(await bcrypt.compare(c.req.valid("json").password, profile.password_hash))
-        ) {
-          await repository.recordUnlockFailure(
-            profileId,
-            key,
-            now,
-            context.configuration.auth.loginWindowMs,
-          );
-          return c.json({ message: "Incorrect profile password" }, 403);
-        }
-        if (!(await repository.selectProfile(c.get("session").sessionKey, profile)))
+        const result = await profiles.selectProfile(
+          c.get("session").sessionKey,
+          c.req.valid("param").profileId,
+          c.req.valid("json").password,
+          clientKey(c, context.configuration),
+        );
+        if (!result.ok) {
+          if (result.reason === "rate_limited") {
+            c.header("Retry-After", String(result.retryAfter));
+            return c.json({ message: "Too many attempts. Try again later." }, 429);
+          }
+          if (result.reason === "not_found") return c.json({ message: "Profile not found" }, 404);
+          if (result.reason === "incorrect_password")
+            return c.json({ message: "Incorrect profile password" }, 403);
           return c.json({ message: "Profile changed. Try again." }, 409);
-        await repository.clearUnlockFailures(profileId, key);
+        }
         return c.json({ selected: true });
       },
     )
@@ -98,10 +83,10 @@ export function createProfilesRouter(context: AppContext) {
       zValidator("param", profileParametersSchema),
       zValidator("json", updateProfileSchema, validationHook),
       async (c) => {
-        const result = await repository.mutateProfile(
+        const result = await profiles.updateProfile(
           c.get("profile").id,
           c.req.valid("param").profileId,
-          { kind: "details", input: c.req.valid("json") },
+          c.req.valid("json"),
         );
         if (result !== "ok") {
           const error = mutationError(result);
@@ -118,13 +103,10 @@ export function createProfilesRouter(context: AppContext) {
       zValidator("json", profilePasswordChangeSchema, validationHook),
       async (c) => {
         const password = c.req.valid("json").password;
-        const result = await repository.mutateProfile(
+        const result = await profiles.changePassword(
           c.get("profile").id,
           c.req.valid("param").profileId,
-          {
-            kind: "password",
-            passwordHash: password === null ? null : await bcrypt.hash(password, rounds),
-          },
+          password,
         );
         if (result !== "ok") {
           const error = mutationError(result);
@@ -138,10 +120,9 @@ export function createProfilesRouter(context: AppContext) {
       requireProfile,
       zValidator("param", profileParametersSchema),
       async (c) => {
-        const result = await repository.mutateProfile(
+        const result = await profiles.deleteProfile(
           c.get("profile").id,
           c.req.valid("param").profileId,
-          { kind: "delete" },
         );
         if (result !== "ok") {
           const error = mutationError(result);

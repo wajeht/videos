@@ -117,8 +117,7 @@ declare module "hono" {
 
 export function createRequireProfile(context: AppContext): MiddlewareHandler {
   return async (c, next) => {
-    const session = await readSession(c, context);
-    if (!session) return c.json({ message: "Authentication required" }, 401);
+    const session = c.get("session");
     if (
       !session.profileId ||
       !session.profileSelectionKey ||
@@ -126,12 +125,10 @@ export function createRequireProfile(context: AppContext): MiddlewareHandler {
     ) {
       return c.json({ message: "Choose your profile again", code: "PROFILE_CHANGED" }, 409);
     }
-    const profile = await context.profiles.findProfile(session.profileId);
+    const profile = await context.profilesRepository.findProfile(session.profileId);
     if (!profile)
       return c.json({ message: "Choose your profile again", code: "PROFILE_CHANGED" }, 409);
-    c.set("session", session);
     c.set("profile", profileDto(profile));
-    await context.auth.touchSession(session);
     await next();
   };
 }
@@ -161,7 +158,7 @@ export function createAuthRouter(context: AppContext) {
     .get("/me", async (c) => {
       const session = await readSession(c, context);
       const profile = session?.profileId
-        ? await context.profiles.findProfile(session.profileId)
+        ? await context.profilesRepository.findProfile(session.profileId)
         : undefined;
       const authenticated = Boolean(session);
       const passwordConfigured = await context.auth.isPasswordConfigured();
@@ -244,6 +241,7 @@ export function createAuthRouter(context: AppContext) {
     )
     .put(
       "/password",
+      createRequireAuth(context),
       createRequireProfile(context),
       requireAdmin,
       authBodyLimit,

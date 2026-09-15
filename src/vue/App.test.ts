@@ -20,6 +20,7 @@ function createUnauthenticatedAuth(): AuthController {
     changePassword: vi.fn(),
     dispose: vi.fn(),
     initialize: vi.fn(),
+    updateProfileName: vi.fn(),
     login: vi.fn(),
     logout: vi.fn(),
     setupAdminProfile: vi.fn(async () => undefined),

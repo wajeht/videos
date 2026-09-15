@@ -21,6 +21,7 @@ export const queryKeys = {
   video: (videoId: string) => ["videos", videoId] as const,
   scanStatus: ["scan-status"] as const,
   settings: ["settings"] as const,
+  profiles: ["profiles"] as const,
 };
 
 export function createVideosQueryClient(): QueryClient {
@@ -82,5 +83,12 @@ export function settingsQueryOptions() {
     queryKey: queryKeys.settings,
     queryFn: ({ signal }): Promise<SettingsDto> => api.getSettings(signal),
     staleTime: Infinity,
+  });
+}
+
+export function profilesQueryOptions() {
+  return queryOptions({
+    queryKey: queryKeys.profiles,
+    queryFn: ({ signal }) => api.listProfiles(signal),
   });
 }

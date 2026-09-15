@@ -146,4 +146,29 @@ describe("createAuth", () => {
     expect(auth.state.profile?.id).toBe("new");
     auth.dispose();
   });
+  it("updates only the selected profile name without resetting the session", async () => {
+    const client = createClient();
+    client.getAuthState.mockResolvedValue({
+      authenticated: true,
+      profile: { id: "member", name: "Member", role: "member", isLocked: false },
+      profileSelectionKey: "selection",
+      passwordConfigured: true,
+      adminProfileRequired: false,
+      setupEnabled: false,
+      setupTokenRequired: false,
+    });
+    const onSessionChange = vi.fn();
+    const auth = createAuth({ client, onSessionChange });
+    await auth.initialize();
+    onSessionChange.mockClear();
+    auth.updateProfileName("other", "Other name");
+    expect(auth.state.profile?.name).toBe("Member");
+    auth.updateProfileName("member", "Renamed");
+    expect(auth.state.profile?.name).toBe("Renamed");
+    expect(auth.state.status).toBe("authenticated");
+    expect(auth.state.profileSelectionKey).toBe("selection");
+    expect(onSessionChange).not.toHaveBeenCalled();
+    expect(client.getAuthState).toHaveBeenCalledOnce();
+    auth.dispose();
+  });
 });

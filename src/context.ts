@@ -3,6 +3,7 @@ import {
   type ProfilesRepository,
 } from "./profiles/profiles.repository.js";
 import fs from "node:fs/promises";
+import { createProfilesService, type ProfilesService } from "./profiles/profiles.service.js";
 
 import { createAuthRepository } from "./auth/auth.repository.js";
 import { createAuthService, type AuthService } from "./auth/auth.service.js";
@@ -35,7 +36,8 @@ export interface AppContext {
   database: Database;
   auth: AuthService;
   scannerLibraryRepository: ScannerLibraryRepository;
-  profiles: ProfilesRepository;
+  profilesRepository: ProfilesRepository;
+  profiles: ProfilesService;
   forProfile(profileId: string): {
     libraryRepository: LibraryRepository;
     library: LibraryService;
@@ -59,7 +61,8 @@ export async function createContext(
   const scannerLibraryRepository = createLibraryRepository(database.connection);
   const playlistCovers = createPlaylistCoverCache({ configuration, logger });
   const thumbnails = createThumbnailCache({ configuration, logger });
-  const profiles = createProfilesRepository(database.connection);
+  const profilesRepository = createProfilesRepository(database.connection);
+  const profiles = createProfilesService(profilesRepository, configuration);
   function forProfile(profileId: string) {
     const libraryRepository = createLibraryApiRepository(database.connection, profileId);
     const settings = createSettingsService(
@@ -93,6 +96,7 @@ export async function createContext(
     database,
     auth,
     scannerLibraryRepository,
+    profilesRepository,
     profiles,
     forProfile,
     playback,
