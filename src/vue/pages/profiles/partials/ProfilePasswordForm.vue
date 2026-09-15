@@ -62,15 +62,17 @@ function submit(): void {
           required
         />
       </FormField>
-      <div class="mt-4 flex flex-wrap justify-end gap-3">
-        <AppButton type="submit" :loading="busy">Set password</AppButton
-        ><AppButton
+      <div
+        class="mt-4 flex flex-wrap justify-end gap-3 max-[600px]:grid max-[600px]:auto-cols-fr max-[600px]:grid-flow-col"
+      >
+        <AppButton
           v-if="props.profile.role === 'member' && props.profile.isLocked"
           variant="secondary"
           :disabled="busy"
           @click="emit('save', null)"
           >Remove lock</AppButton
         >
+        <AppButton type="submit" :loading="busy">Set password</AppButton>
       </div>
     </form>
   </PanelCard>
