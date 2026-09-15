@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/vue-query";
 import { api, ApiError, type ProfileDto } from "@/api.js";
 import { useAuth } from "@/composables/useAuth.js";
 import { useAsyncAction } from "@/composables/useAsyncAction.js";
-import AppLogo from "@/components/ui/AppLogo.vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
 import ProfileAvatar from "./partials/ProfileAvatar.vue";
@@ -45,7 +44,6 @@ async function select(profile: ProfileDto): Promise<void> {
         "
       />
       <template v-else>
-        <AppLogo class="mx-auto mb-10" />
         <h1 class="font-display text-4xl font-black">Who’s watching?</h1>
         <p class="mt-3 text-muted">Your progress. Your place in the library.</p>
 
@@ -73,17 +71,17 @@ async function select(profile: ProfileDto): Promise<void> {
             >
           </button>
         </div>
+        <AlertMessage v-if="logout.errorMessage.value" class="mt-8">{{
+          logout.errorMessage.value
+        }}</AlertMessage>
+        <AppButton
+          class="mt-10"
+          variant="secondary"
+          :loading="logout.pending.value"
+          @click="logout.run()"
+          >Sign out</AppButton
+        >
       </template>
-      <AlertMessage v-if="logout.errorMessage.value" class="mt-8">{{
-        logout.errorMessage.value
-      }}</AlertMessage>
-      <AppButton
-        class="mt-10"
-        variant="secondary"
-        :loading="logout.pending.value"
-        @click="logout.run()"
-        >Sign out</AppButton
-      >
     </section>
   </main>
 </template>
