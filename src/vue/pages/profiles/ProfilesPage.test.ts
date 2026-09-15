@@ -17,7 +17,7 @@ describe("profile picker", () => {
     const wrapper = mount(ProfilesPage, {
       global: {
         plugins: [[VueQueryPlugin, { queryClient }]],
-        provide: { [authKey]: { selectProfile, logout: vi.fn() } },
+        provide: { [authKey]: { selectProfile } },
       },
     });
     await flushPromises();
@@ -43,7 +43,7 @@ describe("profile picker", () => {
       .find((button) => button.text() === "Back to profiles")!
       .trigger("click");
     expect(wrapper.get("h1").text()).toBe("Who’s watching?");
-    expect(wrapper.text()).toContain("Sign out");
+    expect(wrapper.text()).not.toContain("Sign out");
     wrapper.unmount();
     queryClient.clear();
   });
@@ -58,7 +58,7 @@ describe("profile picker", () => {
     const wrapper = mount(ProfilesPage, {
       global: {
         plugins: [[VueQueryPlugin, { queryClient }]],
-        provide: { [authKey]: { selectProfile, logout: vi.fn() } },
+        provide: { [authKey]: { selectProfile } },
       },
     });
     await flushPromises();

@@ -15,7 +15,6 @@ const selected = shallowRef<ProfileDto | null>(null);
 const unlock = useAsyncAction((profile: ProfileDto, password: string) =>
   auth.selectProfile(profile.id, password),
 );
-const logout = useAsyncAction(() => auth.logout());
 const passwordError = computed(() =>
   unlock.error.value instanceof ApiError &&
   unlock.error.value.message === "Incorrect profile password"
@@ -79,16 +78,6 @@ async function select(profile: ProfileDto): Promise<void> {
             >
           </button>
         </div>
-        <AlertMessage v-if="logout.errorMessage.value" class="mt-8">{{
-          logout.errorMessage.value
-        }}</AlertMessage>
-        <AppButton
-          class="mt-10"
-          variant="secondary"
-          :loading="logout.pending.value"
-          @click="logout.run()"
-          >Sign out</AppButton
-        >
       </template>
     </section>
   </main>
