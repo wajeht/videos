@@ -14,7 +14,7 @@ import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
 import PanelCard from "@/components/ui/PanelCard.vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
-import ProfileAvatar from "@/pages/profiles/partials/ProfileAvatar.vue";
+import ProfileTable from "./partials/ProfileTable.vue";
 import ProfileDetailsForm from "@/pages/profiles/partials/ProfileDetailsForm.vue";
 import ProfilePasswordForm from "@/pages/profiles/partials/ProfilePasswordForm.vue";
 const auth = useAuth();
@@ -125,34 +125,12 @@ watch(
             remove.errorMessage.value
           }}</AlertMessage>
           <p v-if="profiles.isPending.value" class="mt-4" role="status">Loading profiles…</p>
-          <div v-if="!editRoute" class="divide-y divide-line">
-            <div
-              v-for="profile in profiles.data.value"
-              :key="profile.id"
-              class="flex flex-wrap items-center gap-4 py-6 first:pt-0 last:pb-0"
-            >
-              <ProfileAvatar :name="profile.name" />
-              <div class="min-w-0 flex-1">
-                <h3 class="break-words font-bold">{{ profile.name }}</h3>
-                <p class="text-sm text-muted">
-                  {{ profile.role === "admin" ? "Admin" : "Member" }} ·
-                  {{ profile.isLocked ? "Locked" : "Open" }}
-                </p>
-              </div>
-              <AppButton
-                :as="IntentRouterLink"
-                :to="{ name: 'settings-profile-edit', params: { profileId: profile.id } }"
-                :prefetch="prefetch.settingsProfiles"
-                variant="secondary"
-                >Edit</AppButton
-              ><AppButton
-                variant="danger"
-                :disabled="remove.pending.value"
-                @click="remove.run(profile)"
-                >Delete</AppButton
-              >
-            </div>
-          </div>
+          <ProfileTable
+            v-if="!editRoute && profiles.data.value"
+            :profiles="profiles.data.value"
+            :busy="remove.pending.value"
+            @remove="remove.run($event)"
+          />
           <div v-if="!editRoute" class="mt-8 flex justify-end">
             <AppButton
               :as="IntentRouterLink"
