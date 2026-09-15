@@ -26,24 +26,24 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(page.getByLabel(/^Profile password/)).toHaveAttribute("aria-invalid", "true");
   await page.getByLabel(/^Profile password/).fill("test-admin-password");
   await page.getByRole("button", { name: "Unlock profile" }).click();
-  await expect(page.getByRole("button", { name: "Profile menu" })).toHaveText(/Admin/);
+  await expect(page.getByRole("button", { name: "Switch profile" })).toHaveText(/Admin/);
   const navigation = await page
     .getByRole("navigation", { name: "Main navigation", exact: true })
     .boundingBox();
-  const profileMenu = await page.getByRole("button", { name: "Profile menu" }).boundingBox();
+  const profileButton = await page.getByRole("button", { name: "Switch profile" }).boundingBox();
   expect(navigation).not.toBeNull();
-  expect(profileMenu).not.toBeNull();
-  expect(profileMenu!.x - (navigation!.x + navigation!.width)).toBeCloseTo(24, 0);
-  const styles = await page.getByRole("button", { name: "Profile menu" }).evaluate((button) => {
-    const menuStyle = getComputedStyle(button);
+  expect(profileButton).not.toBeNull();
+  expect(profileButton!.x - (navigation!.x + navigation!.width)).toBeCloseTo(24, 0);
+  const styles = await page.getByRole("button", { name: "Switch profile" }).evaluate((button) => {
+    const buttonStyle = getComputedStyle(button);
     const linkStyle = getComputedStyle(
       document.querySelector('nav[aria-label="Main navigation"] a')!,
     );
     return {
-      font: menuStyle.font,
+      font: buttonStyle.font,
       linkFont: linkStyle.font,
-      borderTopWidth: menuStyle.borderTopWidth,
-      borderRadius: menuStyle.borderRadius,
+      borderTopWidth: buttonStyle.borderTopWidth,
+      borderRadius: buttonStyle.borderRadius,
     };
   });
   expect(styles.font).toBe(styles.linkFont);
@@ -58,10 +58,8 @@ test("selects locked profiles and limits profile management to admins", async ({
   const secondTab = await context.newPage();
   await secondTab.goto("/settings/profiles");
   await expect(secondTab.getByRole("button", { name: "Add profile" })).toBeVisible();
-  await page.getByRole("button", { name: "Profile menu" }).click();
-  await expect(page.getByRole("menu", { name: "Profile", exact: true })).toBeVisible();
-  await page.screenshot({ path: testInfo.outputPath("profile-menu.png"), fullPage: true });
-  await page.getByRole("menuitem", { name: "Switch profile" }).click();
+  await page.getByRole("button", { name: "Switch profile" }).click();
+  await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await expect(secondTab.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await page.getByRole("button", { name: "Browser Member Open", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Your profile" })).toBeVisible();
@@ -85,7 +83,7 @@ test("selects locked profiles and limits profile management to admins", async ({
     page.getByText("Only an admin profile can change the shared app password."),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Change password", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Profile menu" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Switch profile" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("member-mobile.png"), fullPage: true });
   await secondTab.close();
 });
