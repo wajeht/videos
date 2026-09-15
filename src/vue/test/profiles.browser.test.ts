@@ -24,6 +24,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   await page.getByRole("button", { name: "Admin Admin · Locked", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Who’s watching?" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Unlock Admin" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toHaveCount(0);
   const pinBoxes = page.getByRole("group", { name: "Profile PIN", exact: true }).locator("input");
   await expect(pinBoxes).toHaveCount(4);
   await expect(pinBoxes.first()).toHaveAttribute("inputmode", "numeric");

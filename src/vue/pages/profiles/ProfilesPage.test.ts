@@ -32,6 +32,7 @@ describe("profile picker", () => {
       .trigger("click");
     expect(selectProfile).toHaveBeenCalledTimes(1);
     expect(wrapper.get("h1").text()).toBe("Unlock Private");
+    expect(wrapper.text()).not.toContain("Sign out");
     expect(wrapper.text()).not.toContain("Who’s watching?");
     expect(wrapper.text()).not.toContain("Your progress. Your place in the library.");
     const boxes = wrapper.findAll('input[type="password"]');
@@ -39,6 +40,12 @@ describe("profile picker", () => {
     for (const [index, digit] of [..."0123"].entries()) await boxes[index]!.setValue(digit);
     await wrapper.get("form").trigger("submit");
     expect(selectProfile).toHaveBeenLastCalledWith("locked", "0123");
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Back to profiles")!
+      .trigger("click");
+    expect(wrapper.get("h1").text()).toBe("Who’s watching?");
+    expect(wrapper.text()).toContain("Sign out");
     wrapper.unmount();
     queryClient.clear();
   });
