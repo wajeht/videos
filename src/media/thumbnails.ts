@@ -281,18 +281,6 @@ export function createThumbnailCache({
     await fs.rm(videoThumbnailDirectory(directory, videoId), { recursive: true, force: true });
     metas.delete(videoId);
     jobs.delete(videoId);
-    let entries: string[];
-    try {
-      entries = await fs.readdir(directory);
-    } catch (error) {
-      if (hasErrorCode(error, "ENOENT")) return;
-      throw error;
-    }
-    await Promise.all(
-      entries
-        .filter((name) => name.startsWith(`${videoId}.`))
-        .map((name) => fs.rm(path.join(directory, name), { force: true })),
-    );
   }
 
   async function storedVideoIds(): Promise<Set<string>> {
@@ -301,8 +289,6 @@ export function createThumbnailCache({
       const ids = new Set<string>();
       for (const entry of entries) {
         if (entry.isDirectory() && videoIdPattern.test(entry.name)) ids.add(entry.name);
-        const legacy = /^([a-f0-9]{24})(?:\.c\d+)?\.(?:jpg|json)$/.exec(entry.name);
-        if (legacy?.[1]) ids.add(legacy[1]);
       }
       return ids;
     } catch (error) {
@@ -344,12 +330,6 @@ export function createThumbnailCache({
               force: true,
             }),
           ),
-      );
-      const legacyFiles = await fs.readdir(directory);
-      await Promise.all(
-        legacyFiles
-          .filter((name) => new RegExp(`^${videoId}(?:\\.c\\d+)?\\.(?:jpg|json)$`).test(name))
-          .map((name) => fs.rm(path.join(directory, name), { force: true })),
       );
     } catch (error) {
       logger.warn("Could not prune old thumbnail revisions", {
