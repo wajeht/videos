@@ -23,41 +23,23 @@ function mountSwitcher() {
   return { clearProfile, error };
 }
 
-describe("profile menu", () => {
-  it("opens the menu before switching profiles", async () => {
+describe("profile switcher", () => {
+  it("switches profiles directly when the profile name is clicked", async () => {
     const { clearProfile } = mountSwitcher();
-    const trigger = wrapper.get('button[aria-label="Profile menu"]');
+    const trigger = wrapper.get('button[aria-label="Switch profile"]');
     expect(trigger.text()).toBe("Jaw");
     await trigger.trigger("click");
-    expect(trigger.attributes("aria-expanded")).toBe("true");
-    expect(clearProfile).not.toHaveBeenCalled();
-    await wrapper.get('[role="menuitem"]').trigger("click");
     await flushPromises();
     expect(clearProfile).toHaveBeenCalledOnce();
     expect(wrapper.find('[role="menu"]').exists()).toBe(false);
   });
 
-  it("supports keyboard opening, Escape, and outside dismissal", async () => {
-    mountSwitcher();
-    const trigger = wrapper.get('button[aria-label="Profile menu"]');
-    await trigger.trigger("keydown", { key: "ArrowDown" });
-    expect(document.activeElement).toBe(wrapper.get('[role="menuitem"]').element);
-    await wrapper.get('[role="menuitem"]').trigger("keydown", { key: "Escape" });
-    expect(document.activeElement).toBe(trigger.element);
-    expect(trigger.attributes("aria-expanded")).toBe("false");
-    await trigger.trigger("click");
-    document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
-    await flushPromises();
-    expect(wrapper.find('[role="menu"]').exists()).toBe(false);
-  });
-
-  it("reports a failed switch without leaving the menu open", async () => {
+  it("reports a failed switch", async () => {
     const { clearProfile, error } = mountSwitcher();
     clearProfile.mockRejectedValueOnce(new Error("Offline"));
-    await wrapper.get('button[aria-label="Profile menu"]').trigger("click");
-    await wrapper.get('[role="menuitem"]').trigger("click");
+    await wrapper.get('button[aria-label="Switch profile"]').trigger("click");
     await flushPromises();
     expect(error).toHaveBeenCalledWith("Could not switch profiles");
-    expect(wrapper.find('[role="menu"]').exists()).toBe(false);
+    expect(wrapper.get("button").attributes("disabled")).toBeUndefined();
   });
 });
