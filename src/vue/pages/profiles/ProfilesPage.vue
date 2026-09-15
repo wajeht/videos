@@ -31,9 +31,6 @@ async function select(profile: ProfileDto): Promise<void> {
 <template>
   <main class="grid min-h-screen place-items-center bg-canvas px-5 py-12">
     <section class="w-full max-w-3xl text-center">
-      <AppLogo class="mx-auto mb-10" />
-      <h1 class="font-display text-4xl font-black">Who’s watching?</h1>
-      <p class="mt-3 text-muted">Your progress. Your place in the library.</p>
       <ProfileUnlockForm
         v-if="selected"
         :key="selected.id"
@@ -48,6 +45,10 @@ async function select(profile: ProfileDto): Promise<void> {
         "
       />
       <template v-else>
+        <AppLogo class="mx-auto mb-10" />
+        <h1 class="font-display text-4xl font-black">Who’s watching?</h1>
+        <p class="mt-3 text-muted">Your progress. Your place in the library.</p>
+
         <p v-if="profiles.isPending.value" class="mt-8" role="status">Loading profiles…</p>
         <AlertMessage v-if="profiles.isError.value" class="mt-8"
           >Could not load profiles.

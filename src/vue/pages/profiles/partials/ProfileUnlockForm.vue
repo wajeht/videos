@@ -9,8 +9,8 @@ const emit = defineEmits<{ unlock: [pin: string]; cancel: [] }>();
 const pin = shallowRef("");
 </script>
 <template>
-  <form class="mx-auto mt-8 grid max-w-sm gap-4 text-left" @submit.prevent="emit('unlock', pin)">
-    <h2 class="text-xl font-bold">Unlock {{ profile.name }}</h2>
+  <form class="mx-auto grid max-w-sm gap-4 text-left" @submit.prevent="emit('unlock', pin)">
+    <h1 class="text-xl font-bold">Unlock {{ profile.name }}</h1>
     <AlertMessage v-if="error">{{ error }}</AlertMessage>
     <ProfilePinField
       v-model="pin"

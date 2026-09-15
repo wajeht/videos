@@ -31,6 +31,9 @@ describe("profile picker", () => {
       .find((button) => button.text().includes("Private"))!
       .trigger("click");
     expect(selectProfile).toHaveBeenCalledTimes(1);
+    expect(wrapper.get("h1").text()).toBe("Unlock Private");
+    expect(wrapper.text()).not.toContain("Who’s watching?");
+    expect(wrapper.text()).not.toContain("Your progress. Your place in the library.");
     const boxes = wrapper.findAll('input[type="password"]');
     expect(boxes).toHaveLength(4);
     for (const [index, digit] of [..."0123"].entries()) await boxes[index]!.setValue(digit);
