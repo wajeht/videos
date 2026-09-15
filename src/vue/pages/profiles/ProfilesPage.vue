@@ -6,6 +6,7 @@ import { useAuth } from "@/composables/useAuth.js";
 import { useAsyncAction } from "@/composables/useAsyncAction.js";
 import AppButton from "@/components/ui/AppButton.vue";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
+import PageHeader from "@/components/ui/PageHeader.vue";
 import ProfileAvatar from "./partials/ProfileAvatar.vue";
 import ProfileUnlockForm from "./partials/ProfileUnlockForm.vue";
 import { profilesQueryOptions } from "@/queries.js";
@@ -51,8 +52,12 @@ async function select(profile: ProfileDto): Promise<void> {
         "
       />
       <template v-else>
-        <h1 class="font-display text-4xl font-black">Who’s watching?</h1>
-        <p class="mt-3 text-muted">Your progress. Your place in the library.</p>
+        <div class="grid justify-items-center">
+          <PageHeader
+            title="Who’s watching?"
+            description="Your progress. Your place in the library."
+          />
+        </div>
 
         <p v-if="profiles.isPending.value" class="mt-8" role="status">Loading profiles…</p>
         <AlertMessage v-if="profiles.isError.value" class="mt-8"
@@ -63,10 +68,11 @@ async function select(profile: ProfileDto): Promise<void> {
         >
         <AlertMessage v-if="generalError" class="mt-8">{{ generalError }}</AlertMessage>
         <div class="mt-10 flex flex-wrap justify-center gap-6">
-          <button
+          <AppButton
             v-for="profile in profiles.data.value"
             :key="profile.id"
-            class="grid w-28 justify-items-center gap-3 rounded-xl p-2 text-pine-deep hover:bg-porcelain focus-visible:outline-2 focus-visible:outline-pine"
+            variant="unstyled"
+            class="grid w-28 justify-items-center gap-3 rounded-[8px] p-2 text-pine-deep transition-colors duration-[160ms] hover:bg-porcelain"
             :disabled="unlock.pending.value"
             @click="select(profile)"
           >
@@ -76,7 +82,7 @@ async function select(profile: ProfileDto): Promise<void> {
               >{{ profile.role === "admin" ? "Admin · " : ""
               }}{{ profile.isLocked ? "Locked" : "Open" }}</span
             >
-          </button>
+          </AppButton>
         </div>
       </template>
     </section>
