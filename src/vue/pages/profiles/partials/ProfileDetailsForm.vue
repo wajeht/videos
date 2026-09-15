@@ -65,12 +65,12 @@ const pin = shallowRef("");
         help-text="Use exactly 4 digits. Optional for members."
       />
       <div class="mt-4 flex flex-wrap justify-end gap-3">
+        <AppButton v-if="admin" variant="secondary" :disabled="busy" @click="emit('cancel')">
+          Cancel
+        </AppButton>
         <AppButton type="submit" :loading="busy">{{
           profile ? "Save profile" : "Create profile"
-        }}</AppButton
-        ><AppButton v-if="admin" variant="secondary" :disabled="busy" @click="emit('cancel')"
-          >Cancel</AppButton
-        >
+        }}</AppButton>
       </div>
     </form>
   </PanelCard>
