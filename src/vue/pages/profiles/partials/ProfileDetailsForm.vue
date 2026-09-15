@@ -17,7 +17,6 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ save: [input: CreateProfileInput]; cancel: [] }>();
 const name = shallowRef(props.profile?.name ?? "");
-const avatarKey = shallowRef<ProfileDto["avatarKey"]>(props.profile?.avatarKey ?? "pine");
 const role = shallowRef<ProfileDto["role"]>(props.profile?.role ?? "member");
 const pin = shallowRef("");
 </script>
@@ -28,23 +27,12 @@ const pin = shallowRef("");
     />
     <form
       class="grid gap-4 p-[clamp(22px,4vw,34px)]"
-      @submit.prevent="emit('save', { name, avatarKey, role, pin: pin || null })"
+      @submit.prevent="emit('save', { name, role, pin: pin || null })"
     >
       <AlertMessage v-if="error">{{ error }}</AlertMessage>
       <FormField v-slot="field" label="Profile name" required
         ><AppInput :id="field.inputId" v-model="name" maxlength="40" required
       /></FormField>
-      <FormField v-slot="field" label="Avatar color"
-        ><AppSelect :id="field.inputId" v-model="avatarKey"
-          ><option
-            v-for="color in ['pine', 'clay', 'gold', 'slate', 'sage', 'plum']"
-            :key="color"
-            :value="color"
-          >
-            {{ color }}
-          </option></AppSelect
-        ></FormField
-      >
       <FormField
         v-if="admin"
         v-slot="field"

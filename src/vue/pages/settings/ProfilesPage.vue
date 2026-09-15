@@ -25,8 +25,8 @@ const editing = computed(() => (admin.value ? selectedProfile.value : auth.state
 const showForm = shallowRef(false);
 const save = useAsyncAction(async (input: CreateProfileInput) => {
   if (editing.value) {
-    const { name, avatarKey, role } = input;
-    await api.updateProfile(editing.value.id, { name, avatarKey, role });
+    const { name, role } = input;
+    await api.updateProfile(editing.value.id, { name, role });
     await auth.initialize();
   } else await api.createProfile(input);
   showForm.value = false;
@@ -104,7 +104,7 @@ function edit(profile: ProfileDto | null): void {
           :key="profile.id"
           class="mt-6 flex flex-wrap items-center gap-4 border-t border-line pt-6"
         >
-          <ProfileAvatar :name="profile.name" :avatar-key="profile.avatarKey" />
+          <ProfileAvatar :name="profile.name" />
           <div class="min-w-0 flex-1">
             <h3 class="break-words font-bold">{{ profile.name }}</h3>
             <p class="text-sm text-muted">

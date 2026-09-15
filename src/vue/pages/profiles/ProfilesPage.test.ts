@@ -9,8 +9,8 @@ import ProfilesPage from "./ProfilesPage.vue";
 describe("profile picker", () => {
   it("opens an unlocked profile and asks for a PIN on a locked profile", async () => {
     vi.spyOn(api, "listProfiles").mockResolvedValue([
-      { id: "open", name: "Open", avatarKey: "sage", role: "member", isLocked: false },
-      { id: "locked", name: "Private", avatarKey: "pine", role: "admin", isLocked: true },
+      { id: "open", name: "Open", role: "member", isLocked: false },
+      { id: "locked", name: "Private", role: "admin", isLocked: true },
     ]);
     const selectProfile = vi.fn(async () => {});
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

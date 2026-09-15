@@ -50,7 +50,7 @@ async function fixture() {
   async function addProfile(name: string, pin: string | null = null, role = "member") {
     const response = await client.request("/api/profiles", "POST", {
       name,
-      avatarKey: "sage",
+
       role,
       pin,
     });
@@ -84,7 +84,6 @@ describe("profiles", () => {
       (
         await guest.request("/api/profiles", "POST", {
           name: "Intruder",
-          avatarKey: "pine",
           role: "admin",
           pin: testAdminPin,
         })
@@ -96,7 +95,6 @@ describe("profiles", () => {
       (
         await guest.request("/api/profiles", "POST", {
           name: "Intruder",
-          avatarKey: "pine",
           role: "member",
           pin: null,
         })
@@ -123,7 +121,6 @@ describe("profiles", () => {
       (
         await guest.request(`/api/profiles/${member.id}`, "PUT", {
           name: "Promoted",
-          avatarKey: "pine",
           role: "admin",
         })
       ).status,
@@ -132,7 +129,6 @@ describe("profiles", () => {
       (
         await guest.request(`/api/profiles/${member.id}`, "PUT", {
           name: "My name",
-          avatarKey: "clay",
           role: "member",
         })
       ).status,
@@ -149,7 +145,6 @@ describe("profiles", () => {
       (
         await client.request(`/api/profiles/${admin.id}`, "PUT", {
           name: "Admin",
-          avatarKey: "pine",
           role: "member",
         })
       ).status,
@@ -161,7 +156,6 @@ describe("profiles", () => {
       (
         await client.request("/api/profiles", "POST", {
           name: "Open admin",
-          avatarKey: "pine",
           role: "admin",
           pin: null,
         })
@@ -171,11 +165,11 @@ describe("profiles", () => {
     await Promise.all([
       context.profiles.mutateProfile(admin.id, admin.id, {
         kind: "details",
-        input: { name: "First", avatarKey: "pine", role: "member" },
+        input: { name: "First", role: "member" },
       }),
       context.profiles.mutateProfile(second.id, second.id, {
         kind: "details",
-        input: { name: "Second", avatarKey: "pine", role: "member" },
+        input: { name: "Second", role: "member" },
       }),
     ]);
     expect(
@@ -315,7 +309,6 @@ describe("profiles", () => {
         (
           await client.request("/api/profiles", "POST", {
             name: "Invalid admin",
-            avatarKey: "pine",
             role: "admin",
             pin,
           })

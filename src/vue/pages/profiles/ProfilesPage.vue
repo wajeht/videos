@@ -63,7 +63,7 @@ async function select(profile: ProfileDto): Promise<void> {
             :disabled="unlock.pending.value"
             @click="select(profile)"
           >
-            <ProfileAvatar :name="profile.name" :avatar-key="profile.avatarKey" />
+            <ProfileAvatar :name="profile.name" />
             <span class="max-w-full break-words font-bold">{{ profile.name }}</span>
             <span class="text-xs text-muted"
               >{{ profile.role === "admin" ? "Admin · " : ""

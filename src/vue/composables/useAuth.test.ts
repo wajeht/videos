@@ -91,7 +91,7 @@ describe("createAuth", () => {
       passwordConfigured: true,
       setupEnabled: false,
       setupTokenRequired: false,
-      profile: { id: "new", name: "New", avatarKey: "pine", role: "member", isLocked: false },
+      profile: { id: "new", name: "New", role: "member", isLocked: false },
       profileSelectionKey: "new-selection",
     };
     client.getAuthState.mockResolvedValueOnce(newState);

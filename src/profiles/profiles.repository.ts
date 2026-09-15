@@ -5,7 +5,6 @@ import type { ProfileDto, UpdateProfileInput } from "./profiles.schema.js";
 export interface ProfileRow {
   id: string;
   name: string;
-  avatar_key: ProfileDto["avatarKey"];
   role: ProfileDto["role"];
   pin_hash: string | null;
   sort_order: number;
@@ -16,7 +15,6 @@ export function profileDto(row: ProfileRow): ProfileDto {
   return {
     id: row.id,
     name: row.name,
-    avatarKey: row.avatar_key,
     role: row.role,
     isLocked: row.pin_hash !== null,
   };
@@ -60,7 +58,6 @@ export async function insertProfile(
   const row: ProfileRow = {
     id: crypto.randomUUID(),
     name: input.name,
-    avatar_key: input.avatarKey,
     role: input.role,
     pin_hash: pinHash,
     sort_order: (last?.order ?? -1) + 1,
@@ -137,7 +134,6 @@ export function createProfilesRepository(database: Knex) {
             ? { pin_hash: mutation.pinHash }
             : {
                 name: mutation.input.name,
-                avatar_key: mutation.input.avatarKey,
                 role: mutation.input.role,
               };
         await transaction("profiles")
