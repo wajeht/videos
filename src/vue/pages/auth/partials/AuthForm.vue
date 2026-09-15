@@ -4,7 +4,6 @@ import { shallowRef } from "vue";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppInput from "@/components/ui/AppInput.vue";
-import ProfilePinField from "@/pages/profiles/partials/ProfilePinField.vue";
 import FormField from "@/components/ui/FormField.vue";
 
 const props = defineProps<{
@@ -20,7 +19,7 @@ const emit = defineEmits<{
     password: string,
     confirmPassword: string,
     adminName: string,
-    adminPin: string,
+    adminPassword: string,
     setupToken?: string,
   ];
 }>();
@@ -28,22 +27,22 @@ const emit = defineEmits<{
 const password = shallowRef("");
 const confirmPassword = shallowRef("");
 const adminName = shallowRef("");
-const adminPin = shallowRef("");
-const confirmAdminPin = shallowRef("");
-const adminPinError = shallowRef("");
+const adminPassword = shallowRef("");
+const confirmAdminPassword = shallowRef("");
+const adminPasswordError = shallowRef("");
 const setupToken = shallowRef("");
 const formError = shallowRef("");
 
 function submit(): void {
   if (props.busy) return;
   formError.value = "";
-  adminPinError.value = "";
+  adminPasswordError.value = "";
   if (props.isSetup && password.value !== confirmPassword.value) {
     formError.value = "Passwords do not match";
     return;
   }
-  if (props.isSetup && adminPin.value !== confirmAdminPin.value) {
-    adminPinError.value = "PINs do not match";
+  if (props.isSetup && adminPassword.value !== confirmAdminPassword.value) {
+    adminPasswordError.value = "Passwords do not match";
     return;
   }
   if (props.isSetup) {
@@ -52,7 +51,7 @@ function submit(): void {
       password.value,
       confirmPassword.value,
       adminName.value,
-      adminPin.value,
+      adminPassword.value,
       setupToken.value || undefined,
     );
   } else {
@@ -152,27 +151,39 @@ function submit(): void {
     <fieldset v-if="isSetup" class="mt-8 grid gap-4 border-t border-line pt-6">
       <legend class="font-bold">Your admin profile</legend>
       <p class="text-sm text-muted">
-        This profile manages the library. Keep its 4-digit PIN private.
+        This profile manages the library. Keep its password separate from the shared app password.
       </p>
       <FormField v-slot="field" label="Profile name" required
         ><AppInput :id="field.inputId" v-model="adminName" maxlength="40" required
       /></FormField>
-      <ProfilePinField
-        v-model="adminPin"
-        label="Admin profile PIN"
-        help-text="Use exactly 4 digits."
-        :disabled="busy"
-        autocomplete="new-password"
+      <FormField
+        v-slot="field"
+        label="Admin profile password"
+        help-text="Use at least 8 characters."
         required
-      />
-      <ProfilePinField
-        v-model="confirmAdminPin"
-        label="Confirm admin profile PIN"
-        :error="adminPinError"
-        :disabled="busy"
-        autocomplete="new-password"
+        ><AppInput
+          :id="field.inputId"
+          v-model="adminPassword"
+          type="password"
+          autocomplete="new-password"
+          minlength="8"
+          maxlength="72"
+          required
+      /></FormField>
+      <FormField
+        v-slot="field"
+        label="Confirm admin profile password"
+        :error="adminPasswordError"
         required
-      />
+        ><AppInput
+          :id="field.inputId"
+          v-model="confirmAdminPassword"
+          :aria-describedby="field.describedBy"
+          :invalid="field.invalid"
+          type="password"
+          autocomplete="new-password"
+          required
+      /></FormField>
     </fieldset>
     <AppButton
       class="mt-6"

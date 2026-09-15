@@ -11,7 +11,7 @@ import AppButton from "@/components/ui/AppButton.vue";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
 import ProfileAvatar from "@/pages/profiles/partials/ProfileAvatar.vue";
 import ProfileDetailsForm from "@/pages/profiles/partials/ProfileDetailsForm.vue";
-import ProfilePinForm from "@/pages/profiles/partials/ProfilePinForm.vue";
+import ProfilePasswordForm from "@/pages/profiles/partials/ProfilePasswordForm.vue";
 const auth = useAuth();
 const confirmation = useConfirm();
 const admin = computed(() => auth.state.profile?.role === "admin");
@@ -32,9 +32,9 @@ const save = useAsyncAction(async (input: CreateProfileInput) => {
   showForm.value = false;
   if (admin.value) await profiles.refetch();
 });
-const lock = useAsyncAction(async (pin: string | null) => {
+const lock = useAsyncAction(async (password: string | null) => {
   if (!editing.value) return;
-  await api.changeProfilePin(editing.value.id, pin);
+  await api.changeProfilePassword(editing.value.id, password);
   await auth.initialize();
 });
 const remove = useAsyncAction(async (profile: ProfileDto) => {
@@ -75,7 +75,7 @@ function edit(profile: ProfileDto | null): void {
           @save="save.run($event)"
           @cancel="showForm = false"
         />
-        <ProfilePinForm
+        <ProfilePasswordForm
           v-if="editing"
           :key="editing.id"
           :profile="editing"

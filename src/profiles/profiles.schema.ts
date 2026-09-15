@@ -1,9 +1,10 @@
 import { z } from "zod";
 
-export const profilePinSchema = z
+export const profilePasswordSchema = z
   .string()
-  .length(4, "Use exactly 4 digits")
-  .regex(/^\d{4}$/, "Use exactly 4 digits");
+  .min(8, "Use at least 8 characters")
+  .max(72)
+  .refine((value) => Buffer.byteLength(value, "utf8") <= 72, "Password is too long");
 export const profileDetailsSchema = z
   .object({
     name: z.string().trim().min(1).max(40),
@@ -12,23 +13,26 @@ export const profileDetailsSchema = z
 export const createProfileSchema = profileDetailsSchema
   .extend({
     role: z.enum(["admin", "member"]),
-    pin: profilePinSchema.nullable(),
+    password: profilePasswordSchema.nullable(),
   })
-  .refine((value) => value.role !== "admin" || value.pin !== null, {
-    message: "Admin profiles require a PIN",
-    path: ["pin"],
+  .refine((value) => value.role !== "admin" || value.password !== null, {
+    message: "Admin profiles require a password",
+    path: ["password"],
   });
 export const updateProfileSchema = profileDetailsSchema.extend({
   role: z.enum(["admin", "member"]),
 });
-export const profilePinChangeSchema = z
+export const profilePasswordChangeSchema = z
   .object({
-    pin: profilePinSchema.nullable(),
+    password: profilePasswordSchema.nullable(),
   })
   .strict();
 export const selectProfileSchema = z
   .object({
-    pin: z.union([profilePinSchema, z.literal("")]),
+    password: z
+      .string()
+      .max(72)
+      .refine((value) => Buffer.byteLength(value, "utf8") <= 72, "Password is too long"),
   })
   .strict();
 export const profileParametersSchema = z.object({ profileId: z.string().uuid() });

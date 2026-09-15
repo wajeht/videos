@@ -6,7 +6,7 @@ export interface ProfileRow {
   id: string;
   name: string;
   role: ProfileDto["role"];
-  pin_hash: string | null;
+  password_hash: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -16,7 +16,7 @@ export function profileDto(row: ProfileRow): ProfileDto {
     id: row.id,
     name: row.name,
     role: row.role,
-    isLocked: row.pin_hash !== null,
+    isLocked: row.password_hash !== null,
   };
 }
 export type ProfileMutationResult =
@@ -24,10 +24,10 @@ export type ProfileMutationResult =
   | "forbidden"
   | "not_found"
   | "last_admin"
-  | "pin_required";
+  | "password_required";
 export type ProfileMutation =
   | { kind: "details"; input: UpdateProfileInput }
-  | { kind: "pin"; pinHash: string | null }
+  | { kind: "password"; passwordHash: string | null }
   | { kind: "delete" };
 
 function mutationPermission(
@@ -39,17 +39,17 @@ function mutationPermission(
     if (actor.id !== target.id || mutation.kind === "delete") return "forbidden";
     if (mutation.kind === "details" && mutation.input.role !== target.role) return "forbidden";
   }
-  if (mutation.kind === "details" && mutation.input.role === "admin" && !target.pin_hash)
-    return "pin_required";
-  if (mutation.kind === "pin" && target.role === "admin" && !mutation.pinHash)
-    return "pin_required";
+  if (mutation.kind === "details" && mutation.input.role === "admin" && !target.password_hash)
+    return "password_required";
+  if (mutation.kind === "password" && target.role === "admin" && !mutation.passwordHash)
+    return "password_required";
   return "ok";
 }
 
 export async function insertProfile(
   database: Knex,
   input: UpdateProfileInput,
-  pinHash: string | null,
+  passwordHash: string | null,
 ): Promise<ProfileDto> {
   const now = new Date().toISOString();
   const last = await database<ProfileRow>("profiles")
@@ -59,7 +59,7 @@ export async function insertProfile(
     id: crypto.randomUUID(),
     name: input.name,
     role: input.role,
-    pin_hash: pinHash,
+    password_hash: passwordHash,
     sort_order: (last?.order ?? -1) + 1,
     created_at: now,
     updated_at: now,
@@ -87,14 +87,14 @@ export function createProfilesRepository(database: Knex) {
     async createProfile(
       actorId: string,
       input: UpdateProfileInput,
-      pinHash: string | null,
+      passwordHash: string | null,
     ): Promise<ProfileDto | null> {
       return database.transaction(async (transaction) => {
         const actor = await transaction<ProfileRow>("profiles")
           .where({ id: actorId, role: "admin" })
           .first();
         if (!actor) return null;
-        return insertProfile(transaction, input, pinHash);
+        return insertProfile(transaction, input, passwordHash);
       });
     },
     async mutateProfile(
@@ -124,14 +124,14 @@ export function createProfilesRepository(database: Knex) {
           await transaction("profiles").where({ id }).delete();
           return "ok";
         }
-        if (mutation.kind === "pin" || mutation.input.role !== target.role) {
+        if (mutation.kind === "password" || mutation.input.role !== target.role) {
           await transaction("auth_sessions")
             .where({ profile_id: id })
             .update({ profile_id: null, profile_selection_key: null });
         }
         const changes =
-          mutation.kind === "pin"
-            ? { pin_hash: mutation.pinHash }
+          mutation.kind === "password"
+            ? { password_hash: mutation.passwordHash }
             : {
                 name: mutation.input.name,
                 role: mutation.input.role,
@@ -144,9 +144,9 @@ export function createProfilesRepository(database: Knex) {
     },
     async selectProfile(sessionKey: string, profile: ProfileRow): Promise<boolean> {
       return database.transaction(async (transaction) => {
-        // Recheck the lock after PIN verification in case another session changed it.
+        // Recheck the lock after password verification in case another session changed it.
         const current = await transaction<ProfileRow>("profiles").where({ id: profile.id }).first();
-        if (!current || current.pin_hash !== profile.pin_hash) return false;
+        if (!current || current.password_hash !== profile.password_hash) return false;
         const updated = await transaction("auth_sessions")
           .where({ session_key: sessionKey })
           .update({

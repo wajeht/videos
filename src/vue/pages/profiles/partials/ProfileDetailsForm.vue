@@ -4,7 +4,6 @@ import type { CreateProfileInput, ProfileDto } from "@/api.js";
 import PanelCard from "@/components/ui/PanelCard.vue";
 import PanelCardHeader from "@/components/ui/PanelCardHeader.vue";
 import AppButton from "@/components/ui/AppButton.vue";
-import ProfilePinField from "./ProfilePinField.vue";
 import AppInput from "@/components/ui/AppInput.vue";
 import AppSelect from "@/components/ui/AppSelect.vue";
 import FormField from "@/components/ui/FormField.vue";
@@ -18,7 +17,7 @@ const props = defineProps<{
 const emit = defineEmits<{ save: [input: CreateProfileInput]; cancel: [] }>();
 const name = shallowRef(props.profile?.name ?? "");
 const role = shallowRef<ProfileDto["role"]>(props.profile?.role ?? "member");
-const pin = shallowRef("");
+const password = shallowRef("");
 </script>
 <template>
   <PanelCard :elevated="false" padding="none">
@@ -27,7 +26,7 @@ const pin = shallowRef("");
     />
     <form
       class="grid gap-4 p-[clamp(22px,4vw,34px)]"
-      @submit.prevent="emit('save', { name, role, pin: pin || null })"
+      @submit.prevent="emit('save', { name, role, password: password || null })"
     >
       <AlertMessage v-if="error">{{ error }}</AlertMessage>
       <FormField v-slot="field" label="Profile name" required
@@ -43,15 +42,26 @@ const pin = shallowRef("");
           <option value="admin">Admin</option></AppSelect
         ></FormField
       >
-      <ProfilePinField
+      <FormField
         v-if="!profile"
-        v-model="pin"
-        label="Profile PIN"
+        v-slot="field"
+        label="Profile password"
+        help-text="Use at least 8 characters. Optional for members."
         :required="role === 'admin'"
-        :disabled="busy"
-        autocomplete="new-password"
-        help-text="Use exactly 4 digits. Optional for members."
-      />
+      >
+        <AppInput
+          :id="field.inputId"
+          v-model="password"
+          :aria-describedby="field.describedBy"
+          :invalid="field.invalid"
+          :disabled="busy"
+          type="password"
+          autocomplete="new-password"
+          minlength="8"
+          maxlength="72"
+          :required="role === 'admin'"
+        />
+      </FormField>
       <div class="mt-4 flex flex-wrap justify-end gap-3">
         <AppButton v-if="admin" variant="secondary" :disabled="busy" @click="emit('cancel')">
           Cancel

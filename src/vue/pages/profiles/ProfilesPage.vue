@@ -11,16 +11,17 @@ import ProfileUnlockForm from "./partials/ProfileUnlockForm.vue";
 const auth = useAuth();
 const profiles = useQuery({ queryKey: ["profiles"], queryFn: () => api.listProfiles() });
 const selected = shallowRef<ProfileDto | null>(null);
-const unlock = useAsyncAction((profile: ProfileDto, pin: string) =>
-  auth.selectProfile(profile.id, pin),
+const unlock = useAsyncAction((profile: ProfileDto, password: string) =>
+  auth.selectProfile(profile.id, password),
 );
 const logout = useAsyncAction(() => auth.logout());
-const pinError = computed(() =>
-  unlock.error.value instanceof ApiError && unlock.error.value.message === "Incorrect profile PIN"
+const passwordError = computed(() =>
+  unlock.error.value instanceof ApiError &&
+  unlock.error.value.message === "Incorrect profile password"
     ? unlock.error.value.message
     : "",
 );
-const generalError = computed(() => (pinError.value ? "" : unlock.errorMessage.value));
+const generalError = computed(() => (passwordError.value ? "" : unlock.errorMessage.value));
 async function select(profile: ProfileDto): Promise<void> {
   unlock.clearError();
   if (profile.isLocked) selected.value = profile;
@@ -35,7 +36,7 @@ async function select(profile: ProfileDto): Promise<void> {
         :key="selected.id"
         :profile="selected"
         :busy="unlock.pending.value"
-        :pin-error="pinError"
+        :password-error="passwordError"
         :error="generalError"
         @unlock="unlock.run(selected, $event)"
         @cancel="
