@@ -50,6 +50,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   expect(styles.borderTopWidth).toBe("0px");
   expect(styles.borderRadius).toBe("0px");
   await page.goto("/settings/profiles");
+  await expect(page.getByRole("link", { name: "Access", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Add profile" }).click();
   await page.getByLabel(/^Profile name/).fill("Browser Member");
   await page.getByRole("button", { name: "Create profile" }).click();
@@ -63,6 +64,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(secondTab.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await page.getByRole("button", { name: "Browser Member Open", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Your profile" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Access", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add profile" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
   await expect(secondTab.getByRole("heading", { name: "Your profile" })).toBeVisible();
@@ -79,6 +81,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   await page.getByLabel(/^Profile password/).fill("member-password");
   await page.getByRole("button", { name: "Unlock profile" }).click();
   await page.goto("/settings/access");
+  await expect(page.getByRole("link", { name: "Access", exact: true })).toHaveCount(0);
   await expect(
     page.getByText("Only an admin profile can change the shared app password."),
   ).toBeVisible();
