@@ -310,7 +310,14 @@ describe("profiles", () => {
     await freshContext.auth.setupPassword(appPassword);
     const freshApp = createApp(freshContext);
     const setupClient = await createClient(freshApp);
-    for (const password of ["short", "a".repeat(73), "😀".repeat(18) + "x", 1234, null]) {
+    for (const password of [
+      "short",
+      "😀".repeat(4),
+      "a".repeat(73),
+      "😀".repeat(18) + "x",
+      1234,
+      null,
+    ]) {
       const setup = await setupClient.request("/api/auth/admin-profile", "POST", {
         name: "Admin",
         password,
