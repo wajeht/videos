@@ -37,7 +37,7 @@ const password = shallowRef("");
         v-slot="field"
         label="Permissions"
         help-text="Admins manage profiles and the shared app password."
-        ><AppSelect :id="field.inputId" v-model="role"
+        ><AppSelect :id="field.inputId" v-model="role" class="max-[600px]:w-full"
           ><option value="member">Member</option>
           <option value="admin">Admin</option></AppSelect
         ></FormField
