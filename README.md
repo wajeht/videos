@@ -88,7 +88,7 @@ docker run --rm \
   ghcr.io/wajeht/videos:latest
 ```
 
-Open [localhost](http://localhost), enter `AUTH_SETUP_TOKEN`, and create the shared library password plus your password-protected admin profile. `/dev/dri` enables Intel Quick Sync when a video stream requires re-encoding; CPU video re-encoding is intentionally disabled.
+Open [localhost](http://localhost), enter `AUTH_SETUP_TOKEN`, and create the shared library password plus your PIN-protected admin profile. `/dev/dri` enables Intel Quick Sync when a video stream requires re-encoding; CPU video re-encoding is intentionally disabled.
 
 ## Docs
 
@@ -101,12 +101,12 @@ Distributed under the MIT License © [wajeht](https://github.com/wajeht).
 
 ## Profiles
 
-Enter the shared library password, then choose a profile. Member profiles can be open or password-protected. Admin profiles always require their own password (at least 8 characters).
+Enter the shared library password, then choose a profile. Member profiles can be open or protected by a 4-digit PIN. Admin profiles always require a 4-digit PIN.
 
 Each profile has separate watch progress, Continue Watching, playlist completion, next-video selection, and library page size. Autoplay is stored per profile on each browser. The media library and conversions are shared.
 
 Use the profile button in the header to switch. Settings → Profiles lets members edit their own name, avatar, and lock. Admins can also create/delete profiles, assign admin permissions, and reset other profile locks. The final admin cannot be removed or demoted. Only admins can change the shared library password; that password alone cannot reset a profile lock.
 
-Changing a profile password or role requires that profile to be unlocked again on its devices. Changing the shared library password signs out existing sessions. There is no email/password recovery; retain your admin profile password.
+Changing a profile PIN or role requires that profile to be unlocked again on its devices. Changing the shared library password signs out existing sessions. There is no email/password recovery; retain your admin profile PIN.
 
 This schema uses a fresh database. Recreate an existing SQLite database before running this version; no upgrade migration or compatibility behavior is provided.

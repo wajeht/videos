@@ -12,7 +12,7 @@ import {
 import {
   createProfileSchema,
   profileParametersSchema,
-  profilePasswordChangeSchema,
+  profilePinChangeSchema,
   selectProfileSchema,
   updateProfileSchema,
 } from "./profiles.schema.js";
@@ -22,7 +22,7 @@ const mutationErrors = {
   forbidden: { message: "You cannot change this profile", status: 403 },
   not_found: { message: "Profile not found", status: 404 },
   last_admin: { message: "Keep at least one admin profile", status: 409 },
-  password_required: { message: "Admin profiles require a password", status: 400 },
+  pin_required: { message: "Admin profiles require a PIN", status: 400 },
 } as const;
 function mutationError(result: Exclude<ProfileMutationResult, "ok">) {
   return mutationErrors[result];
@@ -46,7 +46,7 @@ export function createProfilesRouter(context: AppContext) {
         const profile = await repository.createProfile(
           c.get("profile").id,
           input,
-          input.password === null ? null : await bcrypt.hash(input.password, rounds),
+          input.pin === null ? null : await bcrypt.hash(input.pin, rounds),
         );
         return profile
           ? c.json(profile, 201)
@@ -74,8 +74,8 @@ export function createProfilesRouter(context: AppContext) {
           return c.json({ message: "Too many attempts. Try again later." }, 429);
         }
         if (
-          profile.password_hash &&
-          !(await bcrypt.compare(c.req.valid("json").password, profile.password_hash))
+          profile.pin_hash &&
+          !(await bcrypt.compare(c.req.valid("json").pin, profile.pin_hash))
         ) {
           await repository.recordUnlockFailure(
             profileId,
@@ -83,7 +83,7 @@ export function createProfilesRouter(context: AppContext) {
             now,
             context.configuration.auth.loginWindowMs,
           );
-          return c.json({ message: "Incorrect profile password" }, 403);
+          return c.json({ message: "Incorrect profile PIN" }, 403);
         }
         if (!(await repository.selectProfile(c.get("session").sessionKey, profile)))
           return c.json({ message: "Profile changed. Try again." }, 409);
@@ -111,19 +111,19 @@ export function createProfilesRouter(context: AppContext) {
       },
     )
     .put(
-      "/:profileId/password",
+      "/:profileId/pin",
       requireProfile,
       authBodyLimit,
       zValidator("param", profileParametersSchema),
-      zValidator("json", profilePasswordChangeSchema, validationHook),
+      zValidator("json", profilePinChangeSchema, validationHook),
       async (c) => {
-        const password = c.req.valid("json").password;
+        const pin = c.req.valid("json").pin;
         const result = await repository.mutateProfile(
           c.get("profile").id,
           c.req.valid("param").profileId,
           {
-            kind: "password",
-            passwordHash: password === null ? null : await bcrypt.hash(password, rounds),
+            kind: "pin",
+            pinHash: pin === null ? null : await bcrypt.hash(pin, rounds),
           },
         );
         if (result !== "ok") {

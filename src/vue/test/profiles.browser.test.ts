@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { fillProfilePin } from "./profiles.helpers.js";
 
 // Exercise the real session cookies, profile permissions, and cross-tab switch behavior.
 test("selects locked profiles and limits profile management to admins", async ({
@@ -10,7 +11,7 @@ test("selects locked profiles and limits profile management to admins", async ({
       password: "playwright-password",
       confirmPassword: "playwright-password",
       adminName: "Admin",
-      adminPassword: "test-admin-password",
+      adminPin: "0123",
       setupToken: "videos-playwright-setup-token",
     },
   });
@@ -21,10 +22,19 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("profile-picker.png"), fullPage: true });
   await page.getByRole("button", { name: "Admin Admin · Locked", exact: true }).click();
-  await page.getByLabel(/^Profile password/).fill("wrong-password");
+  const pinBoxes = page.getByRole("group", { name: "Profile PIN", exact: true }).locator("input");
+  await expect(pinBoxes).toHaveCount(4);
+  await expect(pinBoxes.first()).toHaveAttribute("inputmode", "numeric");
+  await fillProfilePin(page, "Profile PIN", "123");
+  expect(await pinBoxes.last().evaluate((input: HTMLInputElement) => input.checkValidity())).toBe(
+    false,
+  );
+  await fillProfilePin(page, "Profile PIN", "9999");
   await page.getByRole("button", { name: "Unlock profile" }).click();
-  await expect(page.getByLabel(/^Profile password/)).toHaveAttribute("aria-invalid", "true");
-  await page.getByLabel(/^Profile password/).fill("test-admin-password");
+  await expect(
+    page.getByRole("group", { name: "Profile PIN", exact: true }).locator("input").first(),
+  ).toHaveAttribute("aria-invalid", "true");
+  await fillProfilePin(page, "Profile PIN", "0123");
   await page.getByRole("button", { name: "Unlock profile" }).click();
   await expect(page.getByRole("button", { name: "Switch profile" })).toHaveText(/Admin/);
   const navigation = await page
@@ -69,16 +79,23 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(page.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
   await expect(secondTab.getByRole("heading", { name: "Your profile" })).toBeVisible();
   await page.getByRole("button", { name: "Edit", exact: true }).click();
-  await page.getByLabel(/^New profile password/).fill("member-password");
-  await page.getByLabel(/^Confirm profile password/).fill("member-password");
-  await page.getByRole("button", { name: "Set password", exact: true }).click();
+  await fillProfilePin(page, "New profile PIN", "0456");
+  await fillProfilePin(page, "Confirm profile PIN", "9876");
+  await page.getByRole("button", { name: "Set PIN", exact: true }).click();
+  await expect(
+    page.getByRole("group", { name: "Confirm profile PIN", exact: true }).locator("input").first(),
+  ).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByText("PINs do not match")).toBeVisible();
+  await fillProfilePin(page, "Confirm profile PIN", "0456");
+  await page.getByRole("button", { name: "Set PIN", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
     page.getByRole("button", { name: "Browser Member Locked", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Browser Member Locked", exact: true }).click();
-  await page.getByLabel(/^Profile password/).fill("member-password");
+  await page.screenshot({ path: testInfo.outputPath("profile-pin-mobile.png"), fullPage: true });
+  await fillProfilePin(page, "Profile PIN", "0456");
   await page.getByRole("button", { name: "Unlock profile" }).click();
   await page.goto("/settings/access");
   await expect(page.getByRole("link", { name: "Access", exact: true })).toHaveCount(0);

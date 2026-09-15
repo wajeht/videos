@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AppType } from "../app.js";
 
-export const testAdminPassword = "test-admin-password";
+export const testAdminPin = "0123";
 export async function selectTestAdmin(app: AppType, cookie: string): Promise<string> {
   const profiles = z
     .array(z.object({ id: z.string(), role: z.string() }))
@@ -11,7 +11,7 @@ export async function selectTestAdmin(app: AppType, cookie: string): Promise<str
   const selected = await app.request(`/api/profiles/${admin.id}/select`, {
     method: "POST",
     headers: { cookie, "content-type": "application/json" },
-    body: JSON.stringify({ password: testAdminPassword }),
+    body: JSON.stringify({ pin: testAdminPin }),
   });
   if (!selected.ok) throw new Error(await selected.text());
   const state = z

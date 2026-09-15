@@ -1,4 +1,4 @@
-import { selectTestAdmin, testAdminPassword } from "../test/auth.js";
+import { selectTestAdmin, testAdminPin } from "../test/auth.js";
 import path from "node:path";
 
 import bcrypt from "bcryptjs";
@@ -46,7 +46,7 @@ function jsonRequest(
   const headers = new Headers({ "content-type": "application/json" });
   if (selectionKey) headers.set("x-profile-selection", selectionKey);
   if (method === "POST" && "confirmPassword" in body)
-    body = { adminName: "Admin", adminPassword: testAdminPassword, ...body };
+    body = { adminName: "Admin", adminPin: testAdminPin, ...body };
   if (cookie) headers.set("cookie", cookie);
   return {
     method,
@@ -196,7 +196,7 @@ describe("password authentication", () => {
 
   it("blocks repeated failed logins", async () => {
     const { app, context } = await testApp({ maxAttempts: 2 });
-    await context.auth.setupPassword("test-videos-password", "Admin", testAdminPassword);
+    await context.auth.setupPassword("test-videos-password", "Admin", testAdminPin);
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
       expect(
@@ -215,7 +215,7 @@ describe("password authentication", () => {
 
   it("clears persisted failures after a successful login", async () => {
     const { app, context } = await testApp({ maxAttempts: 2 });
-    await context.auth.setupPassword("test-videos-password", "Admin", testAdminPassword);
+    await context.auth.setupPassword("test-videos-password", "Admin", testAdminPin);
 
     expect(
       (await app.request("/api/auth", jsonRequest("POST", { password: "wrong-videos-password" })))
@@ -238,7 +238,7 @@ describe("password authentication", () => {
   it("preserves blocked logins across application restarts", async () => {
     const dataDirectory = await createTemporaryDirectory("videos-auth-test-");
     const first = await testApp({ maxAttempts: 2, dataDirectory });
-    await first.context.auth.setupPassword("test-videos-password", "Admin", testAdminPassword);
+    await first.context.auth.setupPassword("test-videos-password", "Admin", testAdminPin);
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
       expect(
@@ -264,7 +264,7 @@ describe("password authentication", () => {
   it("preserves active sessions across application restarts", async () => {
     const dataDirectory = await createTemporaryDirectory("videos-session-test-");
     const first = await testApp({ dataDirectory });
-    await first.context.auth.setupPassword("test-videos-password", "Admin", testAdminPassword);
+    await first.context.auth.setupPassword("test-videos-password", "Admin", testAdminPin);
     const login = await first.app.request(
       "/api/auth",
       jsonRequest("POST", { password: "test-videos-password" }),
@@ -286,7 +286,7 @@ describe("password authentication", () => {
 
   it("rejects unsigned or expired session cookies", async () => {
     const { app, context } = await testApp({ idleTimeoutMs: 1 });
-    await context.auth.setupPassword("test-videos-password", "Admin", testAdminPassword);
+    await context.auth.setupPassword("test-videos-password", "Admin", testAdminPin);
 
     expect(
       (

@@ -24,7 +24,7 @@ const emit = defineEmits<{
     password: string,
     confirmPassword: string,
     adminName: string,
-    adminPassword: string,
+    adminPin: string,
     setupToken?: string,
   ];
   retry: [];
@@ -36,10 +36,10 @@ function forwardSetup(
   password: string,
   confirmPassword: string,
   adminName: string,
-  adminPassword: string,
+  adminPin: string,
   setupToken?: string,
 ): void {
-  emit("setup", password, confirmPassword, adminName, adminPassword, setupToken);
+  emit("setup", password, confirmPassword, adminName, adminPin, setupToken);
 }
 </script>
 

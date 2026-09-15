@@ -11,7 +11,7 @@ import AppButton from "@/components/ui/AppButton.vue";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
 import ProfileAvatar from "@/pages/profiles/partials/ProfileAvatar.vue";
 import ProfileDetailsForm from "@/pages/profiles/partials/ProfileDetailsForm.vue";
-import ProfilePasswordForm from "@/pages/profiles/partials/ProfilePasswordForm.vue";
+import ProfilePinForm from "@/pages/profiles/partials/ProfilePinForm.vue";
 const auth = useAuth();
 const confirmation = useConfirm();
 const profiles = useQuery({ queryKey: ["profiles"], queryFn: () => api.listProfiles() });
@@ -33,9 +33,9 @@ const save = useAsyncAction(async (input: CreateProfileInput) => {
   showForm.value = false;
   await profiles.refetch();
 });
-const lock = useAsyncAction(async (password: string | null) => {
+const lock = useAsyncAction(async (pin: string | null) => {
   if (!editing.value) return;
-  await api.changeProfilePassword(editing.value.id, password);
+  await api.changeProfilePin(editing.value.id, pin);
   await auth.initialize();
 });
 const remove = useAsyncAction(async (profile: ProfileDto) => {
@@ -77,7 +77,7 @@ function edit(profile: ProfileDto | null): void {
           @save="save.run($event)"
           @cancel="showForm = false"
         />
-        <ProfilePasswordForm
+        <ProfilePinForm
           v-if="editing"
           :key="editing.id"
           :profile="editing"
