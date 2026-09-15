@@ -88,7 +88,7 @@ docker run --rm \
   ghcr.io/wajeht/videos:latest
 ```
 
-Open [localhost](http://localhost), enter `AUTH_SETUP_TOKEN`, and create the shared library password plus your password-protected admin profile. `/dev/dri` enables Intel Quick Sync when a video stream requires re-encoding; CPU video re-encoding is intentionally disabled.
+Open [localhost](http://localhost), enter `AUTH_SETUP_TOKEN`, and create the shared library password. This saves step 1 immediately; refreshing resumes at step 2, where you create your password-protected admin profile. `/dev/dri` enables Intel Quick Sync when a video stream requires re-encoding; CPU video re-encoding is intentionally disabled.
 
 ## Docs
 

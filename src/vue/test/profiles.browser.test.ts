@@ -5,19 +5,41 @@ test("selects locked profiles and limits profile management to admins", async ({
   page,
   context,
 }, testInfo) => {
-  const setup = await page.request.post("/api/auth/password", {
-    data: {
-      password: "playwright-password",
-      confirmPassword: "playwright-password",
-      adminName: "Admin",
-      adminPassword: "test-admin-password",
-      setupToken: "videos-playwright-setup-token",
-    },
-  });
-  expect([201, 409]).toContain(setup.status());
   await page.goto("/");
-  await page.getByLabel(/^Password/).fill("playwright-password");
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  if (await page.getByRole("heading", { name: "Set up your library" }).isVisible()) {
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await expect(page.getByText("Step 1 of 2 · Library password")).toBeVisible();
+    await expect(page.getByLabel(/^Profile name/)).toHaveCount(0);
+    await page.getByLabel(/^Setup token/).fill("videos-playwright-setup-token");
+    await page.getByLabel(/^Password/).fill("playwright-password");
+    await page.getByLabel(/^Confirm password/).fill("a-different-password");
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await expect(page.getByText("Passwords do not match")).toBeVisible();
+    await page.getByLabel(/^Confirm password/).fill("playwright-password");
+    await page.screenshot({
+      path: testInfo.outputPath("setup-library-desktop.png"),
+      fullPage: true,
+    });
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await expect(page.getByText("Step 2 of 2 · Admin profile")).toBeVisible();
+    await expect(page.getByLabel(/^Profile name/)).toBeFocused();
+    await expect(page.getByLabel(/^Password/)).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByText("Step 2 of 2 · Admin profile")).toBeVisible();
+    await expect(page.getByLabel(/^Password/)).toHaveCount(0);
+    await expect(page.getByLabel(/^Setup token/)).toHaveCount(0);
+    await page.getByLabel(/^Profile name/).fill("Admin");
+    await page.getByLabel(/^Admin profile password/).fill("test-admin-password");
+    await page.getByLabel(/^Confirm admin profile password/).fill("test-admin-password");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: testInfo.outputPath("setup-admin-mobile.png"), fullPage: true });
+    await page.getByRole("button", { name: "Finish setup", exact: true }).click();
+    await page.setViewportSize({ width: 1280, height: 720 });
+  } else {
+    await page.getByLabel(/^Password/).fill("playwright-password");
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  }
   await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("profile-picker.png"), fullPage: true });
   await page.getByRole("button", { name: "Admin Admin · Locked", exact: true }).click();

@@ -1,4 +1,4 @@
-import { selectBrowserAdmin } from "./profiles.helpers.js";
+import { selectBrowserAdmin, setupBrowserAdmin } from "./profiles.helpers.js";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 interface ElementBox {
@@ -27,13 +27,12 @@ async function authenticate(page: Page): Promise<void> {
     data: {
       password,
       confirmPassword: password,
-      adminName: "Admin",
-      adminPassword: "test-admin-password",
       setupToken: "videos-playwright-setup-token",
     },
   });
   expect([201, 409]).toContain(setup.status());
   expect((await page.request.post("/api/auth", { data: { password } })).status()).toBe(200);
+  await setupBrowserAdmin(page);
   await selectBrowserAdmin(page);
 }
 

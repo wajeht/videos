@@ -11,6 +11,7 @@ import AuthForm from "@/pages/auth/partials/AuthForm.vue";
 const props = defineProps<{
   status: AuthStatus;
   passwordConfigured: boolean;
+  adminProfileRequired: boolean;
   setupEnabled: boolean;
   setupTokenRequired: boolean;
   busy: boolean;
@@ -20,26 +21,15 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   login: [password: string];
-  setup: [
-    password: string,
-    confirmPassword: string,
-    adminName: string,
-    adminPassword: string,
-    setupToken?: string,
-  ];
+  setup: [password: string, confirmPassword: string, setupToken?: string];
+  setupAdmin: [name: string, password: string];
   retry: [];
 }>();
 
-const isSetup = computed(() => !props.passwordConfigured);
+const isSetup = computed(() => !props.passwordConfigured || props.adminProfileRequired);
 
-function forwardSetup(
-  password: string,
-  confirmPassword: string,
-  adminName: string,
-  adminPassword: string,
-  setupToken?: string,
-): void {
-  emit("setup", password, confirmPassword, adminName, adminPassword, setupToken);
+function forwardSetup(password: string, confirmPassword: string, setupToken?: string): void {
+  emit("setup", password, confirmPassword, setupToken);
 }
 </script>
 
@@ -88,7 +78,7 @@ function forwardSetup(
           <p class="mt-3 text-sm leading-6 text-white/68">
             {{
               isSetup
-                ? "Create the password that protects your private video library."
+                ? "Set up your library and first admin profile."
                 : "Please sign in to continue."
             }}
           </p>
@@ -106,7 +96,7 @@ function forwardSetup(
           <AppButton class="mt-6" block size="lg" @click="emit('retry')"> Try again </AppButton>
         </div>
 
-        <div v-else-if="isSetup && !setupEnabled" class="px-8 py-8 lg:p-10">
+        <div v-else-if="!passwordConfigured && !setupEnabled" class="px-8 py-8 lg:p-10">
           <h1 class="font-display text-2xl font-extrabold lg:text-[2rem]">Setup unavailable</h1>
           <p class="mt-2 text-sm leading-6 text-muted">
             Configure <code>AUTH_SETUP_TOKEN</code> on the server, then restart the app.
@@ -117,11 +107,13 @@ function forwardSetup(
           v-else
           :busy
           :is-setup="isSetup"
+          :admin-profile-required
           :message
           :password-error
           :setup-token-required
           @login="emit('login', $event)"
           @setup="forwardSetup"
+          @setup-admin="(name, password) => emit('setupAdmin', name, password)"
         />
       </PanelCard>
 

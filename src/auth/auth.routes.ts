@@ -30,8 +30,6 @@ const loginSchema = z.object({ password: z.string() }).strict();
 const setupSchema = z
   .object({
     password: passwordSchema,
-    adminName: z.string().trim().min(1).max(40),
-    adminPassword: profilePasswordSchema,
     confirmPassword: z.string(),
     setupToken: z.string().min(16).max(256).optional(),
   })
@@ -40,6 +38,12 @@ const setupSchema = z
     message: "Passwords do not match",
     path: ["confirmPassword"],
   });
+const adminSetupSchema = z
+  .object({
+    name: z.string().trim().min(1).max(40),
+    password: profilePasswordSchema,
+  })
+  .strict();
 const changePasswordSchema = z
   .object({
     currentPassword: passwordSchema,
@@ -166,6 +170,7 @@ export function createAuthRouter(context: AppContext) {
         profile: profile ? profileDto(profile) : null,
         profileSelectionKey: profile ? session!.profileSelectionKey : null,
         passwordConfigured,
+        adminProfileRequired: authenticated && !(await context.auth.isAdminConfigured()),
         setupEnabled:
           !passwordConfigured &&
           (configuration.app.env !== "production" || Boolean(configuration.auth.setupToken)),
@@ -208,13 +213,8 @@ export function createAuthRouter(context: AppContext) {
       authBodyLimit,
       zValidator("json", setupSchema, validationHook),
       async (c) => {
-        const { password, adminName, adminPassword, setupToken } = c.req.valid("json");
-        const result = await context.auth.setupPassword(
-          password,
-          adminName,
-          adminPassword,
-          setupToken,
-        );
+        const { password, setupToken } = c.req.valid("json");
+        const result = await context.auth.setupPassword(password, setupToken);
         if (result.ok) {
           context.logger.info("Initial application password configured");
           return c.json({ passwordConfigured: true }, 201);
@@ -226,6 +226,20 @@ export function createAuthRouter(context: AppContext) {
           return c.json({ message: "Password setup is unavailable" }, 503);
         }
         return c.json({ message: "The password or setup token is incorrect" }, 400);
+      },
+    )
+    .post(
+      "/admin-profile",
+      createRequireAuth(context),
+      authBodyLimit,
+      zValidator("json", adminSetupSchema, validationHook),
+      async (c) => {
+        const { name, password } = c.req.valid("json");
+        const result = await context.auth.setupAdminProfile(name, password);
+        if (result.ok) return c.json({ adminConfigured: true }, 201);
+        if (result.reason === "already_configured")
+          return c.json({ message: "Admin profile is already configured" }, 409);
+        return c.json({ message: "Could not create the admin profile" }, 400);
       },
     )
     .put(

@@ -1,4 +1,4 @@
-import { selectBrowserAdmin } from "./profiles.helpers.js";
+import { selectBrowserAdmin, setupBrowserAdmin } from "./profiles.helpers.js";
 import { expect, test } from "@playwright/test";
 import { z } from "zod";
 
@@ -13,14 +13,13 @@ test("keeps the install experience online-only", async ({ context, page }) => {
     data: {
       password,
       confirmPassword: password,
-      adminName: "Admin",
-      adminPassword: "test-admin-password",
       setupToken: "videos-playwright-setup-token",
     },
   });
   expect([201, 409]).toContain(setup.status());
   const login = await page.request.post("/api/auth", { data: { password } });
   expect(login.status()).toBe(200);
+  await setupBrowserAdmin(page);
   await selectBrowserAdmin(page);
 
   let releaseAuthCheck: () => void = () => undefined;

@@ -42,7 +42,8 @@ async function createClient(app: AppType) {
 }
 async function fixture() {
   const context = await createTestContext(createConfiguration({ APP_ENV: "testing" }));
-  await context.auth.setupPassword(appPassword, "Admin", testAdminPassword);
+  await context.auth.setupPassword(appPassword);
+  await context.auth.setupAdminProfile("Admin", testAdminPassword);
   const app = createApp(context);
   const admin = (await context.profiles.listProfiles())[0]!;
   const client = await createClient(app);
@@ -61,11 +62,17 @@ async function fixture() {
 }
 
 describe("profiles", () => {
-  it("creates the app password and exactly one first admin atomically", async () => {
+  it("saves the app password before creating exactly one first admin", async () => {
     const context = await createTestContext(createConfiguration({ APP_ENV: "testing" }));
+    const passwords = await Promise.all([
+      context.auth.setupPassword(appPassword),
+      context.auth.setupPassword(appPassword),
+    ]);
+    expect(passwords.filter((result) => result.ok)).toHaveLength(1);
+    expect(await context.profiles.listProfiles()).toHaveLength(0);
     const results = await Promise.all([
-      context.auth.setupPassword(appPassword, "First", testAdminPassword),
-      context.auth.setupPassword(appPassword, "Second", testAdminPassword),
+      context.auth.setupAdminProfile("First", testAdminPassword),
+      context.auth.setupAdminProfile("Second", testAdminPassword),
     ]);
     expect(results.filter((result) => result.ok)).toHaveLength(1);
     const profiles = await context.profiles.listProfiles();
@@ -293,17 +300,13 @@ describe("profiles", () => {
   it("validates profile passwords before storing them and permits members to remove locks", async () => {
     const { client, admin, context, addProfile } = await fixture();
     const freshContext = await createTestContext(createConfiguration({ APP_ENV: "testing" }));
+    await freshContext.auth.setupPassword(appPassword);
     const freshApp = createApp(freshContext);
+    const setupClient = await createClient(freshApp);
     for (const password of ["short", "a".repeat(73), "😀".repeat(18) + "x", 1234, null]) {
-      const setup = await freshApp.request("/api/auth/password", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          password: appPassword,
-          confirmPassword: appPassword,
-          adminName: "Admin",
-          adminPassword: password,
-        }),
+      const setup = await setupClient.request("/api/auth/admin-profile", "POST", {
+        name: "Admin",
+        password,
       });
       expect(setup.status).toBe(400);
       expect(
@@ -320,7 +323,7 @@ describe("profiles", () => {
       ).toBe(400);
     }
     expect(await freshContext.profiles.listProfiles()).toEqual([]);
-    expect(await freshContext.auth.isPasswordConfigured()).toBe(false);
+    expect(await freshContext.auth.isPasswordConfigured()).toBe(true);
     const locked = await addProfile("Protected", "abcdefgh");
     const row = await context.profiles.findProfile(locked.id);
     expect(row?.password_hash).not.toBe("abcdefgh");
