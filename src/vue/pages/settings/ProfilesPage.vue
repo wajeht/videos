@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, shallowRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useQuery } from "@tanstack/vue-query";
 import { api, type ProfileDto, type CreateProfileInput } from "@/api.js";
@@ -18,6 +18,7 @@ import AlertMessage from "@/components/ui/AlertMessage.vue";
 import ProfileTable from "./partials/ProfileTable.vue";
 import ProfileDetailsForm from "@/pages/profiles/partials/ProfileDetailsForm.vue";
 import ProfilePasswordForm from "@/pages/profiles/partials/ProfilePasswordForm.vue";
+import { profilesQueryOptions } from "@/queries.js";
 const auth = useAuth();
 const route = useRoute();
 const router = useRouter();
@@ -26,8 +27,7 @@ const confirmation = useConfirm();
 const toast = useToast();
 const admin = computed(() => auth.state.profile?.role === "admin");
 const profiles = useQuery({
-  queryKey: ["profiles"],
-  queryFn: () => api.listProfiles(),
+  ...profilesQueryOptions(),
   enabled: admin,
 });
 const creating = computed(() => route.name === "settings-profile-new");
@@ -49,9 +49,10 @@ const save = useAsyncAction(async (input: CreateProfileInput) => {
   const sourceRoute = router.currentRoute.value;
   const successMessage = editing.value ? "Profile updated" : "Profile created";
   if (editing.value) {
-    const { name } = input;
-    await api.updateProfile(editing.value.id, { name });
-    await auth.initialize();
+    const profileId = editing.value.id;
+    const name = input.name.trim();
+    await api.updateProfile(profileId, { name });
+    auth.updateProfileName(profileId, name);
   } else await api.createProfile(input);
   if (admin.value) {
     await profiles.refetch();
@@ -61,10 +62,18 @@ const save = useAsyncAction(async (input: CreateProfileInput) => {
   }
   toast.success(successMessage);
 });
+const passwordFormVersion = shallowRef(0);
 const lock = useAsyncAction(async (password: string | null) => {
   if (!editing.value) return;
-  await api.changeProfilePassword(editing.value.id, password);
-  await auth.initialize();
+  const profileId = editing.value.id;
+  const sourceRoute = router.currentRoute.value;
+  await api.changeProfilePassword(profileId, password);
+  if (profileId === auth.state.profile?.id) await auth.initialize();
+  else {
+    await profiles.refetch();
+    if (router.currentRoute.value === sourceRoute && editing.value?.id === profileId)
+      passwordFormVersion.value++;
+  }
   toast.success(password === null ? "Profile lock removed" : "Profile password updated");
 });
 const remove = useAsyncAction(async (profile: ProfileDto) => {
@@ -78,8 +87,7 @@ const remove = useAsyncAction(async (profile: ProfileDto) => {
   )
     return;
   await api.deleteProfile(profile.id);
-  if (profile.id === auth.state.profile?.id) await auth.initialize();
-  else await profiles.refetch();
+  await profiles.refetch();
   toast.success("Profile deleted");
 });
 watch(
@@ -111,7 +119,7 @@ watch(
         />
         <ProfilePasswordForm
           v-if="editing"
-          :key="editing.id"
+          :key="`${editing.id}:${passwordFormVersion}`"
           :profile="editing"
           :busy="lock.pending.value"
           :error="lock.errorMessage.value"

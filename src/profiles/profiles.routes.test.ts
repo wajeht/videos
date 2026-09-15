@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createApp, type AppType } from "../app.js";
 import { createConfiguration } from "../config.js";
@@ -141,6 +141,40 @@ describe("profiles", () => {
     expect(JSON.stringify(profiles)).not.toContain(testAdminPassword);
   });
 
+  it("authenticates profile-scoped requests only once and protects the standalone password route", async () => {
+    const { app, context, client } = await fixture();
+    const parseSession = vi.spyOn(context.auth, "parseSession");
+    const touchSession = vi.spyOn(context.auth, "touchSession");
+    for (const path of ["/api/library", "/api/settings"]) {
+      parseSession.mockClear();
+      touchSession.mockClear();
+      expect((await client.request(path)).status).toBe(200);
+      expect(parseSession).toHaveBeenCalledOnce();
+      expect(touchSession).toHaveBeenCalledOnce();
+    }
+    expect(
+      (
+        await app.request("/api/auth/password", {
+          method: "PUT",
+          headers: { origin: "http://localhost" },
+        })
+      ).status,
+    ).toBe(401);
+    parseSession.mockClear();
+    touchSession.mockClear();
+    expect(
+      (
+        await client.request("/api/auth/password", "PUT", {
+          currentPassword: appPassword,
+          newPassword: "changed-library-password",
+          confirmPassword: "changed-library-password",
+        })
+      ).status,
+    ).toBe(200);
+    expect(parseSession).toHaveBeenCalledOnce();
+    expect(touchSession).toHaveBeenCalledOnce();
+  });
+
   it("keeps one immutable admin and creates only member profiles", async () => {
     const { client, admin, addProfile, context } = await fixture();
     expect((await client.request(`/api/profiles/${admin.id}`, "DELETE")).status).toBe(409);
@@ -180,7 +214,7 @@ describe("profiles", () => {
     expect(
       (await client.request(`/api/profiles/${admin.id}`, "PUT", { name: "Owner" })).status,
     ).toBe(200);
-    expect(await context.profiles.findProfile(admin.id)).toMatchObject({
+    expect(await context.profilesRepository.findProfile(admin.id)).toMatchObject({
       name: "Owner",
       role: "admin",
     });
@@ -291,7 +325,7 @@ describe("profiles", () => {
     expect((await other.request("/api/library")).status).toBe(409);
     expect((await other.select(locked.id, "member-password")).status).toBe(403);
     expect((await other.select(locked.id, "replacement-password")).status).toBe(200);
-    const profileBeforeReset = await context.profiles.findProfile(locked.id);
+    const profileBeforeReset = await context.profilesRepository.findProfile(locked.id);
     await client.request(`/api/profiles/${locked.id}/password`, "PUT", {
       password: "another-password",
     });
@@ -300,7 +334,10 @@ describe("profiles", () => {
       .where({ profile_id: null })
       .first();
     expect(
-      await context.profiles.selectProfile(storedSession.session_key, profileBeforeReset!),
+      await context.profilesRepository.selectProfile(
+        storedSession.session_key,
+        profileBeforeReset!,
+      ),
     ).toBe(false);
   });
 
@@ -338,7 +375,7 @@ describe("profiles", () => {
     expect(await freshContext.profiles.listProfiles()).toEqual([]);
     expect(await freshContext.auth.isPasswordConfigured()).toBe(true);
     const locked = await addProfile("Protected", "abcdefgh");
-    const row = await context.profiles.findProfile(locked.id);
+    const row = await context.profilesRepository.findProfile(locked.id);
     expect(row?.password_hash).not.toBe("abcdefgh");
     expect(row?.password_hash).toMatch(/^\$2/);
     expect((await client.select(locked.id, "abcdefgh")).status).toBe(200);

@@ -42,6 +42,7 @@ export interface AuthController {
   clearProfile: AuthClient["clearProfile"];
   dispose(): void;
   initialize(): Promise<void>;
+  updateProfileName(profileId: string, name: string): void;
   login(password: string): Promise<void>;
   logout(): Promise<void>;
   setupAdminProfile(name: string, password: string): Promise<void>;
@@ -195,6 +196,9 @@ export function createAuth(options: CreateAuthOptions = {}): AuthController {
       }
     },
     initialize,
+    updateProfileName(profileId, name) {
+      if (state.profile?.id === profileId) state.profile.name = name;
+    },
     login,
     logout,
     setupPassword,

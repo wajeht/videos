@@ -178,8 +178,8 @@ export const api = {
       }),
     );
   },
-  async listProfiles(): Promise<ProfileDto[]> {
-    return expectProtectedJson(await apiClient.api.profiles.$get());
+  async listProfiles(signal?: AbortSignal): Promise<ProfileDto[]> {
+    return expectProtectedJson(await apiClient.api.profiles.$get({}, { init: { signal } }));
   },
   async selectProfile(profileId: string, password: string): Promise<void> {
     await expectProtectedJson(

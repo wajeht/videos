@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { computed, shallowRef } from "vue";
 import { useQuery } from "@tanstack/vue-query";
-import { api, ApiError, type ProfileDto } from "@/api.js";
+import { ApiError, type ProfileDto } from "@/api.js";
 import { useAuth } from "@/composables/useAuth.js";
 import { useAsyncAction } from "@/composables/useAsyncAction.js";
 import AppButton from "@/components/ui/AppButton.vue";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
 import ProfileAvatar from "./partials/ProfileAvatar.vue";
 import ProfileUnlockForm from "./partials/ProfileUnlockForm.vue";
+import { profilesQueryOptions } from "@/queries.js";
 const auth = useAuth();
-const profiles = useQuery({ queryKey: ["profiles"], queryFn: () => api.listProfiles() });
+const profiles = useQuery(profilesQueryOptions());
 const selected = shallowRef<ProfileDto | null>(null);
 const unlock = useAsyncAction((profile: ProfileDto, password: string) =>
   auth.selectProfile(profile.id, password),

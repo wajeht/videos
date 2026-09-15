@@ -34,46 +34,44 @@ const isPlayer = computed(() => route.meta.shell === "player");
       >
         <AppLogo />
       </IntentRouterLink>
-      <div class="ml-auto flex min-w-0 items-center gap-6 pl-6">
-        <nav class="flex items-center gap-6 max-[600px]:hidden" aria-label="Main navigation">
-          <IntentRouterLink
-            to="/"
-            :prefetch="prefetch.home"
-            class="border-b-2 px-0 py-2 text-[.76rem] font-bold tracking-[.14em] uppercase"
-            :class="
-              activeNavigation === 'home'
-                ? 'border-belt text-white/90'
-                : 'border-transparent text-white/55'
-            "
-          >
-            Home
-          </IntentRouterLink>
-          <IntentRouterLink
-            to="/videos"
-            :prefetch="prefetch.videos"
-            class="border-b-2 px-0 py-2 text-[.76rem] font-bold tracking-[.14em] uppercase"
-            :class="
-              activeNavigation === 'videos'
-                ? 'border-belt text-white/90'
-                : 'border-transparent text-white/55'
-            "
-          >
-            Videos
-          </IntentRouterLink>
-          <IntentRouterLink
-            to="/settings/library"
-            :prefetch="prefetch.settingsLibrary"
-            class="border-b-2 px-0 py-2 text-[.76rem] font-bold tracking-[.14em] uppercase"
-            :class="
-              activeNavigation === 'settings'
-                ? 'border-belt text-white/90'
-                : 'border-transparent text-white/55'
-            "
-          >
-            Settings
-          </IntentRouterLink>
-        </nav>
-      </div>
+      <nav class="flex items-center gap-6 max-[600px]:hidden" aria-label="Main navigation">
+        <IntentRouterLink
+          to="/"
+          :prefetch="prefetch.home"
+          class="border-b-2 px-0 py-2 text-[.76rem] font-bold tracking-[.14em] uppercase"
+          :class="
+            activeNavigation === 'home'
+              ? 'border-belt text-white/90'
+              : 'border-transparent text-white/55'
+          "
+        >
+          Home
+        </IntentRouterLink>
+        <IntentRouterLink
+          to="/videos"
+          :prefetch="prefetch.videos"
+          class="border-b-2 px-0 py-2 text-[.76rem] font-bold tracking-[.14em] uppercase"
+          :class="
+            activeNavigation === 'videos'
+              ? 'border-belt text-white/90'
+              : 'border-transparent text-white/55'
+          "
+        >
+          Videos
+        </IntentRouterLink>
+        <IntentRouterLink
+          to="/settings/library"
+          :prefetch="prefetch.settingsLibrary"
+          class="border-b-2 px-0 py-2 text-[.76rem] font-bold tracking-[.14em] uppercase"
+          :class="
+            activeNavigation === 'settings'
+              ? 'border-belt text-white/90'
+              : 'border-transparent text-white/55'
+          "
+        >
+          Settings
+        </IntentRouterLink>
+      </nav>
     </header>
     <VideoSearchPalette v-if="desktopSearchEnabled" />
     <slot />

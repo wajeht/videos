@@ -26,16 +26,19 @@ test("switching from Access to a member should land on an accessible page", asyn
   await expect(page.getByRole("heading", { name: "Profile details", exact: true })).toBeVisible();
 });
 
-for (const scenario of ["create", "update", "return"] as const) {
+for (const scenario of ["create", "update", "return", "update-return", "lock-return"] as const) {
   test(`finishing ${scenario} preserves later navigation`, async ({ page }) => {
     await authenticate(page);
+    const updating = scenario === "update" || scenario === "update-return";
+    const locking = scenario === "lock-return";
+    const returning = scenario === "return" || scenario === "update-return" || locking;
     await page.goto("/settings/profiles/new");
-    if (scenario === "update") {
-      await page.getByLabel(/^Profile name/).fill("Routing Member");
+    if (updating || locking) {
+      await page.getByLabel(/^Profile name/).fill(`Routing ${scenario}`);
       await page.getByRole("button", { name: "Create profile", exact: true }).click();
       const row = page
         .getByRole("row")
-        .filter({ has: page.getByRole("heading", { name: "Routing Member", exact: true }) });
+        .filter({ has: page.getByRole("heading", { name: `Routing ${scenario}`, exact: true }) });
       await row.getByRole("link", { name: "Edit", exact: true }).click();
     }
     let release!: () => void;
@@ -46,41 +49,48 @@ for (const scenario of ["create", "update", "return"] as const) {
     const requested = new Promise<void>((resolve) => {
       started = resolve;
     });
-    await page.route(
-      scenario === "update" ? "**/api/profiles/*" : "**/api/profiles",
-      async (route) => {
-        if (route.request().method() === (scenario === "update" ? "PUT" : "POST")) {
-          started();
-          await paused;
-        }
-        await route.continue();
+    const operation = updating ? "update" : "create";
+    const action = {
+      create: { path: "**/api/profiles", button: "Create profile", message: "Profile created" },
+      update: { path: "**/api/profiles/*", button: "Save profile", message: "Profile updated" },
+      lock: {
+        path: "**/api/profiles/*/password",
+        button: "Set password",
+        message: "Profile password updated",
       },
-    );
-    await page.getByLabel(/^Profile name/).fill(`Slow ${scenario}`);
+    }[locking ? "lock" : operation];
+    await page.route(action.path, async (route) => {
+      if (route.request().method() === (updating || locking ? "PUT" : "POST")) {
+        started();
+        await paused;
+      }
+      await route.continue();
+    });
+    if (locking) {
+      await page.getByLabel(/^New profile password/).fill("member-password");
+      await page.getByLabel(/^Confirm profile password/).fill("member-password");
+    } else await page.getByLabel(/^Profile name/).fill(`Slow ${scenario}`);
     await page
       .getByRole("button", {
-        name: scenario === "update" ? "Save profile" : "Create profile",
+        name: action.button,
         exact: true,
       })
       .click();
     await requested;
     await page.getByRole("link", { name: "Library", exact: true }).click();
     await expect(page).toHaveURL(/\/settings\/library$/);
-    if (scenario === "return") {
+    if (returning) {
       await page.getByRole("link", { name: "Profiles", exact: true }).click();
       await page.getByRole("link", { name: "Add profile", exact: true }).click();
       await page.getByLabel(/^Profile name/).fill("New draft");
     }
     release();
     await expect(
-      page
-        .getByRole("status")
-        .filter({ hasText: scenario === "update" ? "Profile updated" : "Profile created" }),
+      page.getByRole("status").filter({
+        hasText: action.message,
+      }),
     ).toBeVisible();
-    await expect(page).toHaveURL(
-      scenario === "return" ? /\/settings\/profiles\/new$/ : /\/settings\/library$/,
-    );
-    if (scenario === "return")
-      await expect(page.getByLabel(/^Profile name/)).toHaveValue("New draft");
+    await expect(page).toHaveURL(returning ? /\/settings\/profiles\/new$/ : /\/settings\/library$/);
+    if (returning) await expect(page.getByLabel(/^Profile name/)).toHaveValue("New draft");
   });
 }
