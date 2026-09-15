@@ -6,6 +6,7 @@ import { api, type ProfileDto, type CreateProfileInput } from "@/api.js";
 import { useAuth } from "@/composables/useAuth.js";
 import { useAsyncAction } from "@/composables/useAsyncAction.js";
 import { useConfirm } from "@/composables/useConfirm.js";
+import { useToast } from "@/composables/useToast.js";
 import SettingsLayout from "./partials/SettingsLayout.vue";
 import PanelCardHeader from "@/components/ui/PanelCardHeader.vue";
 import NotFoundPage from "@/pages/NotFoundPage.vue";
@@ -22,6 +23,7 @@ const route = useRoute();
 const router = useRouter();
 const prefetch = useRoutePrefetch();
 const confirmation = useConfirm();
+const toast = useToast();
 const admin = computed(() => auth.state.profile?.role === "admin");
 const profiles = useQuery({
   queryKey: ["profiles"],
@@ -44,6 +46,7 @@ const showForm = computed(
   () => !admin.value || creating.value || (editRoute.value && editing.value !== null),
 );
 const save = useAsyncAction(async (input: CreateProfileInput) => {
+  const successMessage = editing.value ? "Profile updated" : "Profile created";
   if (editing.value) {
     const { name, role } = input;
     await api.updateProfile(editing.value.id, { name, role });
@@ -53,11 +56,13 @@ const save = useAsyncAction(async (input: CreateProfileInput) => {
     await profiles.refetch();
     await router.push({ name: "settings-profiles" });
   }
+  toast.success(successMessage);
 });
 const lock = useAsyncAction(async (password: string | null) => {
   if (!editing.value) return;
   await api.changeProfilePassword(editing.value.id, password);
   await auth.initialize();
+  toast.success(password === null ? "Profile lock removed" : "Profile password updated");
 });
 const remove = useAsyncAction(async (profile: ProfileDto) => {
   if (
@@ -72,6 +77,7 @@ const remove = useAsyncAction(async (profile: ProfileDto) => {
   await api.deleteProfile(profile.id);
   if (profile.id === auth.state.profile?.id) await auth.initialize();
   else await profiles.refetch();
+  toast.success("Profile deleted");
 });
 watch(
   () => route.fullPath,
