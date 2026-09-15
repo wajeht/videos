@@ -48,11 +48,9 @@ async function fixture() {
   const admin = (await context.profiles.listProfiles())[0]!;
   const client = await createClient(app);
   expect((await client.select(admin.id, testAdminPassword)).status).toBe(200);
-  async function addProfile(name: string, password: string | null = null, role = "member") {
+  async function addProfile(name: string, password: string | null = null) {
     const response = await client.request("/api/profiles", "POST", {
       name,
-
-      role,
       password,
     });
     expect(response.status).toBe(201);
@@ -102,7 +100,6 @@ describe("profiles", () => {
       (
         await guest.request("/api/profiles", "POST", {
           name: "Intruder",
-          role: "member",
           password: null,
         })
       ).status,
@@ -131,12 +128,11 @@ describe("profiles", () => {
           role: "admin",
         })
       ).status,
-    ).toBe(403);
+    ).toBe(400);
     expect(
       (
         await guest.request(`/api/profiles/${member.id}`, "PUT", {
           name: "My name",
-          role: "member",
         })
       ).status,
     ).toBe(200);
@@ -145,7 +141,7 @@ describe("profiles", () => {
     expect(JSON.stringify(profiles)).not.toContain(testAdminPassword);
   });
 
-  it("keeps an admin password and at least one admin, including concurrent demotions", async () => {
+  it("keeps one immutable admin and creates only member profiles", async () => {
     const { client, admin, addProfile, context } = await fixture();
     expect((await client.request(`/api/profiles/${admin.id}`, "DELETE")).status).toBe(409);
     expect(
@@ -155,31 +151,42 @@ describe("profiles", () => {
           role: "member",
         })
       ).status,
-    ).toBe(409);
+    ).toBe(400);
     expect(
       (await client.request(`/api/profiles/${admin.id}/password`, "PUT", { password: null }))
         .status,
     ).toBe(400);
+    for (const password of [null, testAdminPassword]) {
+      expect(
+        (
+          await client.request("/api/profiles", "POST", {
+            name: "Extra admin",
+            role: "admin",
+            password,
+          })
+        ).status,
+      ).toBe(400);
+    }
+    const member = await addProfile("Member", testAdminPassword);
+    expect(member.role).toBe("member");
     expect(
       (
-        await client.request("/api/profiles", "POST", {
-          name: "Open admin",
+        await client.request(`/api/profiles/${member.id}`, "PUT", {
+          name: "Promoted",
           role: "admin",
-          password: null,
         })
       ).status,
     ).toBe(400);
-    const second = await addProfile("Second admin", testAdminPassword, "admin");
-    await Promise.all([
-      context.profiles.mutateProfile(admin.id, admin.id, {
-        kind: "details",
-        input: { name: "First", role: "member" },
-      }),
-      context.profiles.mutateProfile(second.id, second.id, {
-        kind: "details",
-        input: { name: "Second", role: "member" },
-      }),
-    ]);
+    expect(
+      (await client.request(`/api/profiles/${admin.id}`, "PUT", { name: "Owner" })).status,
+    ).toBe(200);
+    expect(await context.profiles.findProfile(admin.id)).toMatchObject({
+      name: "Owner",
+      role: "admin",
+    });
+    await expect(
+      context.database.connection("profiles").where({ id: member.id }).update({ role: "admin" }),
+    ).rejects.toThrow("UNIQUE constraint failed: profiles.role");
     expect(
       (await context.profiles.listProfiles()).filter((profile) => profile.role === "admin"),
     ).toHaveLength(1);
@@ -312,12 +319,11 @@ describe("profiles", () => {
       expect(
         (
           await client.request("/api/profiles", "POST", {
-            name: "Invalid admin",
-            role: "admin",
+            name: "Invalid member",
             password,
           })
         ).status,
-      ).toBe(400);
+      ).toBe(password === null ? 201 : 400);
       expect(
         (await client.request(`/api/profiles/${admin.id}/password`, "PUT", { password })).status,
       ).toBe(400);

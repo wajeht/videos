@@ -10,18 +10,10 @@ export const profileDetailsSchema = z
     name: z.string().trim().min(1).max(40),
   })
   .strict();
-export const createProfileSchema = profileDetailsSchema
-  .extend({
-    role: z.enum(["admin", "member"]),
-    password: profilePasswordSchema.nullable(),
-  })
-  .refine((value) => value.role !== "admin" || value.password !== null, {
-    message: "Admin profiles require a password",
-    path: ["password"],
-  });
-export const updateProfileSchema = profileDetailsSchema.extend({
-  role: z.enum(["admin", "member"]),
+export const createProfileSchema = profileDetailsSchema.extend({
+  password: profilePasswordSchema.nullable(),
 });
+export const updateProfileSchema = profileDetailsSchema;
 export const profilePasswordChangeSchema = z
   .object({
     password: profilePasswordSchema.nullable(),

@@ -79,10 +79,19 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(page.locator("#settings-profiles-panel > section > header")).toHaveCount(1);
   await page.getByRole("link", { name: "Add profile" }).click();
   await expect(page).toHaveURL(/\/settings\/profiles\/new$/);
+  await expect(page.getByLabel("Permissions", { exact: true })).toHaveCount(0);
   await page.getByLabel(/^Profile name/).fill("Browser Member");
   await page.getByRole("button", { name: "Create profile" }).click();
   await expect(page.getByRole("heading", { name: "Browser Member", exact: true })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Profile created" })).toBeVisible();
+  const adminRow = page
+    .getByRole("row")
+    .filter({ has: page.getByRole("heading", { name: "Admin", exact: true }) });
+  await expect(adminRow.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
+  const memberRow = page
+    .getByRole("row")
+    .filter({ has: page.getByRole("heading", { name: "Browser Member", exact: true }) });
+  await expect(memberRow.getByRole("cell", { name: "Member", exact: true })).toBeVisible();
   const editLinks = page.getByRole("link", { name: "Edit", exact: true });
   const adminEditPath = (await editLinks.first().getAttribute("href"))!;
   const memberEditPath = (await editLinks.nth(1).getAttribute("href"))!;
@@ -90,6 +99,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   await editLinks.nth(1).click();
   await expect(page).toHaveURL(new RegExp(`${memberEditPath}$`));
   await expect(page.getByRole("heading", { name: "Edit Browser Member" })).toBeVisible();
+  await expect(page.getByLabel("Permissions", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Profiles", exact: true })).toHaveAttribute(
     "aria-current",
     "page",
@@ -100,6 +110,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(page.getByRole("heading", { name: "Manage profiles" })).toBeVisible();
   await page.goForward();
   await expect(page.getByRole("heading", { name: "Edit Browser Member" })).toBeVisible();
+  await expect(page.getByLabel("Permissions", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page).toHaveURL(/\/settings\/profiles$/);
   await page.getByRole("link", { name: "Edit", exact: true }).nth(1).click();

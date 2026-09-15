@@ -23,7 +23,7 @@ export type ProfileMutationResult =
   | "ok"
   | "forbidden"
   | "not_found"
-  | "last_admin"
+  | "admin_required"
   | "password_required";
 export type ProfileMutation =
   | { kind: "details"; input: UpdateProfileInput }
@@ -37,10 +37,8 @@ function mutationPermission(
 ): ProfileMutationResult {
   if (actor.role !== "admin") {
     if (actor.id !== target.id || mutation.kind === "delete") return "forbidden";
-    if (mutation.kind === "details" && mutation.input.role !== target.role) return "forbidden";
   }
-  if (mutation.kind === "details" && mutation.input.role === "admin" && !target.password_hash)
-    return "password_required";
+  if (mutation.kind === "delete" && target.role === "admin") return "admin_required";
   if (mutation.kind === "password" && target.role === "admin" && !mutation.passwordHash)
     return "password_required";
   return "ok";
@@ -48,7 +46,7 @@ function mutationPermission(
 
 export async function insertProfile(
   database: Knex,
-  input: UpdateProfileInput,
+  input: Pick<ProfileDto, "name" | "role">,
   passwordHash: string | null,
 ): Promise<ProfileDto> {
   const now = new Date().toISOString();
@@ -94,7 +92,7 @@ export function createProfilesRepository(database: Knex) {
           .where({ id: actorId, role: "admin" })
           .first();
         if (!actor) return null;
-        return insertProfile(transaction, input, passwordHash);
+        return insertProfile(transaction, { name: input.name, role: "member" }, passwordHash);
       });
     },
     async mutateProfile(
@@ -109,22 +107,11 @@ export function createProfilesRepository(database: Knex) {
         if (!target) return "not_found";
         const permission = mutationPermission(actor, target, mutation);
         if (permission !== "ok") return permission;
-        if (
-          target.role === "admin" &&
-          (mutation.kind === "delete" ||
-            (mutation.kind === "details" && mutation.input.role !== "admin"))
-        ) {
-          const others = await transaction("profiles")
-            .where({ role: "admin" })
-            .whereNot({ id })
-            .first();
-          if (!others) return "last_admin";
-        }
         if (mutation.kind === "delete") {
           await transaction("profiles").where({ id }).delete();
           return "ok";
         }
-        if (mutation.kind === "password" || mutation.input.role !== target.role) {
+        if (mutation.kind === "password") {
           await transaction("auth_sessions")
             .where({ profile_id: id })
             .update({ profile_id: null, profile_selection_key: null });
@@ -134,7 +121,6 @@ export function createProfilesRepository(database: Knex) {
             ? { password_hash: mutation.passwordHash }
             : {
                 name: mutation.input.name,
-                role: mutation.input.role,
               };
         await transaction("profiles")
           .where({ id })

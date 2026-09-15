@@ -104,6 +104,10 @@ export async function up(knex: Knex): Promise<void> {
     table.check("role != 'admin' OR password_hash IS NOT NULL");
   });
 
+  await knex.raw(
+    "CREATE UNIQUE INDEX profiles_single_admin ON profiles (role) WHERE role = 'admin'",
+  );
+
   await knex.schema.createTable("progress", (table) => {
     table.text("profile_id").notNullable().references("id").inTable("profiles").onDelete("CASCADE");
     table.text("video_id").notNullable().references("id").inTable("videos").onDelete("CASCADE");
