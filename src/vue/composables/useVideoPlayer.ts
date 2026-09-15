@@ -1,3 +1,4 @@
+import { currentProfileSelectionKey, currentProfileId } from "@/api.js";
 import { useQueryClient } from "@tanstack/vue-query";
 import { computed, onBeforeUnmount, ref, shallowRef, watch, type Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -23,9 +24,10 @@ import { queryKeys, videoQueryOptions } from "@/queries.js";
 import { notFoundLocation, playerLocation } from "@/router.js";
 import { setPageTitle } from "@/utils.js";
 
-const autoplayNextStorageKey = "videos:autoplay-next";
-
 export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
+  const selectionKey = currentProfileSelectionKey();
+  const autoplayNextStorageKey = `videos:${currentProfileId()}:autoplay-next`;
+
   const route = useRoute();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -39,7 +41,7 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
   const toast = useToast();
   const playback = useVideoPlayback(element, api);
   const progress = usePlaybackProgress(async (videoId, positionSeconds) => {
-    await api.saveProgress(videoId, positionSeconds);
+    await api.saveProgress(videoId, positionSeconds, selectionKey);
     await invalidateProgress();
   });
   const retry = useAsyncAction(async (videoId: string) => playback.retryPlayback(videoId));
@@ -90,7 +92,9 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
   const reset = useAsyncAction(
     async (videoId: string) => {
       if (video.value?.id !== videoId || !progress.isSessionFor(videoId)) return false;
-      await progress.resetSession(element.value?.currentTime, (id) => api.resetVideo(id));
+      await progress.resetSession(element.value?.currentTime, (id) =>
+        api.resetVideo(id, selectionKey),
+      );
       if (video.value?.id !== videoId) return false;
       video.value.positionSeconds = 0;
       video.value.progressPercent = 0;
@@ -131,7 +135,9 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
         !progress.isSessionFor(activeVideo.id)
       )
         return false;
-      await progress.resetSession(element.value?.currentTime, () => api.resetPlaylist(playlistId));
+      await progress.resetSession(element.value?.currentTime, () =>
+        api.resetPlaylist(playlistId, selectionKey),
+      );
       if (playlist.value?.id !== playlistId || video.value?.id !== activeVideo.id) return false;
 
       for (const item of playlistVideos.value) {
@@ -268,7 +274,7 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
         api.preparePlayback(videoId),
       ]);
       if (!playback.isCurrentRequest(requestId)) return;
-      await api.openVideo(videoId);
+      await api.openVideo(videoId, selectionKey);
       await invalidateLibrary();
       if (!playback.isCurrentRequest(requestId)) return;
       video.value = detail.video;
@@ -318,7 +324,7 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
     if (!snapshot) return;
     void fetch(`/api/progress/videos/${snapshot.videoId}`, {
       method: "PUT",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "x-profile-selection": selectionKey },
       body: JSON.stringify({ positionSeconds: snapshot.positionSeconds }),
       keepalive: true,
     });
@@ -327,7 +333,7 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
     if (!video.value) return;
     const autoplayTarget = autoplayNext.value ? nextVideo.value : undefined;
     try {
-      await api.completeVideo(video.value.id);
+      await api.completeVideo(video.value.id, selectionKey);
       await invalidateProgress();
       ended.value = true;
       progress.stopSession();
