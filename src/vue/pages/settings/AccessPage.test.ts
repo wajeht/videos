@@ -2,6 +2,7 @@
 
 import { flushPromises, mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
+import { reactive } from "vue";
 
 import { ApiError } from "@/api.js";
 import { authKey } from "@/composables/useAuth.js";
@@ -9,19 +10,52 @@ import { toastKey } from "@/composables/useToast.js";
 
 import AccessPage from "./AccessPage.vue";
 
-function mountAccessPage(changePassword = vi.fn()) {
+function mountAccessPage(
+  changePassword = vi.fn(),
+  state = reactive<{ profile: { role: "admin" | "member" } | null }>({
+    profile: { role: "admin" },
+  }),
+) {
   return mount(AccessPage, {
     global: {
       provide: {
-        [authKey]: { changePassword, state: { profile: { role: "admin" } } },
+        [authKey]: { changePassword, state },
         [toastKey]: { success: vi.fn() },
       },
-      stubs: { SettingsLayout: { template: "<slot />" } },
+      stubs: {
+        SettingsLayout: { template: "<slot />" },
+        IntentRouterLink: { template: "<a><slot /></a>" },
+      },
     },
   });
 }
 
 describe("settings/AccessPage", () => {
+  it.each([null, { role: "member" as const }])(
+    "hides the page without an admin profile: %j",
+    (profile) => {
+      const wrapper = mountAccessPage(vi.fn(), reactive({ profile }));
+
+      expect(wrapper.get("h1").text()).toBe("Page not found");
+      expect(wrapper.find("#settings-access-panel").exists()).toBe(false);
+      expect(wrapper.find("form").exists()).toBe(false);
+    },
+  );
+
+  it("hides the page when the selected profile loses admin access", async () => {
+    const state = reactive<{ profile: { role: "admin" | "member" } }>({
+      profile: { role: "admin" },
+    });
+    const wrapper = mountAccessPage(vi.fn(), state);
+    expect(wrapper.find("form").exists()).toBe(true);
+
+    state.profile.role = "member";
+    await flushPromises();
+
+    expect(wrapper.get("h1").text()).toBe("Page not found");
+    expect(wrapper.find("form").exists()).toBe(false);
+  });
+
   it("renders only the access settings", () => {
     const wrapper = mountAccessPage();
 
