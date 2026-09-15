@@ -175,6 +175,22 @@ describe("profiles", () => {
     expect(touchSession).toHaveBeenCalledOnce();
   });
 
+  it("allows members to read library status but only admins to refresh it", async () => {
+    const { app, context, client, addProfile } = await fixture();
+    const scan = vi
+      .spyOn(context.scanner, "scanLibrary")
+      .mockResolvedValue(context.scanner.scanStatus());
+    const member = await addProfile("Viewer");
+    const viewer = await createClient(app);
+    await viewer.select(member.id);
+    expect((await viewer.request("/api/scan")).status).toBe(200);
+    expect((await viewer.request("/api/scan", "POST")).status).toBe(403);
+    expect(scan).not.toHaveBeenCalled();
+    expect((await client.request("/api/scan")).status).toBe(200);
+    expect((await client.request("/api/scan", "POST")).status).toBe(200);
+    expect(scan).toHaveBeenCalledOnce();
+  });
+
   it("keeps one immutable admin and creates only member profiles", async () => {
     const { client, admin, addProfile, context } = await fixture();
     expect((await client.request(`/api/profiles/${admin.id}`, "DELETE")).status).toBe(409);

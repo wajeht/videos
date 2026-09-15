@@ -129,6 +129,15 @@ test("selects locked profiles and limits profile management to admins", async ({
   await page.getByRole("button", { name: "Browser Viewer Open", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Profile details" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Access", exact: true })).toHaveCount(0);
+  await page.getByRole("link", { name: "Library", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Refresh library" })).toBeVisible();
+  await expect(page.locator("[data-library-status]")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Settings", exact: true })).toHaveAttribute(
+    "href",
+    "/settings/library",
+  );
+  await expect(page.getByRole("button", { name: "Refresh library", exact: true })).toHaveCount(0);
+  await page.getByRole("link", { name: "Profiles", exact: true }).click();
   await expect(page.getByRole("link", { name: "Add profile" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
   await expect(secondTab.getByRole("heading", { name: "Profile details" })).toBeVisible();
