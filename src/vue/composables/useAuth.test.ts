@@ -6,6 +6,8 @@ import { createAuth } from "./useAuth.js";
 
 function createClient() {
   return {
+    selectProfile: vi.fn(async () => undefined),
+    clearProfile: vi.fn(async () => undefined),
     changePassword: vi.fn(async () => undefined),
     getAuthState: vi.fn<(signal?: AbortSignal) => Promise<AuthStateDto>>(),
     login: vi.fn(async () => undefined),
@@ -21,6 +23,8 @@ describe("createAuth", () => {
     const client = createClient();
     client.getAuthState.mockResolvedValue({
       authenticated: true,
+      profile: null,
+      profileSelectionKey: null,
       passwordConfigured: true,
       setupEnabled: false,
       setupTokenRequired: false,
@@ -58,6 +62,8 @@ describe("createAuth", () => {
     const client = createClient();
     client.getAuthState.mockResolvedValue({
       authenticated: true,
+      profile: null,
+      profileSelectionKey: null,
       passwordConfigured: true,
       setupEnabled: false,
       setupTokenRequired: false,
@@ -70,5 +76,31 @@ describe("createAuth", () => {
     await auth.logout();
 
     expect(onSessionChange).toHaveBeenCalledTimes(3);
+  });
+  it("ignores an older session check after a profile switch", async () => {
+    const client = createClient();
+    let releaseFirst!: (state: AuthStateDto) => void;
+    client.getAuthState.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseFirst = resolve;
+        }),
+    );
+    const newState: AuthStateDto = {
+      authenticated: true,
+      passwordConfigured: true,
+      setupEnabled: false,
+      setupTokenRequired: false,
+      profile: { id: "new", name: "New", avatarKey: "pine", role: "member", isLocked: false },
+      profileSelectionKey: "new-selection",
+    };
+    client.getAuthState.mockResolvedValueOnce(newState);
+    const auth = createAuth({ client });
+    const first = auth.initialize();
+    await auth.selectProfile("new", "");
+    releaseFirst({ ...newState, profile: null, profileSelectionKey: null });
+    await first;
+    expect(auth.state.profile?.id).toBe("new");
+    auth.dispose();
   });
 });

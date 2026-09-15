@@ -12,6 +12,8 @@ import { useAuth } from "@/composables/useAuth.js";
 import { useNetworkStatus } from "@/composables/useNetworkStatus.js";
 import { frontendError } from "@/frontend-error.js";
 import AppShell from "@/layouts/AppShell.vue";
+import ProfilesPage from "@/pages/profiles/ProfilesPage.vue";
+import ProfileSwitchButton from "@/pages/profiles/partials/ProfileSwitchButton.vue";
 import AuthPage from "@/pages/auth/AuthPage.vue";
 import OfflinePage from "@/pages/OfflinePage.vue";
 import UnexpectedErrorPage from "@/pages/UnexpectedErrorPage.vue";
@@ -24,8 +26,13 @@ const loginAction = useAsyncAction((password: string) => auth.login(password), {
   errorMessage: "Could not sign in",
 });
 const setupAction = useAsyncAction(
-  (password: string, confirmPassword: string, setupToken?: string) =>
-    auth.setupPassword(password, confirmPassword, setupToken),
+  (
+    password: string,
+    confirmPassword: string,
+    adminName: string,
+    adminPassword: string,
+    setupToken?: string,
+  ) => auth.setupPassword(password, confirmPassword, adminName, adminPassword, setupToken),
   { errorMessage: "Could not create the library password" },
 );
 const authBusy = computed(() => loginAction.pending.value || setupAction.pending.value);
@@ -86,10 +93,12 @@ async function login(password: string): Promise<void> {
 async function setup(
   password: string,
   confirmPassword: string,
+  adminName: string,
+  adminPassword: string,
   setupToken?: string,
 ): Promise<void> {
   loginAction.clearError();
-  await setupAction.run(password, confirmPassword, setupToken);
+  await setupAction.run(password, confirmPassword, adminName, adminPassword, setupToken);
 }
 </script>
 
@@ -104,7 +113,9 @@ async function setup(
       <p class="mt-3 text-sm text-muted">Opening Videos…</p>
     </div>
   </main>
+  <ProfilesPage v-else-if="auth.state.status === 'authenticated' && !auth.state.profile" />
   <AppShell v-else-if="auth.state.status === 'authenticated'">
+    <template #profile><ProfileSwitchButton /></template>
     <OfflineStatusBanner v-if="!online" />
     <RouterView />
   </AppShell>

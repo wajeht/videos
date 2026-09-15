@@ -1,0 +1,37 @@
+<script setup lang="ts">
+import { shallowRef } from "vue";
+import type { ProfileDto } from "@/api.js";
+import AppButton from "@/components/ui/AppButton.vue";
+import AppInput from "@/components/ui/AppInput.vue";
+import FormField from "@/components/ui/FormField.vue";
+import AlertMessage from "@/components/ui/AlertMessage.vue";
+defineProps<{ profile: ProfileDto; busy: boolean; passwordError: string; error: string }>();
+const emit = defineEmits<{ unlock: [password: string]; cancel: [] }>();
+const password = shallowRef("");
+</script>
+<template>
+  <form
+    class="mx-auto mt-8 grid max-w-sm gap-4 text-left"
+    @submit.prevent="emit('unlock', password)"
+  >
+    <h2 class="text-xl font-bold">Unlock {{ profile.name }}</h2>
+    <AlertMessage v-if="error">{{ error }}</AlertMessage>
+    <FormField v-slot="field" label="Profile password" :error="passwordError" required>
+      <AppInput
+        :id="field.inputId"
+        v-model="password"
+        :aria-describedby="field.describedBy"
+        :invalid="field.invalid"
+        type="password"
+        autocomplete="current-password"
+        maxlength="72"
+        required
+        autofocus
+      />
+    </FormField>
+    <AppButton type="submit" :loading="busy">Unlock profile</AppButton>
+    <AppButton variant="secondary" :disabled="busy" @click="emit('cancel')"
+      >Back to profiles</AppButton
+    >
+  </form>
+</template>

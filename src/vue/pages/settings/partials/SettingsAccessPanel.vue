@@ -59,7 +59,10 @@ async function changePassword(): Promise<void> {
       title="Access"
       description="Change the password for this private library or sign out of this device."
     />
-    <form class="grid gap-4 p-[clamp(22px,4vw,34px)]" @submit.prevent="changePassword">
+    <p v-if="auth.state.profile?.role !== 'admin'" class="p-6 text-muted">
+      Only an admin profile can change the shared app password.
+    </p>
+    <form v-else class="grid gap-4 p-[clamp(22px,4vw,34px)]" @submit.prevent="changePassword">
       <AlertMessage v-if="generalPasswordError">
         {{ generalPasswordError }}
       </AlertMessage>

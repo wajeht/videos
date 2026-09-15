@@ -111,10 +111,33 @@ describe("AuthPage", () => {
     const inputs = wrapper.findAll('input[type="password"]');
     const submit = wrapper.get('button[type="submit"]');
 
-    expect(inputs).toHaveLength(3);
+    expect(inputs).toHaveLength(5);
     expect(inputs.every((input) => input.classes().includes("min-h-10"))).toBe(true);
     expect(inputs.every((input) => !input.classes().includes("lg:min-h-12"))).toBe(true);
     expect(submit.classes()).toContain("h-10");
     expect(submit.classes()).not.toContain("lg:h-12");
+  });
+  it("submits the shared password and first admin profile together", async () => {
+    const wrapper = mount(AuthPage, { props: { ...baseProps, passwordConfigured: false } });
+    const passwords = wrapper.findAll('input[type="password"]');
+    await passwords[0]!.setValue("shared-library-password");
+    await passwords[1]!.setValue("shared-library-password");
+    await wrapper.get('input[maxlength="40"]').setValue("Owner");
+    await passwords[2]!.setValue("admin-profile-password");
+    await passwords[3]!.setValue("different-password");
+    await wrapper.get("form").trigger("submit");
+    expect(wrapper.emitted("setup")).toBeUndefined();
+    expect(wrapper.text()).toContain("Passwords do not match");
+    await passwords[3]!.setValue("admin-profile-password");
+    await wrapper.get("form").trigger("submit");
+    expect(wrapper.emitted("setup")).toEqual([
+      [
+        "shared-library-password",
+        "shared-library-password",
+        "Owner",
+        "admin-profile-password",
+        undefined,
+      ],
+    ]);
   });
 });
