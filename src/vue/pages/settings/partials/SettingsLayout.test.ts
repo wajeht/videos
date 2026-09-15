@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { shallowRef } from "vue";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { describe, expect, it, vi } from "vitest";
@@ -11,7 +11,7 @@ import { confirmationKey } from "@/composables/useConfirm.js";
 
 import SettingsLayout from "./SettingsLayout.vue";
 
-async function mountSettingsLayout() {
+async function mountSettingsLayout(role = "admin") {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -29,6 +29,7 @@ async function mountSettingsLayout() {
     ],
   });
   await router.push("/settings/library");
+  const clearProfile = vi.fn(async () => {});
   const request = vi.fn(async () => false);
   const queryClient = new QueryClient();
   const wrapper = mount(SettingsLayout, {
@@ -36,7 +37,7 @@ async function mountSettingsLayout() {
     global: {
       plugins: [router, [VueQueryPlugin, { queryClient }]],
       provide: {
-        [authKey]: { logout: vi.fn(), state: { profile: { role: "admin" } } },
+        [authKey]: { logout: vi.fn(), clearProfile, state: { profile: { role } } },
         [confirmationKey]: {
           accept: vi.fn(),
           active: shallowRef(null),
@@ -48,7 +49,7 @@ async function mountSettingsLayout() {
       },
     },
   });
-  return { request, wrapper };
+  return { request, wrapper, clearProfile };
 }
 
 describe("SettingsLayout", () => {
@@ -71,5 +72,27 @@ describe("SettingsLayout", () => {
 
     await wrapper.get("[data-desktop-sign-out]").trigger("click");
     expect(request).toHaveBeenCalledOnce();
+  });
+  it.each(["admin", "member"])("lets a %s switch profiles from settings", async (role) => {
+    const { wrapper, clearProfile } = await mountSettingsLayout(role);
+    const button = wrapper.findAll("button").find((button) => button.text() === "Switch profile")!;
+    await button.trigger("click");
+    await flushPromises();
+    expect(clearProfile).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
+
+  it("shows a switch failure and allows retrying", async () => {
+    const { wrapper, clearProfile } = await mountSettingsLayout();
+    clearProfile.mockRejectedValueOnce(new Error("Offline"));
+    const button = wrapper.findAll("button").find((button) => button.text() === "Switch profile")!;
+    await button.trigger("click");
+    await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toContain("Could not switch profiles");
+    expect(button.attributes("disabled")).toBeUndefined();
+    await button.trigger("click");
+    await flushPromises();
+    expect(clearProfile).toHaveBeenCalledTimes(2);
+    wrapper.unmount();
   });
 });

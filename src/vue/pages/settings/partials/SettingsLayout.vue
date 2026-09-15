@@ -17,6 +17,9 @@ defineSlots<{
 
 const auth = useAuth();
 const confirmation = useConfirm();
+const switchAction = useAsyncAction(() => auth.clearProfile(), {
+  errorMessage: "Could not switch profiles",
+});
 const logoutAction = useAsyncAction(() => auth.logout(), {
   errorMessage: "Could not sign out",
 });
@@ -38,8 +41,12 @@ async function logout(): Promise<void> {
   >
     <PageHeader eyebrow="Videos settings" title="Settings" />
 
-    <AlertMessage v-if="logoutAction.errorMessage.value" class="mt-8" size="lg">
-      {{ logoutAction.errorMessage.value }}
+    <AlertMessage
+      v-if="logoutAction.errorMessage.value || switchAction.errorMessage.value"
+      class="mt-8"
+      size="lg"
+    >
+      {{ logoutAction.errorMessage.value || switchAction.errorMessage.value }}
     </AlertMessage>
 
     <div
@@ -48,7 +55,15 @@ async function logout(): Promise<void> {
     >
       <div class="grid gap-[clamp(18px,2vw,30px)]">
         <SettingsNavigation />
-        <div class="max-[760px]:hidden" data-desktop-sign-out-container>
+        <div class="grid gap-3 max-[760px]:hidden" data-desktop-sign-out-container>
+          <AppButton
+            block
+            variant="secondary"
+            :loading="switchAction.pending.value"
+            loading-label="Switching…"
+            @click="switchAction.run()"
+            >Switch profile</AppButton
+          >
           <AppButton
             class="h-10"
             block
@@ -66,7 +81,15 @@ async function logout(): Promise<void> {
 
       <slot />
 
-      <div class="col-span-full hidden max-[760px]:block" data-mobile-sign-out-container>
+      <div class="col-span-full hidden gap-3 max-[760px]:grid" data-mobile-sign-out-container>
+        <AppButton
+          block
+          variant="secondary"
+          :loading="switchAction.pending.value"
+          loading-label="Switching…"
+          @click="switchAction.run()"
+          >Switch profile</AppButton
+        >
         <AppButton
           class="h-10"
           block
