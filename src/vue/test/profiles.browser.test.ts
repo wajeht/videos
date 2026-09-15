@@ -154,9 +154,10 @@ test("selects locked profiles and limits profile management to admins", async ({
   });
   await page.goto("/settings/access");
   await expect(page.getByRole("link", { name: "Access", exact: true })).toHaveCount(0);
-  await expect(
-    page.getByText("Only an admin profile can change the shared app password."),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+  await expect(page.locator("#settings-access-panel")).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Change password", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Switch profile" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("member-mobile.png"), fullPage: true });
