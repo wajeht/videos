@@ -2,8 +2,11 @@
 
 import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
 import { flushPromises, mount } from "@vue/test-utils";
+import { reactive } from "vue";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { describe, expect, it } from "vitest";
+
+import { authKey } from "@/composables/useAuth.js";
 
 import SettingsNavigation from "./SettingsNavigation.vue";
 
@@ -31,8 +34,12 @@ describe("SettingsNavigation", () => {
     });
     await router.push("/settings/library");
     const queryClient = new QueryClient();
+    const state = reactive({ profile: { role: "admin" } });
     const wrapper = mount(SettingsNavigation, {
-      global: { plugins: [router, [VueQueryPlugin, { queryClient }]] },
+      global: {
+        plugins: [router, [VueQueryPlugin, { queryClient }]],
+        provide: { [authKey]: { state } },
+      },
     });
     const sectionLinks = wrapper.findAll("a");
 
@@ -56,5 +63,9 @@ describe("SettingsNavigation", () => {
     expect(sectionLinks[0]?.attributes("aria-current")).toBeUndefined();
     expect(sectionLinks[2]?.attributes("aria-current")).toBe("page");
     expect(sectionLinks[2]?.classes()).toContain("bg-pine!");
+
+    state.profile.role = "member";
+    await flushPromises();
+    expect(wrapper.findAll("a").map((link) => link.text())).toEqual(["Library", "Profiles"]);
   });
 });

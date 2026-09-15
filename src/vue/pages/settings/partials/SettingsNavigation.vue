@@ -4,8 +4,10 @@ import { useRoute } from "vue-router";
 
 import IntentRouterLink from "@/components/IntentRouterLink.vue";
 import PanelCard from "@/components/ui/PanelCard.vue";
+import { useAuth } from "@/composables/useAuth.js";
 import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
 
+const auth = useAuth();
 const route = useRoute();
 const prefetch = useRoutePrefetch();
 const settingsSections = [
@@ -29,18 +31,20 @@ const settingsSections = [
   },
 ] as const;
 const sections = computed(() =>
-  settingsSections.map((section) => {
-    if (route.name === section.routeName) {
+  settingsSections
+    .filter((section) => section.value !== "access" || auth.state.profile?.role === "admin")
+    .map((section) => {
+      if (route.name === section.routeName) {
+        return {
+          ...section,
+          stateClasses: "bg-pine! text-white!",
+        };
+      }
       return {
         ...section,
-        stateClasses: "bg-pine! text-white!",
+        stateClasses: "bg-transparent! text-pine! hover:bg-porcelain!",
       };
-    }
-    return {
-      ...section,
-      stateClasses: "bg-transparent! text-pine! hover:bg-porcelain!",
-    };
-  }),
+    }),
 );
 </script>
 
@@ -52,7 +56,7 @@ const sections = computed(() =>
     padding="none"
     aria-label="Settings sections"
   >
-    <div class="grid gap-1 max-[760px]:grid-cols-3 max-[760px]:gap-0">
+    <div class="grid gap-1 max-[760px]:auto-cols-fr max-[760px]:grid-flow-col max-[760px]:gap-0">
       <IntentRouterLink
         v-for="section in sections"
         :id="`settings-${section.value}-link`"
