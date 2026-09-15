@@ -46,6 +46,7 @@ const showForm = computed(
   () => !admin.value || creating.value || (editRoute.value && editing.value !== null),
 );
 const save = useAsyncAction(async (input: CreateProfileInput) => {
+  const sourceRoute = router.currentRoute.value;
   const successMessage = editing.value ? "Profile updated" : "Profile created";
   if (editing.value) {
     const { name } = input;
@@ -54,7 +55,9 @@ const save = useAsyncAction(async (input: CreateProfileInput) => {
   } else await api.createProfile(input);
   if (admin.value) {
     await profiles.refetch();
-    await router.push({ name: "settings-profiles" });
+    if (router.currentRoute.value === sourceRoute) {
+      await router.push({ name: "settings-profiles" });
+    }
   }
   toast.success(successMessage);
 });
