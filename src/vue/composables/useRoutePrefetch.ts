@@ -22,6 +22,7 @@ export function useRoutePrefetch() {
     author: (authorName: string) =>
       Promise.all([prefetchLibrary({ author: [authorName] }, "author"), loadAuthorPage()]),
     video: (videoId: string) => Promise.all([prefetchVideo(videoId), loadPlayerPage()]),
+    settingsProfiles: () => Promise.all([settings(), import("@/pages/settings/ProfilesPage.vue")]),
     settingsAccess: () => Promise.all([settings(), loadSettingsAccessPage()]),
     settingsLibrary: () => Promise.all([settings(), loadSettingsLibraryPage()]),
   };

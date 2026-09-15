@@ -1,3 +1,9 @@
+import type {
+  ProfileDto,
+  CreateProfileInput,
+  UpdateProfileInput,
+} from "../profiles/profiles.schema";
+export type { ProfileDto, CreateProfileInput, UpdateProfileInput };
 import { hc } from "hono/client";
 import { z } from "zod";
 
@@ -16,10 +22,33 @@ import type { ThumbnailRegenerationStatus } from "../media/thumbnails";
 import type { PlaybackResult } from "../playback/playback.service";
 import type { LibraryPageSize, SettingsDto } from "../settings/settings.service";
 
-const apiClient = hc<AppType>("/");
+let profileSelectionKey: string | null = null;
+let profileId: string | null = null;
+export function setProfileSession(id: string | null, key: string | null): void {
+  profileId = id;
+  profileSelectionKey = key;
+}
+export function currentProfileId(): string {
+  if (!profileId) throw new Error("A profile must be selected before playback");
+  return profileId;
+}
+export function currentProfileSelectionKey(): string {
+  if (!profileSelectionKey) throw new Error("A profile must be selected before playback");
+  return profileSelectionKey;
+}
+const apiClient = hc<AppType>("/", {
+  fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+    const headers = new Headers(init?.headers);
+    if (profileSelectionKey && !headers.has("x-profile-selection"))
+      headers.set("x-profile-selection", profileSelectionKey);
+    return fetch(input, { ...init, headers });
+  },
+});
 
 export interface AuthStateDto {
   authenticated: boolean;
+  profile: ProfileDto | null;
+  profileSelectionKey: string | null;
   passwordConfigured: boolean;
   setupEnabled: boolean;
   setupTokenRequired: boolean;
@@ -46,7 +75,10 @@ export type {
 
 const thumbnailPollMilliseconds = 500;
 const thumbnailPollLimit = 1_200;
-const errorResponseSchema = z.object({ message: z.string().optional() });
+const errorResponseSchema = z.object({
+  message: z.string().optional(),
+  code: z.string().optional(),
+});
 
 function wait(milliseconds: number, signal?: AbortSignal): Promise<void> {
   if (!signal) return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -92,6 +124,9 @@ export async function expectJson<T>(response: Response, notifyUnauthorized = fal
       globalThis.window.dispatchEvent(new Event("videos:unauthorized"));
     }
     const errorBody = errorResponseSchema.safeParse(body);
+    if (errorBody.success && errorBody.data.code === "PROFILE_CHANGED" && "window" in globalThis) {
+      globalThis.window.dispatchEvent(new Event("videos:profile-changed"));
+    }
     throw new ApiError(
       errorBody.success ? (errorBody.data.message ?? "Request failed") : "Request failed",
       response.status,
@@ -118,10 +153,14 @@ export const api = {
   async setupPassword(
     password: string,
     confirmPassword: string,
+    adminName: string,
+    adminPassword: string,
     setupToken?: string,
   ): Promise<void> {
     await expectJson(
-      await apiClient.api.auth.password.$post({ json: { password, confirmPassword, setupToken } }),
+      await apiClient.api.auth.password.$post({
+        json: { password, confirmPassword, adminName, adminPassword, setupToken },
+      }),
     );
   },
   async changePassword(
@@ -133,6 +172,41 @@ export const api = {
       await apiClient.api.auth.password.$put({
         json: { currentPassword, newPassword, confirmPassword },
       }),
+    );
+  },
+  async listProfiles(): Promise<ProfileDto[]> {
+    return expectProtectedJson(await apiClient.api.profiles.$get());
+  },
+  async selectProfile(profileId: string, password: string): Promise<void> {
+    await expectProtectedJson(
+      await apiClient.api.profiles[":profileId"].select.$post({
+        param: { profileId },
+        json: { password },
+      }),
+    );
+  },
+  async clearProfile(): Promise<void> {
+    await expectProtectedJson(await apiClient.api.profiles.clear.$post());
+  },
+  async createProfile(input: CreateProfileInput): Promise<ProfileDto> {
+    return expectProtectedJson(await apiClient.api.profiles.$post({ json: input }));
+  },
+  async updateProfile(profileId: string, input: UpdateProfileInput): Promise<void> {
+    await expectProtectedJson(
+      await apiClient.api.profiles[":profileId"].$put({ param: { profileId }, json: input }),
+    );
+  },
+  async changeProfilePassword(profileId: string, password: string | null): Promise<void> {
+    await expectProtectedJson(
+      await apiClient.api.profiles[":profileId"].password.$put({
+        param: { profileId },
+        json: { password },
+      }),
+    );
+  },
+  async deleteProfile(profileId: string): Promise<void> {
+    await expectProtectedJson(
+      await apiClient.api.profiles[":profileId"].$delete({ param: { profileId } }),
     );
   },
   async getLibrary(filters: LibraryFilters = {}, signal?: AbortSignal): Promise<LibraryDto> {
@@ -180,9 +254,12 @@ export const api = {
       await apiClient.api.playback[":videoId"].$post({ param: { videoId } }),
     );
   },
-  async openVideo(videoId: string): Promise<void> {
+  async openVideo(videoId: string, selectionKey: string): Promise<void> {
     await expectProtectedJson(
-      await apiClient.api.progress.videos[":videoId"].open.$post({ param: { videoId } }),
+      await apiClient.api.progress.videos[":videoId"].open.$post(
+        { param: { videoId } },
+        { headers: { "x-profile-selection": selectionKey } },
+      ),
     );
   },
   async getConversionStatus(videoId: string): Promise<PlaybackResult> {
@@ -195,27 +272,43 @@ export const api = {
       await apiClient.api.playback[":videoId"].retry.$post({ param: { videoId } }),
     );
   },
-  async saveProgress(videoId: string, positionSeconds: number): Promise<void> {
+  async saveProgress(
+    videoId: string,
+    positionSeconds: number,
+    selectionKey: string,
+  ): Promise<void> {
     await expectProtectedJson(
-      await apiClient.api.progress.videos[":videoId"].$put({
-        param: { videoId },
-        json: { positionSeconds },
-      }),
+      await apiClient.api.progress.videos[":videoId"].$put(
+        {
+          param: { videoId },
+          json: { positionSeconds },
+        },
+        { headers: { "x-profile-selection": selectionKey } },
+      ),
     );
   },
-  async completeVideo(videoId: string): Promise<void> {
+  async completeVideo(videoId: string, selectionKey: string): Promise<void> {
     await expectProtectedJson(
-      await apiClient.api.progress.videos[":videoId"].complete.$post({ param: { videoId } }),
+      await apiClient.api.progress.videos[":videoId"].complete.$post(
+        { param: { videoId } },
+        { headers: { "x-profile-selection": selectionKey } },
+      ),
     );
   },
-  async resetVideo(videoId: string): Promise<void> {
+  async resetVideo(videoId: string, selectionKey: string): Promise<void> {
     await expectProtectedJson(
-      await apiClient.api.progress.videos[":videoId"].$delete({ param: { videoId } }),
+      await apiClient.api.progress.videos[":videoId"].$delete(
+        { param: { videoId } },
+        { headers: { "x-profile-selection": selectionKey } },
+      ),
     );
   },
-  async resetPlaylist(playlistId: string): Promise<void> {
+  async resetPlaylist(playlistId: string, selectionKey: string): Promise<void> {
     await expectProtectedJson(
-      await apiClient.api.progress.playlists[":playlistId"].$delete({ param: { playlistId } }),
+      await apiClient.api.progress.playlists[":playlistId"].$delete(
+        { param: { playlistId } },
+        { headers: { "x-profile-selection": selectionKey } },
+      ),
     );
   },
   async getSettings(signal?: AbortSignal): Promise<SettingsDto> {

@@ -47,6 +47,12 @@ export const router = createRouter({
       meta: { navigation: "settings", title: "Library settings" },
     },
     {
+      path: "/settings/profiles",
+      name: "settings-profiles",
+      component: () => import("@/pages/settings/ProfilesPage.vue"),
+      meta: { navigation: "settings", title: "Profiles" },
+    },
+    {
       path: "/settings/access",
       name: "settings-access",
       component: loadSettingsAccessPage,

@@ -20,14 +20,26 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   login: [password: string];
-  setup: [password: string, confirmPassword: string, setupToken?: string];
+  setup: [
+    password: string,
+    confirmPassword: string,
+    adminName: string,
+    adminPassword: string,
+    setupToken?: string,
+  ];
   retry: [];
 }>();
 
 const isSetup = computed(() => !props.passwordConfigured);
 
-function forwardSetup(password: string, confirmPassword: string, setupToken?: string): void {
-  emit("setup", password, confirmPassword, setupToken);
+function forwardSetup(
+  password: string,
+  confirmPassword: string,
+  adminName: string,
+  adminPassword: string,
+  setupToken?: string,
+): void {
+  emit("setup", password, confirmPassword, adminName, adminPassword, setupToken);
 }
 </script>
 

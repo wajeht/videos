@@ -15,6 +15,7 @@ async function mountSettingsLayout() {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
+      { path: "/settings/profiles", name: "settings-profiles", component: { template: "<div />" } },
       {
         path: "/settings/library",
         name: "settings-library",
@@ -60,7 +61,9 @@ describe("SettingsLayout", () => {
     expect(wrapper.get("[data-settings-layout]").classes()).toEqual(
       expect.arrayContaining(["grid-cols-[240px_minmax(0,1fr)]", "max-[760px]:grid-cols-1"]),
     );
-    expect(wrapper.get('[aria-label="Settings sections"]').text()).toContain("LibraryAccess");
+    expect(wrapper.get('[aria-label="Settings sections"]').text()).toContain(
+      "LibraryProfilesAccess",
+    );
     expect(wrapper.get("[data-settings-page]").element.tagName).toBe("SECTION");
     expect(wrapper.get("[data-mobile-sign-out]").text()).toBe("Sign out");
     expect(wrapper.get("[data-desktop-sign-out]").text()).toBe("Sign out");

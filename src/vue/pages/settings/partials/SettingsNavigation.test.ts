@@ -13,6 +13,11 @@ describe("SettingsNavigation", () => {
       history: createMemoryHistory(),
       routes: [
         {
+          path: "/settings/profiles",
+          name: "settings-profiles",
+          component: { template: "<div />" },
+        },
+        {
           path: "/settings/library",
           name: "settings-library",
           component: { template: "<div />" },
@@ -31,13 +36,14 @@ describe("SettingsNavigation", () => {
     });
     const sectionLinks = wrapper.findAll("a");
 
-    expect(sectionLinks.map((link) => link.text())).toEqual(["Library", "Access"]);
+    expect(sectionLinks.map((link) => link.text())).toEqual(["Library", "Profiles", "Access"]);
     expect(sectionLinks.map((link) => link.attributes("href"))).toEqual([
       "/settings/library",
+      "/settings/profiles",
       "/settings/access",
     ]);
     expect(sectionLinks[0]?.attributes("aria-current")).toBe("page");
-    expect(sectionLinks[1]?.attributes("aria-current")).toBeUndefined();
+    expect(sectionLinks[2]?.attributes("aria-current")).toBeUndefined();
     expect(sectionLinks[0]?.classes()).toContain("bg-pine!");
     expect(sectionLinks[0]?.classes()).toContain("h-10");
     expect(sectionLinks[0]?.classes()).not.toContain("min-h-12");
@@ -48,7 +54,7 @@ describe("SettingsNavigation", () => {
     await router.push("/settings/access");
     await flushPromises();
     expect(sectionLinks[0]?.attributes("aria-current")).toBeUndefined();
-    expect(sectionLinks[1]?.attributes("aria-current")).toBe("page");
-    expect(sectionLinks[1]?.classes()).toContain("bg-pine!");
+    expect(sectionLinks[2]?.attributes("aria-current")).toBe("page");
+    expect(sectionLinks[2]?.classes()).toContain("bg-pine!");
   });
 });

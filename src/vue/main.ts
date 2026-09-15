@@ -1,5 +1,5 @@
 import { VueQueryPlugin } from "@tanstack/vue-query";
-import { createApp, watch } from "vue";
+import { createApp } from "vue";
 
 import App from "@/App.vue";
 import "@/assets/tailwind.css";
@@ -12,16 +12,14 @@ import { createVideosQueryClient } from "@/queries.js";
 import { router } from "@/router.js";
 
 const app = createApp(App);
-const auth = createAuth({ onSessionChange: resetImagePrefetch });
 const queryClient = createVideosQueryClient();
-void auth.initialize();
-
-watch(
-  () => auth.state.status,
-  (status) => {
-    if (status !== "authenticated") queryClient.clear();
+const auth = createAuth({
+  onSessionChange: () => {
+    queryClient.clear();
+    resetImagePrefetch();
   },
-);
+});
+void auth.initialize();
 
 app.provide(authKey, auth);
 app.provide(confirmationKey, createConfirmation());

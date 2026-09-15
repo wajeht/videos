@@ -15,6 +15,8 @@ import UnexpectedErrorPage from "./pages/UnexpectedErrorPage.vue";
 
 function createUnauthenticatedAuth(): AuthController {
   return {
+    selectProfile: vi.fn(),
+    clearProfile: vi.fn(),
     changePassword: vi.fn(),
     dispose: vi.fn(),
     initialize: vi.fn(),
@@ -22,6 +24,8 @@ function createUnauthenticatedAuth(): AuthController {
     logout: vi.fn(),
     setupPassword: vi.fn(),
     state: {
+      profile: null,
+      profileSelectionKey: null,
       error: "",
       passwordConfigured: true,
       setupEnabled: false,

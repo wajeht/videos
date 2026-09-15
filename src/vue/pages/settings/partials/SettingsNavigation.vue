@@ -16,6 +16,12 @@ const settingsSections = [
     value: "library",
   },
   {
+    label: "Profiles",
+    prefetch: prefetch.settingsProfiles,
+    routeName: "settings-profiles",
+    value: "profiles",
+  },
+  {
     label: "Access",
     prefetch: prefetch.settingsAccess,
     routeName: "settings-access",
@@ -46,7 +52,7 @@ const sections = computed(() =>
     padding="none"
     aria-label="Settings sections"
   >
-    <div class="grid gap-1 max-[760px]:grid-cols-2 max-[760px]:gap-0">
+    <div class="grid gap-1 max-[760px]:grid-cols-3 max-[760px]:gap-0">
       <IntentRouterLink
         v-for="section in sections"
         :id="`settings-${section.value}-link`"

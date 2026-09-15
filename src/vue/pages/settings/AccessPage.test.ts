@@ -13,7 +13,7 @@ function mountAccessPage(changePassword = vi.fn()) {
   return mount(AccessPage, {
     global: {
       provide: {
-        [authKey]: { changePassword },
+        [authKey]: { changePassword, state: { profile: { role: "admin" } } },
         [toastKey]: { success: vi.fn() },
       },
       stubs: { SettingsLayout: { template: "<slot />" } },
