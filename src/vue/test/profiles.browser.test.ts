@@ -76,12 +76,28 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await expect(secondTab.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await page.getByRole("button", { name: "Browser Member Open", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Your profile" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Profile details" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Access", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add profile" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
-  await expect(secondTab.getByRole("heading", { name: "Your profile" })).toBeVisible();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(secondTab.getByRole("heading", { name: "Profile details" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
+  await expect(page.locator("#settings-profiles-panel > section > header")).toHaveCount(2);
+  await page.getByLabel(/^Profile name/).fill("Renamed Member");
+  await page.getByLabel("Avatar color").selectOption("sage");
+  await page.getByRole("button", { name: "Save profile", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Switch profile" })).toHaveText("Renamed Member");
+  await secondTab.reload();
+  await expect(secondTab.getByLabel(/^Profile name/)).toHaveValue("Renamed Member");
+  await page.reload();
+  await expect(page.getByLabel(/^Profile name/)).toHaveValue("Renamed Member");
+  await expect(page.getByLabel("Avatar color")).toHaveValue("sage");
+  await expect(page.getByRole("heading", { name: "Profile lock" })).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("member-profile-settings.png"),
+    fullPage: true,
+  });
   await fillProfilePin(page, "New profile PIN", "0456");
   await fillProfilePin(page, "Confirm profile PIN", "9876");
   await page.getByRole("button", { name: "Set PIN", exact: true }).click();
@@ -94,12 +110,18 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
-    page.getByRole("button", { name: "Browser Member Locked", exact: true }),
+    page.getByRole("button", { name: "Renamed Member Locked", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Browser Member Locked", exact: true }).click();
+  await page.getByRole("button", { name: "Renamed Member Locked", exact: true }).click();
   await page.screenshot({ path: testInfo.outputPath("profile-pin-mobile.png"), fullPage: true });
   await fillProfilePin(page, "Profile PIN", "0456");
   await page.getByRole("button", { name: "Unlock profile" }).click();
+  await expect(page.getByRole("heading", { name: "Profile details" })).toBeVisible();
+  await expect(page.locator("#settings-profiles-panel > section > header")).toHaveCount(2);
+  await page.screenshot({
+    path: testInfo.outputPath("member-profile-settings-mobile.png"),
+    fullPage: true,
+  });
   await page.goto("/settings/access");
   await expect(page.getByRole("link", { name: "Access", exact: true })).toHaveCount(0);
   await expect(
