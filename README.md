@@ -105,7 +105,7 @@ Enter the shared library password, then choose a profile. Member profiles can be
 
 Each profile has separate watch progress, Continue Watching, playlist completion, next-video selection, and library page size. Autoplay is stored per profile on each browser. The media library and conversions are shared.
 
-Use the profile button in the header to switch. Settings → Profiles lets members edit their own name and lock. Setup creates the only admin profile. The admin can create/delete member profiles, reset their locks, and change the shared library password. Every later profile is a member; roles cannot be changed and the admin cannot be deleted. The shared password alone cannot reset a profile lock.
+Use Switch profile above Sign out in Settings to switch. Settings → Profiles lets members edit their own name and lock. Setup creates the only admin profile. The admin can create/delete member profiles, reset their locks, and change the shared library password. Every later profile is a member; roles cannot be changed and the admin cannot be deleted. The shared password alone cannot reset a profile lock.
 
 Changing a profile password requires that profile to be unlocked again on its devices. Changing the shared library password signs out existing sessions. There is no email/password recovery; retain your admin profile password.
 
