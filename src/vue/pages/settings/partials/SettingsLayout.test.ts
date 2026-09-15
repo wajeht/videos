@@ -49,7 +49,7 @@ async function mountSettingsLayout(role = "admin") {
       },
     },
   });
-  return { request, wrapper, clearProfile };
+  return { request, wrapper, clearProfile, router };
 }
 
 describe("SettingsLayout", () => {
@@ -74,22 +74,24 @@ describe("SettingsLayout", () => {
     expect(request).toHaveBeenCalledOnce();
   });
   it.each(["admin", "member"])("lets a %s switch profiles from settings", async (role) => {
-    const { wrapper, clearProfile } = await mountSettingsLayout(role);
+    const { wrapper, clearProfile, router } = await mountSettingsLayout(role);
     const button = wrapper.findAll("button").find((button) => button.text() === "Switch profile")!;
     await button.trigger("click");
     await flushPromises();
     expect(clearProfile).toHaveBeenCalledOnce();
+    expect(router.currentRoute.value.name).toBe("settings-profiles");
     wrapper.unmount();
   });
 
   it("shows a switch failure and allows retrying", async () => {
-    const { wrapper, clearProfile } = await mountSettingsLayout();
+    const { wrapper, clearProfile, router } = await mountSettingsLayout();
     clearProfile.mockRejectedValueOnce(new Error("Offline"));
     const button = wrapper.findAll("button").find((button) => button.text() === "Switch profile")!;
     await button.trigger("click");
     await flushPromises();
     expect(wrapper.get('[role="alert"]').text()).toContain("Could not switch profiles");
     expect(button.attributes("disabled")).toBeUndefined();
+    expect(router.currentRoute.value.name).toBe("settings-library");
     await button.trigger("click");
     await flushPromises();
     expect(clearProfile).toHaveBeenCalledTimes(2);
