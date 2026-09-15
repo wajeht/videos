@@ -27,9 +27,11 @@ const password = shallowRef("");
         autofocus
       />
     </FormField>
-    <AppButton type="submit" :loading="busy">Unlock profile</AppButton>
-    <AppButton variant="secondary" :disabled="busy" @click="emit('cancel')"
-      >Back to profiles</AppButton
-    >
+    <div class="grid grid-cols-2 gap-3">
+      <AppButton variant="secondary" :disabled="busy" @click="emit('cancel')"
+        >Back to profiles</AppButton
+      >
+      <AppButton type="submit" :loading="busy">Unlock profile</AppButton>
+    </div>
   </form>
 </template>
