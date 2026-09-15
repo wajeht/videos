@@ -14,15 +14,14 @@ import ProfileDetailsForm from "@/pages/profiles/partials/ProfileDetailsForm.vue
 import ProfilePinForm from "@/pages/profiles/partials/ProfilePinForm.vue";
 const auth = useAuth();
 const confirmation = useConfirm();
-const profiles = useQuery({ queryKey: ["profiles"], queryFn: () => api.listProfiles() });
 const admin = computed(() => auth.state.profile?.role === "admin");
-const visibleProfiles = computed(
-  () =>
-    profiles.data.value?.filter(
-      (profile) => admin.value || profile.id === auth.state.profile?.id,
-    ) ?? [],
-);
-const editing = shallowRef<ProfileDto | null>(null);
+const profiles = useQuery({
+  queryKey: ["profiles"],
+  queryFn: () => api.listProfiles(),
+  enabled: admin,
+});
+const selectedProfile = shallowRef<ProfileDto | null>(null);
+const editing = computed(() => (admin.value ? selectedProfile.value : auth.state.profile));
 const showForm = shallowRef(false);
 const save = useAsyncAction(async (input: CreateProfileInput) => {
   if (editing.value) {
@@ -31,7 +30,7 @@ const save = useAsyncAction(async (input: CreateProfileInput) => {
     await auth.initialize();
   } else await api.createProfile(input);
   showForm.value = false;
-  await profiles.refetch();
+  if (admin.value) await profiles.refetch();
 });
 const lock = useAsyncAction(async (pin: string | null) => {
   if (!editing.value) return;
@@ -53,7 +52,7 @@ const remove = useAsyncAction(async (profile: ProfileDto) => {
   else await profiles.refetch();
 });
 function edit(profile: ProfileDto | null): void {
-  editing.value = profile;
+  selectedProfile.value = profile;
   showForm.value = true;
   save.clearError();
   lock.clearError();
@@ -61,13 +60,12 @@ function edit(profile: ProfileDto | null): void {
 </script>
 <template>
   <SettingsLayout>
-    <PanelCard
+    <section
       id="settings-profiles-panel"
-      class="min-w-0 p-6"
-      :elevated="false"
+      class="grid min-w-0 gap-[clamp(18px,2vw,30px)]"
       aria-labelledby="settings-profiles-link"
     >
-      <template v-if="showForm">
+      <template v-if="!admin || showForm">
         <ProfileDetailsForm
           :key="editing?.id ?? 'new'"
           :profile="editing"
@@ -86,10 +84,10 @@ function edit(profile: ProfileDto | null): void {
           @save="lock.run($event)"
         />
       </template>
-      <template v-else>
+      <PanelCard v-else :elevated="false">
         <div class="flex items-center justify-between gap-4">
-          <h2 class="text-xl font-bold">{{ admin ? "Manage profiles" : "Your profile" }}</h2>
-          <AppButton v-if="admin" @click="edit(null)">Add profile</AppButton>
+          <h2 class="text-xl font-bold">Manage profiles</h2>
+          <AppButton @click="edit(null)">Add profile</AppButton>
         </div>
         <AlertMessage v-if="profiles.isError.value" class="mt-4"
           >Could not load profiles.
@@ -102,7 +100,7 @@ function edit(profile: ProfileDto | null): void {
         }}</AlertMessage>
         <p v-if="profiles.isPending.value" class="mt-4" role="status">Loading profiles…</p>
         <div
-          v-for="profile in visibleProfiles"
+          v-for="profile in profiles.data.value"
           :key="profile.id"
           class="mt-6 flex flex-wrap items-center gap-4 border-t border-line pt-6"
         >
@@ -115,15 +113,11 @@ function edit(profile: ProfileDto | null): void {
             </p>
           </div>
           <AppButton variant="secondary" @click="edit(profile)">Edit</AppButton
-          ><AppButton
-            v-if="admin"
-            variant="danger"
-            :disabled="remove.pending.value"
-            @click="remove.run(profile)"
+          ><AppButton variant="danger" :disabled="remove.pending.value" @click="remove.run(profile)"
             >Delete</AppButton
           >
         </div>
-      </template>
-    </PanelCard>
+      </PanelCard>
+    </section>
   </SettingsLayout>
 </template>
