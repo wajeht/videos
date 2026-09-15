@@ -2,6 +2,7 @@
 import { shallowRef } from "vue";
 import type { CreateProfileInput, ProfileDto } from "@/api.js";
 import AppButton from "@/components/ui/AppButton.vue";
+import ProfilePinField from "./ProfilePinField.vue";
 import AppInput from "@/components/ui/AppInput.vue";
 import AppSelect from "@/components/ui/AppSelect.vue";
 import FormField from "@/components/ui/FormField.vue";
@@ -16,12 +17,12 @@ const emit = defineEmits<{ save: [input: CreateProfileInput]; cancel: [] }>();
 const name = shallowRef(props.profile?.name ?? "");
 const avatarKey = shallowRef<ProfileDto["avatarKey"]>(props.profile?.avatarKey ?? "pine");
 const role = shallowRef<ProfileDto["role"]>(props.profile?.role ?? "member");
-const password = shallowRef("");
+const pin = shallowRef("");
 </script>
 <template>
   <form
     class="grid gap-4"
-    @submit.prevent="emit('save', { name, avatarKey, role, password: password || null })"
+    @submit.prevent="emit('save', { name, avatarKey, role, pin: pin || null })"
   >
     <h2 class="text-xl font-bold">{{ profile ? `Edit ${profile.name}` : "Add profile" }}</h2>
     <AlertMessage v-if="error">{{ error }}</AlertMessage>
@@ -49,21 +50,15 @@ const password = shallowRef("");
         <option value="admin">Admin</option></AppSelect
       ></FormField
     >
-    <FormField
+    <ProfilePinField
       v-if="!profile"
-      v-slot="field"
-      label="Profile password"
+      v-model="pin"
+      label="Profile PIN"
       :required="role === 'admin'"
-      help-text="Use at least 8 characters. Optional for members."
-      ><AppInput
-        :id="field.inputId"
-        v-model="password"
-        type="password"
-        autocomplete="new-password"
-        minlength="8"
-        maxlength="72"
-        :required="role === 'admin'"
-    /></FormField>
+      :disabled="busy"
+      autocomplete="new-password"
+      help-text="Use exactly 4 digits. Optional for members."
+    />
     <div class="flex gap-3">
       <AppButton type="submit" :loading="busy">{{
         profile ? "Save profile" : "Create profile"

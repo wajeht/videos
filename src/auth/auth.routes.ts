@@ -1,5 +1,5 @@
 import { profileDto } from "../profiles/profiles.repository.js";
-import { profilePasswordSchema, type ProfileDto } from "../profiles/profiles.schema.js";
+import { profilePinSchema, type ProfileDto } from "../profiles/profiles.schema.js";
 import type { SessionPayload } from "./auth.service.js";
 import crypto from "node:crypto";
 
@@ -31,7 +31,7 @@ const setupSchema = z
   .object({
     password: passwordSchema,
     adminName: z.string().trim().min(1).max(40),
-    adminPassword: profilePasswordSchema,
+    adminPin: profilePinSchema,
     confirmPassword: z.string(),
     setupToken: z.string().min(16).max(256).optional(),
   })
@@ -208,13 +208,8 @@ export function createAuthRouter(context: AppContext) {
       authBodyLimit,
       zValidator("json", setupSchema, validationHook),
       async (c) => {
-        const { password, adminName, adminPassword, setupToken } = c.req.valid("json");
-        const result = await context.auth.setupPassword(
-          password,
-          adminName,
-          adminPassword,
-          setupToken,
-        );
+        const { password, adminName, adminPin, setupToken } = c.req.valid("json");
+        const result = await context.auth.setupPassword(password, adminName, adminPin, setupToken);
         if (result.ok) {
           context.logger.info("Initial application password configured");
           return c.json({ passwordConfigured: true }, 201);

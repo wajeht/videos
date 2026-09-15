@@ -15,7 +15,7 @@ interface AuthControllerState {
 }
 
 interface AuthClient {
-  selectProfile(profileId: string, password: string): Promise<void>;
+  selectProfile(profileId: string, pin: string): Promise<void>;
   clearProfile(): Promise<void>;
   changePassword(
     currentPassword: string,
@@ -29,7 +29,7 @@ interface AuthClient {
     password: string,
     confirmPassword: string,
     adminName: string,
-    adminPassword: string,
+    adminPin: string,
     setupToken?: string,
   ): Promise<void>;
 }
@@ -52,7 +52,7 @@ export interface AuthController {
     password: string,
     confirmPassword: string,
     adminName: string,
-    adminPassword: string,
+    adminPin: string,
     setupToken?: string,
   ): Promise<void>;
   state: Readonly<AuthControllerState>;
@@ -153,16 +153,16 @@ export function createAuth(options: CreateAuthOptions = {}): AuthController {
     password: string,
     confirmPassword: string,
     adminName: string,
-    adminPassword: string,
+    adminPin: string,
     setupToken?: string,
   ): Promise<void> {
-    await client.setupPassword(password, confirmPassword, adminName, adminPassword, setupToken);
+    await client.setupPassword(password, confirmPassword, adminName, adminPin, setupToken);
     state.passwordConfigured = true;
     await login(password);
   }
 
-  async function selectProfile(profileId: string, password: string): Promise<void> {
-    await client.selectProfile(profileId, password);
+  async function selectProfile(profileId: string, pin: string): Promise<void> {
+    await client.selectProfile(profileId, pin);
     channel.postMessage("changed");
     await initialize();
   }

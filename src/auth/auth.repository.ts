@@ -18,11 +18,7 @@ export interface StoredSession {
 
 export interface AuthRepository {
   getPasswordHash(): Promise<string | null>;
-  setupCredentials(
-    passwordHash: string,
-    adminName: string,
-    adminPasswordHash: string,
-  ): Promise<boolean>;
+  setupCredentials(passwordHash: string, adminName: string, adminPinHash: string): Promise<boolean>;
   changePasswordHash(passwordHash: string): Promise<void>;
   getLoginAttempt(clientKey: string, now: number): Promise<LoginAttempt | null>;
   recordLoginFailure(clientKey: string, now: number, windowMs: number): Promise<void>;
@@ -43,7 +39,7 @@ export function createAuthRepository(database: Knex): AuthRepository {
       return credentials?.password_hash ?? null;
     },
 
-    async setupCredentials(passwordHash, adminName, adminPasswordHash) {
+    async setupCredentials(passwordHash, adminName, adminPinHash) {
       return database.transaction(async (transaction) => {
         if (await transaction("auth_credentials").first()) return false;
         await transaction("auth_credentials").insert({
@@ -53,7 +49,7 @@ export function createAuthRepository(database: Knex): AuthRepository {
         await insertProfile(
           transaction,
           { name: adminName, avatarKey: "pine", role: "admin" },
-          adminPasswordHash,
+          adminPinHash,
         );
         return true;
       });

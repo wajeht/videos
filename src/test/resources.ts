@@ -53,7 +53,7 @@ export async function seedTestProfile(database: Database): Promise<void> {
     name: "Test",
     avatar_key: "pine",
     role: "member",
-    password_hash: null,
+    pin_hash: null,
     sort_order: 0,
     created_at: now,
     updated_at: now,

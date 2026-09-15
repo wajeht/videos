@@ -15,8 +15,14 @@ export async function selectBrowserAdmin(page: Page): Promise<void> {
     (
       await page.request.post(`/api/profiles/${profile.id}/select`, {
         headers,
-        data: { password: "test-admin-password" },
+        data: { pin: "0123" },
       })
     ).status(),
   ).toBe(200);
+}
+
+export async function fillProfilePin(page: Page, label: string, pin: string): Promise<void> {
+  const boxes = page.getByRole("group", { name: label, exact: true }).locator("input");
+  await expect(boxes).toHaveCount(4);
+  for (let index = 0; index < 4; index++) await boxes.nth(index).fill(pin[index] ?? "");
 }

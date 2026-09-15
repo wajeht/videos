@@ -1,4 +1,4 @@
-import { selectBrowserAdmin } from "./profiles.helpers.js";
+import { fillProfilePin, selectBrowserAdmin } from "./profiles.helpers.js";
 import { expect, test } from "@playwright/test";
 import { z } from "zod";
 
@@ -14,7 +14,7 @@ test("keeps the install experience online-only", async ({ context, page }) => {
       password,
       confirmPassword: password,
       adminName: "Admin",
-      adminPassword: "test-admin-password",
+      adminPin: "0123",
       setupToken: "videos-playwright-setup-token",
     },
   });
@@ -121,7 +121,7 @@ test("keeps the install experience online-only", async ({ context, page }) => {
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await page.getByRole("button", { name: "Admin Admin · Locked", exact: true }).click();
-  await page.getByLabel(/^Profile password/).fill("test-admin-password");
+  await fillProfilePin(page, "Profile PIN", "0123");
   await page.getByRole("button", { name: "Unlock profile" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
 });

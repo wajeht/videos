@@ -98,11 +98,11 @@ export async function up(knex: Knex): Promise<void> {
     table.text("name").notNullable();
     table.text("avatar_key").notNullable();
     table.text("role").notNullable().defaultTo("member").checkIn(["admin", "member"]);
-    table.text("password_hash");
+    table.text("pin_hash");
     table.integer("sort_order").notNullable();
     table.text("created_at").notNullable();
     table.text("updated_at").notNullable();
-    table.check("role != 'admin' OR password_hash IS NOT NULL");
+    table.check("role != 'admin' OR pin_hash IS NOT NULL");
   });
 
   await knex.schema.createTable("progress", (table) => {

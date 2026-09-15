@@ -1,4 +1,4 @@
-import { selectTestAdmin, testAdminPassword } from "./test/auth.js";
+import { selectTestAdmin, testAdminPin } from "./test/auth.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -95,7 +95,7 @@ describe("application", () => {
         password: "videos-test-password",
         confirmPassword: "videos-test-password",
         adminName: "Admin",
-        adminPassword: testAdminPassword,
+        adminPin: testAdminPin,
         setupToken: "wrong-setup-token",
       }),
     });
@@ -108,7 +108,7 @@ describe("application", () => {
         password: "videos-test-password",
         confirmPassword: "videos-test-password",
         adminName: "Admin",
-        adminPassword: testAdminPassword,
+        adminPin: testAdminPin,
         setupToken: "videos-app-test-setup-token",
       }),
     });
