@@ -73,7 +73,6 @@ const isPlayer = computed(() => route.meta.shell === "player");
             Settings
           </IntentRouterLink>
         </nav>
-        <slot name="profile" />
       </div>
     </header>
     <VideoSearchPalette v-if="desktopSearchEnabled" />

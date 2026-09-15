@@ -13,7 +13,6 @@ import { useNetworkStatus } from "@/composables/useNetworkStatus.js";
 import { frontendError } from "@/frontend-error.js";
 import AppShell from "@/layouts/AppShell.vue";
 import ProfilesPage from "@/pages/profiles/ProfilesPage.vue";
-import ProfileSwitchButton from "@/pages/profiles/partials/ProfileSwitchButton.vue";
 import AuthPage from "@/pages/auth/AuthPage.vue";
 import OfflinePage from "@/pages/OfflinePage.vue";
 import UnexpectedErrorPage from "@/pages/UnexpectedErrorPage.vue";
@@ -121,7 +120,6 @@ async function setup(
     "
   />
   <AppShell v-else-if="auth.state.status === 'authenticated' && !auth.state.adminProfileRequired">
-    <template #profile><ProfileSwitchButton /></template>
     <OfflineStatusBanner v-if="!online" />
     <RouterView />
   </AppShell>

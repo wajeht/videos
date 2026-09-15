@@ -51,29 +51,10 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(page.getByLabel(/^Profile password/)).toHaveAttribute("aria-invalid", "true");
   await page.getByLabel(/^Profile password/).fill("test-admin-password");
   await page.getByRole("button", { name: "Unlock profile" }).click();
-  await expect(page.getByRole("button", { name: "Switch profile" })).toHaveText(/Admin/);
-  const navigation = await page
-    .getByRole("navigation", { name: "Main navigation", exact: true })
-    .boundingBox();
-  const profileButton = await page.getByRole("button", { name: "Switch profile" }).boundingBox();
-  expect(navigation).not.toBeNull();
-  expect(profileButton).not.toBeNull();
-  expect(profileButton!.x - (navigation!.x + navigation!.width)).toBeCloseTo(24, 0);
-  const styles = await page.getByRole("button", { name: "Switch profile" }).evaluate((button) => {
-    const buttonStyle = getComputedStyle(button);
-    const linkStyle = getComputedStyle(
-      document.querySelector('nav[aria-label="Main navigation"] a')!,
-    );
-    return {
-      font: buttonStyle.font,
-      linkFont: linkStyle.font,
-      borderTopWidth: buttonStyle.borderTopWidth,
-      borderRadius: buttonStyle.borderRadius,
-    };
-  });
-  expect(styles.font).toBe(styles.linkFont);
-  expect(styles.borderTopWidth).toBe("0px");
-  expect(styles.borderRadius).toBe("0px");
+  await expect(
+    page.getByRole("navigation", { name: "Main navigation", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Switch profile" })).toHaveCount(0);
   await page.goto("/settings/profiles");
   await expect(page.getByRole("link", { name: "Access", exact: true })).toBeVisible();
   await expect(page.locator("#settings-profiles-panel > section > header")).toHaveCount(1);
@@ -142,7 +123,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   const secondTab = await context.newPage();
   await secondTab.goto("/settings/profiles");
   await expect(secondTab.getByRole("link", { name: "Add profile" })).toBeVisible();
-  await page.getByRole("button", { name: "Switch profile" }).click();
+  await page.getByRole("button", { name: "Switch profile", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await expect(secondTab.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await page.getByRole("button", { name: "Browser Viewer Open", exact: true }).click();
@@ -163,7 +144,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(page.locator("#settings-profiles-panel > section > header")).toHaveCount(2);
   await page.getByLabel(/^Profile name/).fill("Renamed Member");
   await page.getByRole("button", { name: "Save profile", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Switch profile" })).toHaveText("Renamed Member");
+  await expect(page.getByRole("status").filter({ hasText: "Profile updated" })).toBeVisible();
   await secondTab.reload();
   await expect(secondTab.getByLabel(/^Profile name/)).toHaveValue("Renamed Member");
   await page.reload();
@@ -219,7 +200,18 @@ test("selects locked profiles and limits profile management to admins", async ({
   await page.reload();
   await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Change password", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Switch profile" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Switch profile" })).toHaveCount(0);
+  await page.goto("/settings/profiles");
+  const switchButton = page.getByRole("button", { name: "Switch profile", exact: true });
+  await expect(switchButton).toBeVisible();
+  const switchBox = await switchButton.boundingBox();
+  const signOutBox = await page
+    .getByRole("button", { name: "Sign out", exact: true })
+    .boundingBox();
+  expect(switchBox!.width).toBe(signOutBox!.width);
+  expect(switchBox!.y).toBeLessThan(signOutBox!.y);
+  await switchButton.click();
+  await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("member-mobile.png"), fullPage: true });
   await secondTab.close();
 });
