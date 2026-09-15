@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { VNode } from "vue";
+import { useRouter } from "vue-router";
 
 import AlertMessage from "@/components/ui/AlertMessage.vue";
 import AppButton from "@/components/ui/AppButton.vue";
@@ -16,10 +17,15 @@ defineSlots<{
 }>();
 
 const auth = useAuth();
+const router = useRouter();
 const confirmation = useConfirm();
-const switchAction = useAsyncAction(() => auth.clearProfile(), {
-  errorMessage: "Could not switch profiles",
-});
+const switchAction = useAsyncAction(
+  async () => {
+    await auth.clearProfile();
+    await router.replace({ name: "settings-profiles" });
+  },
+  { errorMessage: "Could not switch profiles" },
+);
 const logoutAction = useAsyncAction(() => auth.logout(), {
   errorMessage: "Could not sign out",
 });
