@@ -62,7 +62,9 @@ const password = shallowRef("");
           :required="role === 'admin'"
         />
       </FormField>
-      <div class="mt-4 flex flex-wrap justify-end gap-3">
+      <div
+        class="mt-4 flex flex-wrap justify-end gap-3 max-[600px]:grid max-[600px]:auto-cols-fr max-[600px]:grid-flow-col"
+      >
         <AppButton v-if="admin" variant="secondary" :disabled="busy" @click="emit('cancel')">
           Cancel
         </AppButton>

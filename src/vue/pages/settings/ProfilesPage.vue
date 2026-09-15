@@ -133,6 +133,7 @@ watch(
           />
           <div v-if="!editRoute" class="mt-8 flex justify-end">
             <AppButton
+              class="max-[600px]:w-full"
               :as="IntentRouterLink"
               :to="{ name: 'settings-profile-new' }"
               :prefetch="prefetch.settingsProfiles"
