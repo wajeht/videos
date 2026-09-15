@@ -21,7 +21,7 @@ import type { ProfileMutationResult } from "./profiles.repository.js";
 const mutationErrors = {
   forbidden: { message: "You cannot change this profile", status: 403 },
   not_found: { message: "Profile not found", status: 404 },
-  last_admin: { message: "Keep at least one admin profile", status: 409 },
+  admin_required: { message: "The admin profile cannot be deleted", status: 409 },
   password_required: { message: "Admin profiles require a password", status: 400 },
 } as const;
 function mutationError(result: Exclude<ProfileMutationResult, "ok">) {

@@ -48,8 +48,8 @@ const showForm = computed(
 const save = useAsyncAction(async (input: CreateProfileInput) => {
   const successMessage = editing.value ? "Profile updated" : "Profile created";
   if (editing.value) {
-    const { name, role } = input;
-    await api.updateProfile(editing.value.id, { name, role });
+    const { name } = input;
+    await api.updateProfile(editing.value.id, { name });
     await auth.initialize();
   } else await api.createProfile(input);
   if (admin.value) {

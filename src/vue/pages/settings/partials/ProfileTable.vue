@@ -47,7 +47,7 @@ const prefetch = useRoutePrefetch();
           {{ profile.isLocked ? "Enabled" : "Disabled" }}
         </td>
         <td class="lg:py-4">
-          <div class="grid grid-cols-2 gap-3 lg:flex lg:justify-end">
+          <div class="grid auto-cols-fr grid-flow-col gap-3 lg:flex lg:justify-end">
             <AppButton
               :as="IntentRouterLink"
               :to="{ name: 'settings-profile-edit', params: { profileId: profile.id } }"
@@ -55,7 +55,11 @@ const prefetch = useRoutePrefetch();
               variant="secondary"
               >Edit</AppButton
             >
-            <AppButton variant="danger" :disabled="busy" @click="emit('remove', profile)"
+            <AppButton
+              v-if="profile.role === 'member'"
+              variant="danger"
+              :disabled="busy"
+              @click="emit('remove', profile)"
               >Delete</AppButton
             >
           </div>
