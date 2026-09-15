@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   api,
+  setProfileSession,
   ApiError,
   type PlaybackResult,
   type PlaylistDetailDto,
@@ -68,7 +69,10 @@ function createStorage(): Storage {
   };
 }
 
-beforeEach(() => vi.stubGlobal("localStorage", createStorage()));
+beforeEach(() => {
+  setProfileSession("test-profile", "test-selection");
+  vi.stubGlobal("localStorage", createStorage());
+});
 afterEach(() => vi.restoreAllMocks());
 
 interface MountPlayerOptions {
@@ -150,12 +154,12 @@ describe("useVideoPlayer", () => {
     await wrapper.get("[data-autoplay-toggle]").trigger("click");
 
     expect(wrapper.get("[data-autoplay]").text()).toBe("true");
-    expect(localStorage.getItem("videos:autoplay-next")).toBe("true");
+    expect(localStorage.getItem("videos:test-profile:autoplay-next")).toBe("true");
 
     await wrapper.get("[data-autoplay-toggle]").trigger("click");
 
     expect(wrapper.get("[data-autoplay]").text()).toBe("false");
-    expect(localStorage.getItem("videos:autoplay-next")).toBeNull();
+    expect(localStorage.getItem("videos:test-profile:autoplay-next")).toBeNull();
     wrapper.unmount();
   });
 
@@ -363,7 +367,7 @@ describe("useVideoPlayer", () => {
     expect(wrapper.get("[data-video-title]").text()).toBe("Next video");
     expect(media.getAttribute("src")).toBe(`/media/${nextVideoId}`);
     expect(api.openVideo).toHaveBeenCalledTimes(1);
-    expect(api.openVideo).toHaveBeenCalledWith(nextVideoId);
+    expect(api.openVideo).toHaveBeenCalledWith(nextVideoId, "test-selection");
     wrapper.unmount();
   });
 });
