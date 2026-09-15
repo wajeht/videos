@@ -51,7 +51,6 @@ export async function seedTestProfile(database: Database): Promise<void> {
   await database.connection("profiles").insert({
     id: testProfileId,
     name: "Test",
-    avatar_key: "pine",
     role: "member",
     pin_hash: null,
     sort_order: 0,

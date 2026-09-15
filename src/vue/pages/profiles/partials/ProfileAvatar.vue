@@ -1,19 +1,9 @@
 <script setup lang="ts">
-import type { ProfileDto } from "@/api.js";
-defineProps<{ name: string; avatarKey: ProfileDto["avatarKey"] }>();
-const colors = {
-  pine: "bg-pine text-white",
-  clay: "bg-clay text-white",
-  gold: "bg-belt text-pine-deep",
-  slate: "bg-slate-600 text-white",
-  sage: "bg-green-200 text-pine-deep",
-  plum: "bg-purple-800 text-white",
-};
+defineProps<{ name: string }>();
 </script>
 <template>
   <span
-    :class="colors[avatarKey]"
-    class="grid size-20 shrink-0 place-items-center rounded-xl font-display text-3xl font-bold"
+    class="grid size-20 shrink-0 place-items-center rounded-xl bg-pine font-display text-3xl font-bold text-white"
     aria-hidden="true"
     >{{ name.slice(0, 1).toUpperCase() }}</span
   >

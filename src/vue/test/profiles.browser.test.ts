@@ -85,14 +85,13 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(page.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
   await expect(page.locator("#settings-profiles-panel > section > header")).toHaveCount(2);
   await page.getByLabel(/^Profile name/).fill("Renamed Member");
-  await page.getByLabel("Avatar color").selectOption("sage");
   await page.getByRole("button", { name: "Save profile", exact: true }).click();
   await expect(page.getByRole("button", { name: "Switch profile" })).toHaveText("Renamed Member");
   await secondTab.reload();
   await expect(secondTab.getByLabel(/^Profile name/)).toHaveValue("Renamed Member");
   await page.reload();
   await expect(page.getByLabel(/^Profile name/)).toHaveValue("Renamed Member");
-  await expect(page.getByLabel("Avatar color")).toHaveValue("sage");
+  await expect(page.getByLabel("Avatar color")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Profile lock" })).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("member-profile-settings.png"),

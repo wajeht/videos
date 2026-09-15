@@ -46,11 +46,7 @@ export function createAuthRepository(database: Knex): AuthRepository {
           id: credentialsId,
           password_hash: passwordHash,
         });
-        await insertProfile(
-          transaction,
-          { name: adminName, avatarKey: "pine", role: "admin" },
-          adminPinHash,
-        );
+        await insertProfile(transaction, { name: adminName, role: "admin" }, adminPinHash);
         return true;
       });
     },

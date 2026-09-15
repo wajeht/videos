@@ -7,7 +7,6 @@ export const profilePinSchema = z
 export const profileDetailsSchema = z
   .object({
     name: z.string().trim().min(1).max(40),
-    avatarKey: z.enum(["pine", "clay", "gold", "slate", "sage", "plum"]),
   })
   .strict();
 export const createProfileSchema = profileDetailsSchema
@@ -38,7 +37,6 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export interface ProfileDto {
   id: string;
   name: string;
-  avatarKey: z.infer<typeof profileDetailsSchema>["avatarKey"];
   role: "admin" | "member";
   isLocked: boolean;
 }

@@ -96,7 +96,6 @@ export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable("profiles", (table) => {
     table.text("id").primary();
     table.text("name").notNullable();
-    table.text("avatar_key").notNullable();
     table.text("role").notNullable().defaultTo("member").checkIn(["admin", "member"]);
     table.text("pin_hash");
     table.integer("sort_order").notNullable();
