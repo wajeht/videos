@@ -30,9 +30,9 @@ const setupAction = useAsyncAction(
     password: string,
     confirmPassword: string,
     adminName: string,
-    adminPin: string,
+    adminPassword: string,
     setupToken?: string,
-  ) => auth.setupPassword(password, confirmPassword, adminName, adminPin, setupToken),
+  ) => auth.setupPassword(password, confirmPassword, adminName, adminPassword, setupToken),
   { errorMessage: "Could not create the library password" },
 );
 const authBusy = computed(() => loginAction.pending.value || setupAction.pending.value);
@@ -94,11 +94,11 @@ async function setup(
   password: string,
   confirmPassword: string,
   adminName: string,
-  adminPin: string,
+  adminPassword: string,
   setupToken?: string,
 ): Promise<void> {
   loginAction.clearError();
-  await setupAction.run(password, confirmPassword, adminName, adminPin, setupToken);
+  await setupAction.run(password, confirmPassword, adminName, adminPassword, setupToken);
 }
 </script>
 

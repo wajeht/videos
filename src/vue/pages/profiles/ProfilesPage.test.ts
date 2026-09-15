@@ -7,7 +7,7 @@ import { authKey } from "@/composables/useAuth.js";
 import ProfilesPage from "./ProfilesPage.vue";
 
 describe("profile picker", () => {
-  it("opens an unlocked profile and asks for a PIN on a locked profile", async () => {
+  it("opens an unlocked profile and asks for a password on a locked profile", async () => {
     vi.spyOn(api, "listProfiles").mockResolvedValue([
       { id: "open", name: "Open", role: "member", isLocked: false },
       { id: "locked", name: "Private", role: "admin", isLocked: true },
@@ -35,11 +35,9 @@ describe("profile picker", () => {
     expect(wrapper.text()).not.toContain("Sign out");
     expect(wrapper.text()).not.toContain("Who’s watching?");
     expect(wrapper.text()).not.toContain("Your progress. Your place in the library.");
-    const boxes = wrapper.findAll('input[type="password"]');
-    expect(boxes).toHaveLength(4);
-    for (const [index, digit] of [..."0123"].entries()) await boxes[index]!.setValue(digit);
+    await wrapper.get('input[type="password"]').setValue("private-password");
     await wrapper.get("form").trigger("submit");
-    expect(selectProfile).toHaveBeenLastCalledWith("locked", "0123");
+    expect(selectProfile).toHaveBeenLastCalledWith("locked", "private-password");
     await wrapper
       .findAll("button")
       .find((button) => button.text() === "Back to profiles")!

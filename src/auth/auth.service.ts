@@ -1,4 +1,4 @@
-import { profilePinSchema } from "../profiles/profiles.schema.js";
+import { profilePasswordSchema } from "../profiles/profiles.schema.js";
 import crypto from "node:crypto";
 
 import bcrypt from "bcryptjs";
@@ -27,7 +27,7 @@ export interface AuthService {
   setupPassword(
     password: string,
     adminName: string,
-    adminPin: string,
+    adminPassword: string,
     setupToken?: string,
   ): Promise<PasswordResult>;
   changePassword(currentPassword: string, newPassword: string): Promise<PasswordResult>;
@@ -71,7 +71,7 @@ export function createAuthService(
     async setupPassword(
       password: string,
       adminName: string,
-      adminPin: string,
+      adminPassword: string,
       setupToken?: string,
     ): Promise<PasswordResult> {
       if (await repository.getPasswordHash()) return { ok: false, reason: "already_configured" };
@@ -85,14 +85,14 @@ export function createAuthService(
       if (
         !adminName.trim() ||
         adminName.trim().length > 40 ||
-        !profilePinSchema.safeParse(adminPin).success
+        !profilePasswordSchema.safeParse(adminPassword).success
       )
         return { ok: false, reason: "invalid" };
       const rounds = configuration.app.env === "testing" ? 4 : 12;
       const created = await repository.setupCredentials(
         await bcrypt.hash(password, rounds),
         adminName.trim(),
-        await bcrypt.hash(adminPin, rounds),
+        await bcrypt.hash(adminPassword, rounds),
       );
       return created ? { ok: true } : { ok: false, reason: "already_configured" };
     },

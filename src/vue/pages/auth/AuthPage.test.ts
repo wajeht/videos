@@ -111,7 +111,7 @@ describe("AuthPage", () => {
     const inputs = wrapper.findAll('input[type="password"]');
     const submit = wrapper.get('button[type="submit"]');
 
-    expect(inputs).toHaveLength(11);
+    expect(inputs).toHaveLength(5);
     expect(inputs.every((input) => input.classes().includes("min-h-10"))).toBe(true);
     expect(inputs.every((input) => !input.classes().includes("lg:min-h-12"))).toBe(true);
     expect(submit.classes()).toContain("h-10");
@@ -123,20 +123,21 @@ describe("AuthPage", () => {
     await passwords[0]!.setValue("shared-library-password");
     await passwords[1]!.setValue("shared-library-password");
     await wrapper.get('input[maxlength="40"]').setValue("Owner");
-    for (const pinInput of passwords.slice(2)) {
-      expect(pinInput.attributes("inputmode")).toBe("numeric");
-      expect(pinInput.attributes("pattern")).toBe("\\d");
-      expect(pinInput.attributes("maxlength")).toBe("1");
-    }
-    for (const [index, digit] of [..."01239876"].entries())
-      await passwords[index + 2]!.setValue(digit);
+    await passwords[2]!.setValue("admin-profile-password");
+    await passwords[3]!.setValue("different-password");
     await wrapper.get("form").trigger("submit");
     expect(wrapper.emitted("setup")).toBeUndefined();
-    expect(wrapper.text()).toContain("PINs do not match");
-    for (const [index, digit] of [..."0123"].entries()) await passwords[index + 6]!.setValue(digit);
+    expect(wrapper.text()).toContain("Passwords do not match");
+    await passwords[3]!.setValue("admin-profile-password");
     await wrapper.get("form").trigger("submit");
     expect(wrapper.emitted("setup")).toEqual([
-      ["shared-library-password", "shared-library-password", "Owner", "0123", undefined],
+      [
+        "shared-library-password",
+        "shared-library-password",
+        "Owner",
+        "admin-profile-password",
+        undefined,
+      ],
     ]);
   });
 });

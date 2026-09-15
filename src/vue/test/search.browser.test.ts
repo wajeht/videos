@@ -10,7 +10,7 @@ async function authenticate(page: Page): Promise<void> {
       password,
       confirmPassword: password,
       adminName: "Admin",
-      adminPin: "0123",
+      adminPassword: "test-admin-password",
       setupToken: "videos-playwright-setup-token",
     },
   });

@@ -154,12 +154,12 @@ export const api = {
     password: string,
     confirmPassword: string,
     adminName: string,
-    adminPin: string,
+    adminPassword: string,
     setupToken?: string,
   ): Promise<void> {
     await expectJson(
       await apiClient.api.auth.password.$post({
-        json: { password, confirmPassword, adminName, adminPin, setupToken },
+        json: { password, confirmPassword, adminName, adminPassword, setupToken },
       }),
     );
   },
@@ -177,11 +177,11 @@ export const api = {
   async listProfiles(): Promise<ProfileDto[]> {
     return expectProtectedJson(await apiClient.api.profiles.$get());
   },
-  async selectProfile(profileId: string, pin: string): Promise<void> {
+  async selectProfile(profileId: string, password: string): Promise<void> {
     await expectProtectedJson(
       await apiClient.api.profiles[":profileId"].select.$post({
         param: { profileId },
-        json: { pin },
+        json: { password },
       }),
     );
   },
@@ -196,11 +196,11 @@ export const api = {
       await apiClient.api.profiles[":profileId"].$put({ param: { profileId }, json: input }),
     );
   },
-  async changeProfilePin(profileId: string, pin: string | null): Promise<void> {
+  async changeProfilePassword(profileId: string, password: string | null): Promise<void> {
     await expectProtectedJson(
-      await apiClient.api.profiles[":profileId"].pin.$put({
+      await apiClient.api.profiles[":profileId"].password.$put({
         param: { profileId },
-        json: { pin },
+        json: { password },
       }),
     );
   },

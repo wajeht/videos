@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createApp, type AppType } from "../app.js";
 import { createConfiguration } from "../config.js";
 import { createTestContext } from "../test/resources.js";
-import { testAdminPin } from "../test/auth.js";
+import { testAdminPassword } from "../test/auth.js";
 
 const appPassword = "shared-library-password";
 const profileSchema = z.object({
@@ -28,8 +28,8 @@ async function createClient(app: AppType) {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   }
-  async function select(id: string, pin = "") {
-    const response = await request(`/api/profiles/${id}/select`, "POST", { pin });
+  async function select(id: string, password = "") {
+    const response = await request(`/api/profiles/${id}/select`, "POST", { password });
     if (response.ok) {
       const state = z
         .object({ profileSelectionKey: z.string() })
@@ -42,17 +42,17 @@ async function createClient(app: AppType) {
 }
 async function fixture() {
   const context = await createTestContext(createConfiguration({ APP_ENV: "testing" }));
-  await context.auth.setupPassword(appPassword, "Admin", testAdminPin);
+  await context.auth.setupPassword(appPassword, "Admin", testAdminPassword);
   const app = createApp(context);
   const admin = (await context.profiles.listProfiles())[0]!;
   const client = await createClient(app);
-  expect((await client.select(admin.id, testAdminPin)).status).toBe(200);
-  async function addProfile(name: string, pin: string | null = null, role = "member") {
+  expect((await client.select(admin.id, testAdminPassword)).status).toBe(200);
+  async function addProfile(name: string, password: string | null = null, role = "member") {
     const response = await client.request("/api/profiles", "POST", {
       name,
 
       role,
-      pin,
+      password,
     });
     expect(response.status).toBe(201);
     return profileSchema.parse(await response.json());
@@ -64,8 +64,8 @@ describe("profiles", () => {
   it("creates the app password and exactly one first admin atomically", async () => {
     const context = await createTestContext(createConfiguration({ APP_ENV: "testing" }));
     const results = await Promise.all([
-      context.auth.setupPassword(appPassword, "First", testAdminPin),
-      context.auth.setupPassword(appPassword, "Second", testAdminPin),
+      context.auth.setupPassword(appPassword, "First", testAdminPassword),
+      context.auth.setupPassword(appPassword, "Second", testAdminPassword),
     ]);
     expect(results.filter((result) => result.ok)).toHaveLength(1);
     const profiles = await context.profiles.listProfiles();
@@ -85,7 +85,7 @@ describe("profiles", () => {
         await guest.request("/api/profiles", "POST", {
           name: "Intruder",
           role: "admin",
-          pin: testAdminPin,
+          password: testAdminPassword,
         })
       ).status,
     ).toBe(409);
@@ -96,15 +96,15 @@ describe("profiles", () => {
         await guest.request("/api/profiles", "POST", {
           name: "Intruder",
           role: "member",
-          pin: null,
+          password: null,
         })
       ).status,
     ).toBe(403);
     expect((await guest.request(`/api/profiles/${admin.id}`, "DELETE")).status).toBe(403);
     expect(
       (
-        await guest.request(`/api/profiles/${admin.id}/pin`, "PUT", {
-          pin: "9876",
+        await guest.request(`/api/profiles/${admin.id}/password`, "PUT", {
+          password: "different-password",
         })
       ).status,
     ).toBe(403);
@@ -134,11 +134,11 @@ describe("profiles", () => {
       ).status,
     ).toBe(200);
     const profiles = await (await client.request("/api/profiles")).json();
-    expect(JSON.stringify(profiles)).not.toContain("pin_hash");
-    expect(JSON.stringify(profiles)).not.toContain(testAdminPin);
+    expect(JSON.stringify(profiles)).not.toContain("password_hash");
+    expect(JSON.stringify(profiles)).not.toContain(testAdminPassword);
   });
 
-  it("keeps an admin PIN and at least one admin, including concurrent demotions", async () => {
+  it("keeps an admin password and at least one admin, including concurrent demotions", async () => {
     const { client, admin, addProfile, context } = await fixture();
     expect((await client.request(`/api/profiles/${admin.id}`, "DELETE")).status).toBe(409);
     expect(
@@ -150,18 +150,19 @@ describe("profiles", () => {
       ).status,
     ).toBe(409);
     expect(
-      (await client.request(`/api/profiles/${admin.id}/pin`, "PUT", { pin: null })).status,
+      (await client.request(`/api/profiles/${admin.id}/password`, "PUT", { password: null }))
+        .status,
     ).toBe(400);
     expect(
       (
         await client.request("/api/profiles", "POST", {
           name: "Open admin",
           role: "admin",
-          pin: null,
+          password: null,
         })
       ).status,
     ).toBe(400);
-    const second = await addProfile("Second admin", testAdminPin, "admin");
+    const second = await addProfile("Second admin", testAdminPassword, "admin");
     await Promise.all([
       context.profiles.mutateProfile(admin.id, admin.id, {
         kind: "details",
@@ -239,12 +240,12 @@ describe("profiles", () => {
     expect((await other.request("/api/settings")).status).toBe(409);
   });
 
-  it("rejects stale tab writes and re-locks all sessions when a PIN changes", async () => {
+  it("rejects stale tab writes and re-locks all sessions when a password changes", async () => {
     const { app, context, client, addProfile } = await fixture();
-    const locked = await addProfile("Locked", "0456");
+    const locked = await addProfile("Locked", "member-password");
     const other = await createClient(app);
-    expect((await other.select(locked.id, appPassword)).status).toBe(400);
-    await other.select(locked.id, "0456");
+    expect((await other.select(locked.id, appPassword)).status).toBe(403);
+    await other.select(locked.id, "member-password");
     const oldSelection = other.selection();
     const open = await addProfile("Open");
     await other.select(open.id);
@@ -269,16 +270,16 @@ describe("profiles", () => {
     });
     expect(staleProgress.status).toBe(409);
     expect(await (await other.request("/api/settings")).json()).toEqual({ libraryPageSize: 24 });
-    await other.select(locked.id, "0456");
-    await client.request(`/api/profiles/${locked.id}/pin`, "PUT", {
-      pin: "0789",
+    await other.select(locked.id, "member-password");
+    await client.request(`/api/profiles/${locked.id}/password`, "PUT", {
+      password: "replacement-password",
     });
     expect((await other.request("/api/library")).status).toBe(409);
-    expect((await other.select(locked.id, "0456")).status).toBe(403);
-    expect((await other.select(locked.id, "0789")).status).toBe(200);
+    expect((await other.select(locked.id, "member-password")).status).toBe(403);
+    expect((await other.select(locked.id, "replacement-password")).status).toBe(200);
     const profileBeforeReset = await context.profiles.findProfile(locked.id);
-    await client.request(`/api/profiles/${locked.id}/pin`, "PUT", {
-      pin: "0987",
+    await client.request(`/api/profiles/${locked.id}/password`, "PUT", {
+      password: "another-password",
     });
     const storedSession = await context.database
       .connection("auth_sessions")
@@ -289,11 +290,11 @@ describe("profiles", () => {
     ).toBe(false);
   });
 
-  it("requires exactly four ASCII digits for setup, creation, changes, and unlocking", async () => {
+  it("validates profile passwords before storing them and permits members to remove locks", async () => {
     const { client, admin, context, addProfile } = await fixture();
     const freshContext = await createTestContext(createConfiguration({ APP_ENV: "testing" }));
     const freshApp = createApp(freshContext);
-    for (const pin of ["123", "12345", "12a4", "１２３４", " 123", "1234\n", 1234, null]) {
+    for (const password of ["short", "a".repeat(73), "😀".repeat(18) + "x", 1234, null]) {
       const setup = await freshApp.request("/api/auth/password", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -301,7 +302,7 @@ describe("profiles", () => {
           password: appPassword,
           confirmPassword: appPassword,
           adminName: "Admin",
-          adminPin: pin,
+          adminPassword: password,
         }),
       });
       expect(setup.status).toBe(400);
@@ -310,39 +311,40 @@ describe("profiles", () => {
           await client.request("/api/profiles", "POST", {
             name: "Invalid admin",
             role: "admin",
-            pin,
+            password,
           })
         ).status,
       ).toBe(400);
-      expect((await client.request(`/api/profiles/${admin.id}/pin`, "PUT", { pin })).status).toBe(
-        400,
-      );
       expect(
-        (await client.request(`/api/profiles/${admin.id}/select`, "POST", { pin })).status,
+        (await client.request(`/api/profiles/${admin.id}/password`, "PUT", { password })).status,
       ).toBe(400);
     }
     expect(await freshContext.profiles.listProfiles()).toEqual([]);
     expect(await freshContext.auth.isPasswordConfigured()).toBe(false);
-    const locked = await addProfile("Leading zero", "0000");
+    const locked = await addProfile("Protected", "abcdefgh");
     const row = await context.profiles.findProfile(locked.id);
-    expect(row?.pin_hash).not.toBe("0000");
-    expect(row?.pin_hash).toMatch(/^\$2/);
-    expect((await client.select(locked.id, "0000")).status).toBe(200);
+    expect(row?.password_hash).not.toBe("abcdefgh");
+    expect(row?.password_hash).toMatch(/^\$2/);
+    expect((await client.select(locked.id, "abcdefgh")).status).toBe(200);
     expect(
-      (await client.request(`/api/profiles/${locked.id}/pin`, "PUT", { pin: null })).status,
+      (await client.request(`/api/profiles/${locked.id}/password`, "PUT", { password: null }))
+        .status,
     ).toBe(200);
     expect((await client.select(locked.id)).status).toBe(200);
   });
 
-  it("rate limits incorrect PIN guesses across sessions", async () => {
+  it("rate limits incorrect password guesses across sessions", async () => {
     const { app, addProfile } = await fixture();
-    const profile = await addProfile("Locked", "0456");
+    const profile = await addProfile("Locked", "member-password");
     const other = await createClient(app);
     for (let index = 0; index < 5; index++)
-      expect((await other.select(profile.id, "9999")).status).toBe(403);
+      expect((await other.select(profile.id, "wrong-password")).status).toBe(403);
     const another = await createClient(app);
-    const blocked = await another.select(profile.id, "0456");
+    const blocked = await another.select(profile.id, "member-password");
     expect(blocked.status).toBe(429);
     expect(blocked.headers.get("retry-after")).toBeTruthy();
+    const unicode = await addProfile("Unicode", "😀".repeat(18));
+    expect((await another.select(unicode.id, "😀".repeat(18))).status).toBe(200);
+    expect((await another.select(unicode.id, "😀".repeat(18) + "x")).status).toBe(400);
   });
 });
