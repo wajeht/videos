@@ -22,12 +22,14 @@ function createUnauthenticatedAuth(): AuthController {
     initialize: vi.fn(),
     login: vi.fn(),
     logout: vi.fn(),
+    setupAdminProfile: vi.fn(async () => undefined),
     setupPassword: vi.fn(),
     state: {
       profile: null,
       profileSelectionKey: null,
       error: "",
       passwordConfigured: true,
+      adminProfileRequired: false,
       setupEnabled: false,
       setupTokenRequired: false,
       status: "unauthenticated",
@@ -88,6 +90,16 @@ describe("App", () => {
     expect(wrapper.findComponent(AuthPage).exists()).toBe(true);
     expect(wrapper.text()).toContain("Please sign in to continue.");
     expect(wrapper.findComponent(NotFoundPage).exists()).toBe(false);
+  });
+
+  it("shows admin setup for an authenticated library with no admin profile", async () => {
+    const auth = createUnauthenticatedAuth();
+    auth.state = { ...auth.state, status: "authenticated", adminProfileRequired: true };
+    const wrapper = await mountAt("/settings/library", auth);
+    expect(wrapper.findComponent(AuthPage).exists()).toBe(true);
+    expect(wrapper.text()).toContain("Step 2 of 2 · Admin profile");
+    expect(wrapper.text()).not.toContain("Who’s watching?");
+    expect(wrapper.find('input[minlength="15"]').exists()).toBe(false);
   });
 
   it("attaches an invalid login password error to the password field", async () => {

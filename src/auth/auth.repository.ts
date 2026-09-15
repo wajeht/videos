@@ -18,11 +18,9 @@ export interface StoredSession {
 
 export interface AuthRepository {
   getPasswordHash(): Promise<string | null>;
-  setupCredentials(
-    passwordHash: string,
-    adminName: string,
-    adminPasswordHash: string,
-  ): Promise<boolean>;
+  setupCredentials(passwordHash: string): Promise<boolean>;
+  isAdminConfigured(): Promise<boolean>;
+  setupAdminProfile(name: string, passwordHash: string): Promise<boolean>;
   changePasswordHash(passwordHash: string): Promise<void>;
   getLoginAttempt(clientKey: string, now: number): Promise<LoginAttempt | null>;
   recordLoginFailure(clientKey: string, now: number, windowMs: number): Promise<void>;
@@ -43,14 +41,25 @@ export function createAuthRepository(database: Knex): AuthRepository {
       return credentials?.password_hash ?? null;
     },
 
-    async setupCredentials(passwordHash, adminName, adminPasswordHash) {
+    async setupCredentials(passwordHash) {
       return database.transaction(async (transaction) => {
         if (await transaction("auth_credentials").first()) return false;
         await transaction("auth_credentials").insert({
           id: credentialsId,
           password_hash: passwordHash,
         });
-        await insertProfile(transaction, { name: adminName, role: "admin" }, adminPasswordHash);
+        return true;
+      });
+    },
+
+    async isAdminConfigured() {
+      return Boolean(await database("profiles").where({ role: "admin" }).first());
+    },
+
+    async setupAdminProfile(name, passwordHash) {
+      return database.transaction(async (transaction) => {
+        if (await transaction("profiles").first()) return false;
+        await insertProfile(transaction, { name, role: "admin" }, passwordHash);
         return true;
       });
     },

@@ -1,5 +1,15 @@
 import { expect, type Page } from "@playwright/test";
 import { z } from "zod";
+export async function setupBrowserAdmin(page: Page): Promise<void> {
+  const cookie = (await page.context().cookies())
+    .map((entry) => `${entry.name}=${entry.value}`)
+    .join("; ");
+  const response = await page.request.post("/api/auth/admin-profile", {
+    headers: { cookie },
+    data: { name: "Admin", password: "test-admin-password" },
+  });
+  expect([201, 409]).toContain(response.status());
+}
 export async function selectBrowserAdmin(page: Page): Promise<void> {
   // The API request client omits Secure cookies on HTTP loopback; Chromium accepts them there.
   const cookie = (await page.context().cookies())

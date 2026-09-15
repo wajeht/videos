@@ -47,6 +47,7 @@ const apiClient = hc<AppType>("/", {
 
 export interface AuthStateDto {
   authenticated: boolean;
+  adminProfileRequired: boolean;
   profile: ProfileDto | null;
   profileSelectionKey: string | null;
   passwordConfigured: boolean;
@@ -153,14 +154,17 @@ export const api = {
   async setupPassword(
     password: string,
     confirmPassword: string,
-    adminName: string,
-    adminPassword: string,
     setupToken?: string,
   ): Promise<void> {
     await expectJson(
       await apiClient.api.auth.password.$post({
-        json: { password, confirmPassword, adminName, adminPassword, setupToken },
+        json: { password, confirmPassword, setupToken },
       }),
+    );
+  },
+  async setupAdminProfile(name: string, password: string): Promise<void> {
+    await expectProtectedJson(
+      await apiClient.api.auth["admin-profile"].$post({ json: { name, password } }),
     );
   },
   async changePassword(

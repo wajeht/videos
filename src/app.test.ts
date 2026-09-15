@@ -94,8 +94,6 @@ describe("application", () => {
       body: JSON.stringify({
         password: "videos-test-password",
         confirmPassword: "videos-test-password",
-        adminName: "Admin",
-        adminPassword: testAdminPassword,
         setupToken: "wrong-setup-token",
       }),
     });
@@ -107,8 +105,6 @@ describe("application", () => {
       body: JSON.stringify({
         password: "videos-test-password",
         confirmPassword: "videos-test-password",
-        adminName: "Admin",
-        adminPassword: testAdminPassword,
         setupToken: "videos-app-test-setup-token",
       }),
     });
@@ -121,6 +117,15 @@ describe("application", () => {
     expect(login.status).toBe(200);
     const cookie = login.headers.get("set-cookie")?.split(";")[0];
     expect(cookie).toBeTruthy();
+    expect(
+      (
+        await app.request("/api/auth/admin-profile", {
+          method: "POST",
+          headers: { cookie: cookie!, "content-type": "application/json" },
+          body: JSON.stringify({ name: "Admin", password: testAdminPassword }),
+        })
+      ).status,
+    ).toBe(201);
     const selectionKey = await selectTestAdmin(app, cookie!);
 
     const regenerate = vi

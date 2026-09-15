@@ -12,6 +12,7 @@ function createClient() {
     getAuthState: vi.fn<(signal?: AbortSignal) => Promise<AuthStateDto>>(),
     login: vi.fn(async () => undefined),
     logout: vi.fn(async () => undefined),
+    setupAdminProfile: vi.fn(async () => undefined),
     setupPassword: vi.fn(async () => undefined),
   };
 }
@@ -26,6 +27,7 @@ describe("createAuth", () => {
       profile: null,
       profileSelectionKey: null,
       passwordConfigured: true,
+      adminProfileRequired: false,
       setupEnabled: false,
       setupTokenRequired: false,
     });
@@ -35,6 +37,45 @@ describe("createAuth", () => {
 
     expect(auth.state.status).toBe("authenticated");
     expect(client.getAuthState).toHaveBeenCalledWith(expect.any(AbortSignal));
+  });
+
+  it("resumes admin setup from the server after saving the library password", async () => {
+    const client = createClient();
+    client.getAuthState.mockResolvedValue({
+      authenticated: true,
+      profile: null,
+      profileSelectionKey: null,
+      passwordConfigured: true,
+      adminProfileRequired: true,
+      setupEnabled: false,
+      setupTokenRequired: false,
+    });
+    const auth = createAuth({ client });
+    await auth.setupPassword("shared-library-password", "shared-library-password", "setup-token");
+    expect(client.setupPassword).toHaveBeenCalledWith(
+      "shared-library-password",
+      "shared-library-password",
+      "setup-token",
+    );
+    expect(client.login).toHaveBeenCalledWith("shared-library-password");
+    expect(auth.state.adminProfileRequired).toBe(true);
+    const refreshed = createAuth({ client });
+    await refreshed.initialize();
+    expect(refreshed.state.adminProfileRequired).toBe(true);
+    client.getAuthState.mockResolvedValue({
+      authenticated: true,
+      profile: null,
+      profileSelectionKey: null,
+      passwordConfigured: true,
+      adminProfileRequired: false,
+      setupEnabled: false,
+      setupTokenRequired: false,
+    });
+    await refreshed.setupAdminProfile("Admin", "profile-password");
+    expect(client.setupAdminProfile).toHaveBeenCalledWith("Admin", "profile-password");
+    expect(refreshed.state.adminProfileRequired).toBe(false);
+    auth.dispose();
+    refreshed.dispose();
   });
 
   it("moves stalled session checks to a retryable error", async () => {
@@ -65,6 +106,7 @@ describe("createAuth", () => {
       profile: null,
       profileSelectionKey: null,
       passwordConfigured: true,
+      adminProfileRequired: false,
       setupEnabled: false,
       setupTokenRequired: false,
     });
@@ -89,6 +131,7 @@ describe("createAuth", () => {
     const newState: AuthStateDto = {
       authenticated: true,
       passwordConfigured: true,
+      adminProfileRequired: false,
       setupEnabled: false,
       setupTokenRequired: false,
       profile: { id: "new", name: "New", role: "member", isLocked: false },

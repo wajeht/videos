@@ -9,6 +9,7 @@ interface AuthControllerState {
   profileSelectionKey: string | null;
   error: string;
   passwordConfigured: boolean;
+  adminProfileRequired: boolean;
   setupEnabled: boolean;
   setupTokenRequired: boolean;
   status: AuthStatus;
@@ -25,13 +26,8 @@ interface AuthClient {
   getAuthState(signal?: AbortSignal): Promise<AuthStateDto>;
   login(password: string): Promise<void>;
   logout(): Promise<void>;
-  setupPassword(
-    password: string,
-    confirmPassword: string,
-    adminName: string,
-    adminPassword: string,
-    setupToken?: string,
-  ): Promise<void>;
+  setupAdminProfile(name: string, password: string): Promise<void>;
+  setupPassword(password: string, confirmPassword: string, setupToken?: string): Promise<void>;
 }
 
 interface CreateAuthOptions {
@@ -48,13 +44,8 @@ export interface AuthController {
   initialize(): Promise<void>;
   login(password: string): Promise<void>;
   logout(): Promise<void>;
-  setupPassword(
-    password: string,
-    confirmPassword: string,
-    adminName: string,
-    adminPassword: string,
-    setupToken?: string,
-  ): Promise<void>;
+  setupAdminProfile(name: string, password: string): Promise<void>;
+  setupPassword(password: string, confirmPassword: string, setupToken?: string): Promise<void>;
   state: Readonly<AuthControllerState>;
 }
 
@@ -71,6 +62,7 @@ export function createAuth(options: CreateAuthOptions = {}): AuthController {
     profileSelectionKey: null,
     status: "loading",
     passwordConfigured: false,
+    adminProfileRequired: false,
     setupEnabled: false,
     setupTokenRequired: false,
     error: "",
@@ -89,6 +81,7 @@ export function createAuth(options: CreateAuthOptions = {}): AuthController {
     state.profileSelectionKey = null;
     setProfileSession(null, null);
     state.status = "unauthenticated";
+    state.adminProfileRequired = false;
     state.passwordConfigured = true;
     state.error = "Your session expired. Sign in again.";
   }
@@ -119,6 +112,7 @@ export function createAuth(options: CreateAuthOptions = {}): AuthController {
       state.profileSelectionKey = result.profileSelectionKey;
       setProfileSession(result.profile?.id ?? null, result.profileSelectionKey);
       state.passwordConfigured = result.passwordConfigured;
+      state.adminProfileRequired = result.adminProfileRequired;
       state.setupEnabled = result.setupEnabled;
       state.setupTokenRequired = result.setupTokenRequired;
       state.status = result.authenticated ? "authenticated" : "unauthenticated";
@@ -152,13 +146,17 @@ export function createAuth(options: CreateAuthOptions = {}): AuthController {
   async function setupPassword(
     password: string,
     confirmPassword: string,
-    adminName: string,
-    adminPassword: string,
     setupToken?: string,
   ): Promise<void> {
-    await client.setupPassword(password, confirmPassword, adminName, adminPassword, setupToken);
+    await client.setupPassword(password, confirmPassword, setupToken);
     state.passwordConfigured = true;
     await login(password);
+  }
+
+  async function setupAdminProfile(name: string, password: string): Promise<void> {
+    await client.setupAdminProfile(name, password);
+    channel.postMessage("changed");
+    await initialize();
   }
 
   async function selectProfile(profileId: string, password: string): Promise<void> {
@@ -180,6 +178,7 @@ export function createAuth(options: CreateAuthOptions = {}): AuthController {
     state.profileSelectionKey = null;
     setProfileSession(null, null);
     state.status = "unauthenticated";
+    state.adminProfileRequired = false;
     state.error = "";
   }
 
@@ -199,6 +198,7 @@ export function createAuth(options: CreateAuthOptions = {}): AuthController {
     login,
     logout,
     setupPassword,
+    setupAdminProfile,
     state: readonly(state),
   };
 }

@@ -7,6 +7,7 @@ import AuthPage from "./AuthPage.vue";
 
 const baseProps = {
   busy: false,
+  adminProfileRequired: false,
   message: undefined,
   passwordError: undefined,
   setupEnabled: true,
@@ -111,33 +112,67 @@ describe("AuthPage", () => {
     const inputs = wrapper.findAll('input[type="password"]');
     const submit = wrapper.get('button[type="submit"]');
 
-    expect(inputs).toHaveLength(5);
+    expect(inputs).toHaveLength(3);
     expect(inputs.every((input) => input.classes().includes("min-h-10"))).toBe(true);
     expect(inputs.every((input) => !input.classes().includes("lg:min-h-12"))).toBe(true);
     expect(submit.classes()).toContain("h-10");
     expect(submit.classes()).not.toContain("lg:h-12");
   });
-  it("submits the shared password and first admin profile together", async () => {
-    const wrapper = mount(AuthPage, { props: { ...baseProps, passwordConfigured: false } });
-    const passwords = wrapper.findAll('input[type="password"]');
+  it("saves the shared password before advancing to admin setup", async () => {
+    const wrapper = mount(AuthPage, {
+      props: { ...baseProps, passwordConfigured: false, setupTokenRequired: true },
+    });
+    await wrapper.get('input[autocomplete="one-time-code"]').setValue("setup-token");
+    const passwords = wrapper.findAll('input[autocomplete="new-password"]');
     await passwords[0]!.setValue("shared-library-password");
-    await passwords[1]!.setValue("shared-library-password");
-    await wrapper.get('input[maxlength="40"]').setValue("Owner");
-    await passwords[2]!.setValue("admin-profile-password");
-    await passwords[3]!.setValue("different-password");
+    await passwords[1]!.setValue("a-different-password");
     await wrapper.get("form").trigger("submit");
-    expect(wrapper.emitted("setup")).toBeUndefined();
     expect(wrapper.text()).toContain("Passwords do not match");
-    await passwords[3]!.setValue("admin-profile-password");
+    expect(wrapper.emitted("setup")).toBeUndefined();
+    await passwords[1]!.setValue("shared-library-password");
     await wrapper.get("form").trigger("submit");
     expect(wrapper.emitted("setup")).toEqual([
-      [
-        "shared-library-password",
-        "shared-library-password",
-        "Owner",
-        "admin-profile-password",
-        undefined,
-      ],
+      ["shared-library-password", "shared-library-password", "setup-token"],
     ]);
+    expect(wrapper.text()).toContain("Step 1 of 2");
+    await wrapper.setProps({
+      passwordConfigured: true,
+      adminProfileRequired: true,
+      status: "authenticated",
+    });
+    expect(wrapper.text()).toContain("Step 2 of 2");
+    expect(wrapper.find('input[minlength="15"]').exists()).toBe(false);
+    expect(wrapper.emitted("setupAdmin")).toBeUndefined();
+  });
+
+  it("resumes at admin setup without asking for the saved library password", async () => {
+    const wrapper = mount(AuthPage, {
+      props: {
+        ...baseProps,
+        passwordConfigured: true,
+        adminProfileRequired: true,
+        setupEnabled: false,
+        status: "authenticated",
+      },
+    });
+    expect(wrapper.text()).toContain("Step 2 of 2");
+    expect(wrapper.find('input[autocomplete="one-time-code"]').exists()).toBe(false);
+    expect(wrapper.find('input[minlength="15"]').exists()).toBe(false);
+    await wrapper.get('input[maxlength="40"]').setValue("Owner");
+    const passwords = wrapper.findAll('input[type="password"]');
+    await passwords[0]!.setValue("admin-profile-password");
+    await passwords[1]!.setValue("different-password");
+    await wrapper.get("form").trigger("submit");
+    expect(wrapper.emitted("setupAdmin")).toBeUndefined();
+    expect(wrapper.text()).toContain("Passwords do not match");
+    await passwords[1]!.setValue("admin-profile-password");
+    await wrapper.setProps({ busy: true });
+    await wrapper.get("form").trigger("submit");
+    expect(wrapper.emitted("setupAdmin")).toBeUndefined();
+    await wrapper.setProps({ busy: false, message: "Could not create the admin profile" });
+    expect(wrapper.get<HTMLInputElement>('input[maxlength="40"]').element.value).toBe("Owner");
+    await wrapper.get("form").trigger("submit");
+    expect(wrapper.emitted("setupAdmin")).toEqual([["Owner", "admin-profile-password"]]);
+    expect(wrapper.emitted("setup")).toBeUndefined();
   });
 });

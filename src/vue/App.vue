@@ -26,16 +26,17 @@ const loginAction = useAsyncAction((password: string) => auth.login(password), {
   errorMessage: "Could not sign in",
 });
 const setupAction = useAsyncAction(
-  (
-    password: string,
-    confirmPassword: string,
-    adminName: string,
-    adminPassword: string,
-    setupToken?: string,
-  ) => auth.setupPassword(password, confirmPassword, adminName, adminPassword, setupToken),
+  (password: string, confirmPassword: string, setupToken?: string) =>
+    auth.setupPassword(password, confirmPassword, setupToken),
   { errorMessage: "Could not create the library password" },
 );
-const authBusy = computed(() => loginAction.pending.value || setupAction.pending.value);
+const adminSetupAction = useAsyncAction(
+  (name: string, password: string) => auth.setupAdminProfile(name, password),
+  { errorMessage: "Could not create the admin profile" },
+);
+const authBusy = computed(
+  () => loginAction.pending.value || setupAction.pending.value || adminSetupAction.pending.value,
+);
 const loginPasswordError = computed(() => {
   const cause = loginAction.error.value;
   if (cause instanceof ApiError && cause.status === 401) return cause.message;
@@ -46,7 +47,7 @@ const generalAuthError = computed(() => {
     if (loginPasswordError.value) return "";
     return loginAction.errorMessage.value;
   }
-  return setupAction.errorMessage.value || auth.state.error;
+  return adminSetupAction.errorMessage.value || setupAction.errorMessage.value || auth.state.error;
 });
 const showBootstrap = shallowRef(false);
 let bootstrapTimer: ReturnType<typeof setTimeout> | undefined;
@@ -86,6 +87,7 @@ watch(
 onBeforeUnmount(() => clearTimeout(bootstrapTimer));
 
 async function login(password: string): Promise<void> {
+  adminSetupAction.clearError();
   setupAction.clearError();
   await loginAction.run(password);
 }
@@ -93,12 +95,10 @@ async function login(password: string): Promise<void> {
 async function setup(
   password: string,
   confirmPassword: string,
-  adminName: string,
-  adminPassword: string,
   setupToken?: string,
 ): Promise<void> {
   loginAction.clearError();
-  await setupAction.run(password, confirmPassword, adminName, adminPassword, setupToken);
+  await setupAction.run(password, confirmPassword, setupToken);
 }
 </script>
 
@@ -113,8 +113,14 @@ async function setup(
       <p class="mt-3 text-sm text-muted">Opening Videos…</p>
     </div>
   </main>
-  <ProfilesPage v-else-if="auth.state.status === 'authenticated' && !auth.state.profile" />
-  <AppShell v-else-if="auth.state.status === 'authenticated'">
+  <ProfilesPage
+    v-else-if="
+      auth.state.status === 'authenticated' &&
+      !auth.state.adminProfileRequired &&
+      !auth.state.profile
+    "
+  />
+  <AppShell v-else-if="auth.state.status === 'authenticated' && !auth.state.adminProfileRequired">
     <template #profile><ProfileSwitchButton /></template>
     <OfflineStatusBanner v-if="!online" />
     <RouterView />
@@ -127,6 +133,7 @@ async function setup(
     v-else
     :status="auth.state.status"
     :password-configured="auth.state.passwordConfigured"
+    :admin-profile-required="auth.state.adminProfileRequired"
     :setup-enabled="auth.state.setupEnabled"
     :setup-token-required="auth.state.setupTokenRequired"
     :busy="authBusy"
@@ -134,6 +141,7 @@ async function setup(
     :password-error="loginPasswordError"
     @login="login"
     @setup="setup"
+    @setup-admin="adminSetupAction.run"
     @retry="auth.initialize"
   />
   <ConfirmDialog v-if="!frontendError.visible" />
