@@ -64,6 +64,17 @@ describe("router error pages", () => {
     expect(access.meta.title).toBe("Access settings");
   });
 
+  it("resolves profile creation and editing under the Profiles settings section", () => {
+    const edit = router.resolve("/settings/profiles/profile-id/edit");
+    expect(edit.name).toBe("settings-profile-edit");
+    expect(edit.params.profileId).toBe("profile-id");
+    expect(edit.meta.navigation).toBe("settings");
+    expect(edit.meta.title).toBe("Edit profile");
+    expect(edit.matched.some((record) => record.path === "/settings/profiles")).toBe(true);
+    expect(router.resolve("/settings/profiles/new").name).toBe("settings-profile-new");
+    expect(router.resolve("/settings/profiles").name).toBe("settings-profiles");
+  });
+
   it("does not retain the old combined settings route", () => {
     const route = router.resolve("/settings");
 

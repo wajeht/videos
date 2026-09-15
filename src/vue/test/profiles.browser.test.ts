@@ -54,24 +54,61 @@ test("selects locked profiles and limits profile management to admins", async ({
   expect(styles.borderRadius).toBe("0px");
   await page.goto("/settings/profiles");
   await expect(page.getByRole("link", { name: "Access", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Add profile" }).click();
+  await expect(page.locator("#settings-profiles-panel > section > header")).toHaveCount(1);
+  await page.getByRole("link", { name: "Add profile" }).click();
+  await expect(page).toHaveURL(/\/settings\/profiles\/new$/);
   await page.getByLabel(/^Profile name/).fill("Browser Member");
   await page.getByRole("button", { name: "Create profile" }).click();
   await expect(page.getByRole("heading", { name: "Browser Member", exact: true })).toBeVisible();
+  const editLinks = page.getByRole("link", { name: "Edit", exact: true });
+  const adminEditPath = (await editLinks.first().getAttribute("href"))!;
+  const memberEditPath = (await editLinks.nth(1).getAttribute("href"))!;
+  expect(memberEditPath).toMatch(/^\/settings\/profiles\/[^/]+\/edit$/);
+  await editLinks.nth(1).click();
+  await expect(page).toHaveURL(new RegExp(`${memberEditPath}$`));
+  await expect(page.getByRole("heading", { name: "Edit Browser Member" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Profiles", exact: true })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await page.reload();
+  await expect(page.getByLabel(/^Profile name/)).toHaveValue("Browser Member");
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Manage profiles" })).toBeVisible();
+  await page.goForward();
+  await expect(page.getByRole("heading", { name: "Edit Browser Member" })).toBeVisible();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page).toHaveURL(/\/settings\/profiles$/);
+  await page.getByRole("link", { name: "Edit", exact: true }).nth(1).click();
+  await page.getByLabel(/^Profile name/).fill("Browser Viewer");
+  await page.getByRole("button", { name: "Save profile", exact: true }).click();
+  await expect(page).toHaveURL(/\/settings\/profiles$/);
+  await expect(page.getByRole("heading", { name: "Browser Viewer", exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("manage-profiles.png"), fullPage: true });
+  await page.goto("/settings/profiles/missing/edit");
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save profile", exact: true })).toHaveCount(0);
+  await page.goto("/settings/profiles");
   const secondTab = await context.newPage();
   await secondTab.goto("/settings/profiles");
-  await expect(secondTab.getByRole("button", { name: "Add profile" })).toBeVisible();
+  await expect(secondTab.getByRole("link", { name: "Add profile" })).toBeVisible();
   await page.getByRole("button", { name: "Switch profile" }).click();
   await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await expect(secondTab.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
-  await page.getByRole("button", { name: "Browser Member Open", exact: true }).click();
+  await page.getByRole("button", { name: "Browser Viewer Open", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Profile details" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Access", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Add profile" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Add profile" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
   await expect(secondTab.getByRole("heading", { name: "Profile details" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
+  for (const path of [adminEditPath, "/settings/profiles/new"]) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Create profile", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Save profile", exact: true })).toHaveCount(0);
+  }
+  await page.goto("/settings/profiles");
+  await expect(page.getByRole("link", { name: "Edit", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
   await expect(page.locator("#settings-profiles-panel > section > header")).toHaveCount(2);
   await page.getByLabel(/^Profile name/).fill("Renamed Member");

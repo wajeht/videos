@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { computed, shallowRef } from "vue";
+import { computed, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useQuery } from "@tanstack/vue-query";
 import { api, type ProfileDto, type CreateProfileInput } from "@/api.js";
 import { useAuth } from "@/composables/useAuth.js";
 import { useAsyncAction } from "@/composables/useAsyncAction.js";
 import { useConfirm } from "@/composables/useConfirm.js";
 import SettingsLayout from "./partials/SettingsLayout.vue";
+import PanelCardHeader from "@/components/ui/PanelCardHeader.vue";
+import NotFoundPage from "@/pages/NotFoundPage.vue";
+import IntentRouterLink from "@/components/IntentRouterLink.vue";
+import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
 import PanelCard from "@/components/ui/PanelCard.vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
@@ -13,6 +18,9 @@ import ProfileAvatar from "@/pages/profiles/partials/ProfileAvatar.vue";
 import ProfileDetailsForm from "@/pages/profiles/partials/ProfileDetailsForm.vue";
 import ProfilePasswordForm from "@/pages/profiles/partials/ProfilePasswordForm.vue";
 const auth = useAuth();
+const route = useRoute();
+const router = useRouter();
+const prefetch = useRoutePrefetch();
 const confirmation = useConfirm();
 const admin = computed(() => auth.state.profile?.role === "admin");
 const profiles = useQuery({
@@ -20,17 +28,31 @@ const profiles = useQuery({
   queryFn: () => api.listProfiles(),
   enabled: admin,
 });
-const selectedProfile = shallowRef<ProfileDto | null>(null);
-const editing = computed(() => (admin.value ? selectedProfile.value : auth.state.profile));
-const showForm = shallowRef(false);
+const creating = computed(() => route.name === "settings-profile-new");
+const editRoute = computed(() => route.name === "settings-profile-edit");
+const editing = computed(() => {
+  if (!admin.value) return auth.state.profile;
+  return profiles.data.value?.find((profile) => profile.id === route.params.profileId) ?? null;
+});
+const unavailable = computed(() => {
+  if (creating.value) return !admin.value;
+  if (!editRoute.value) return false;
+  if (!admin.value) return route.params.profileId !== auth.state.profile?.id;
+  return profiles.isSuccess.value && !editing.value;
+});
+const showForm = computed(
+  () => !admin.value || creating.value || (editRoute.value && editing.value !== null),
+);
 const save = useAsyncAction(async (input: CreateProfileInput) => {
   if (editing.value) {
     const { name, role } = input;
     await api.updateProfile(editing.value.id, { name, role });
     await auth.initialize();
   } else await api.createProfile(input);
-  showForm.value = false;
-  if (admin.value) await profiles.refetch();
+  if (admin.value) {
+    await profiles.refetch();
+    await router.push({ name: "settings-profiles" });
+  }
 });
 const lock = useAsyncAction(async (password: string | null) => {
   if (!editing.value) return;
@@ -51,21 +73,24 @@ const remove = useAsyncAction(async (profile: ProfileDto) => {
   if (profile.id === auth.state.profile?.id) await auth.initialize();
   else await profiles.refetch();
 });
-function edit(profile: ProfileDto | null): void {
-  selectedProfile.value = profile;
-  showForm.value = true;
-  save.clearError();
-  lock.clearError();
-}
+watch(
+  () => route.fullPath,
+  () => {
+    save.clearError();
+    lock.clearError();
+    remove.clearError();
+  },
+);
 </script>
 <template>
-  <SettingsLayout>
+  <NotFoundPage v-if="unavailable" />
+  <SettingsLayout v-else>
     <section
       id="settings-profiles-panel"
       class="grid min-w-0 gap-[clamp(18px,2vw,30px)]"
       aria-labelledby="settings-profiles-link"
     >
-      <template v-if="!admin || showForm">
+      <template v-if="showForm">
         <ProfileDetailsForm
           :key="editing?.id ?? 'new'"
           :profile="editing"
@@ -73,7 +98,7 @@ function edit(profile: ProfileDto | null): void {
           :busy="save.pending.value"
           :error="save.errorMessage.value"
           @save="save.run($event)"
-          @cancel="showForm = false"
+          @cancel="router.push({ name: 'settings-profiles' })"
         />
         <ProfilePasswordForm
           v-if="editing"
@@ -84,38 +109,58 @@ function edit(profile: ProfileDto | null): void {
           @save="lock.run($event)"
         />
       </template>
-      <PanelCard v-else :elevated="false">
-        <div class="flex items-center justify-between gap-4">
-          <h2 class="text-xl font-bold">Manage profiles</h2>
-          <AppButton @click="edit(null)">Add profile</AppButton>
-        </div>
-        <AlertMessage v-if="profiles.isError.value" class="mt-4"
-          >Could not load profiles.
-          <AppButton variant="secondary" @click="profiles.refetch()"
-            >Try again</AppButton
-          ></AlertMessage
-        >
-        <AlertMessage v-if="remove.errorMessage.value" class="mt-4">{{
-          remove.errorMessage.value
-        }}</AlertMessage>
-        <p v-if="profiles.isPending.value" class="mt-4" role="status">Loading profiles…</p>
-        <div
-          v-for="profile in profiles.data.value"
-          :key="profile.id"
-          class="mt-6 flex flex-wrap items-center gap-4 border-t border-line pt-6"
-        >
-          <ProfileAvatar :name="profile.name" />
-          <div class="min-w-0 flex-1">
-            <h3 class="break-words font-bold">{{ profile.name }}</h3>
-            <p class="text-sm text-muted">
-              {{ profile.role === "admin" ? "Admin" : "Member" }} ·
-              {{ profile.isLocked ? "Locked" : "Open" }}
-            </p>
-          </div>
-          <AppButton variant="secondary" @click="edit(profile)">Edit</AppButton
-          ><AppButton variant="danger" :disabled="remove.pending.value" @click="remove.run(profile)"
-            >Delete</AppButton
+      <PanelCard v-else :elevated="false" padding="none">
+        <PanelCardHeader
+          :title="editRoute ? 'Edit profile' : 'Manage profiles'"
+          :description="editRoute ? undefined : 'Add profiles and manage their access.'"
+        />
+        <div class="p-[clamp(22px,4vw,34px)]">
+          <AlertMessage v-if="profiles.isError.value" class="mt-4"
+            >Could not load profiles.
+            <AppButton variant="secondary" @click="profiles.refetch()"
+              >Try again</AppButton
+            ></AlertMessage
           >
+          <AlertMessage v-if="remove.errorMessage.value" class="mt-4">{{
+            remove.errorMessage.value
+          }}</AlertMessage>
+          <p v-if="profiles.isPending.value" class="mt-4" role="status">Loading profiles…</p>
+          <div v-if="!editRoute" class="divide-y divide-line">
+            <div
+              v-for="profile in profiles.data.value"
+              :key="profile.id"
+              class="flex flex-wrap items-center gap-4 py-6 first:pt-0 last:pb-0"
+            >
+              <ProfileAvatar :name="profile.name" />
+              <div class="min-w-0 flex-1">
+                <h3 class="break-words font-bold">{{ profile.name }}</h3>
+                <p class="text-sm text-muted">
+                  {{ profile.role === "admin" ? "Admin" : "Member" }} ·
+                  {{ profile.isLocked ? "Locked" : "Open" }}
+                </p>
+              </div>
+              <AppButton
+                :as="IntentRouterLink"
+                :to="{ name: 'settings-profile-edit', params: { profileId: profile.id } }"
+                :prefetch="prefetch.settingsProfiles"
+                variant="secondary"
+                >Edit</AppButton
+              ><AppButton
+                variant="danger"
+                :disabled="remove.pending.value"
+                @click="remove.run(profile)"
+                >Delete</AppButton
+              >
+            </div>
+          </div>
+          <div v-if="!editRoute" class="mt-8 flex justify-end">
+            <AppButton
+              :as="IntentRouterLink"
+              :to="{ name: 'settings-profile-new' }"
+              :prefetch="prefetch.settingsProfiles"
+              >Add profile</AppButton
+            >
+          </div>
         </div>
       </PanelCard>
     </section>

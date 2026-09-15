@@ -19,6 +19,13 @@ describe("SettingsNavigation", () => {
           path: "/settings/profiles",
           name: "settings-profiles",
           component: { template: "<div />" },
+          children: [
+            {
+              path: ":profileId/edit",
+              name: "settings-profile-edit",
+              component: { template: "<div />" },
+            },
+          ],
         },
         {
           path: "/settings/library",
@@ -63,6 +70,11 @@ describe("SettingsNavigation", () => {
     expect(sectionLinks[0]?.attributes("aria-current")).toBeUndefined();
     expect(sectionLinks[2]?.attributes("aria-current")).toBe("page");
     expect(sectionLinks[2]?.classes()).toContain("bg-pine!");
+
+    await router.push("/settings/profiles/profile-id/edit");
+    await flushPromises();
+    expect(sectionLinks[1]?.classes()).toContain("bg-pine!");
+    expect(sectionLinks[1]?.attributes("aria-current")).toBe("page");
 
     state.profile.role = "member";
     await flushPromises();

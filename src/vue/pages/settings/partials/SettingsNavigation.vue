@@ -34,14 +34,17 @@ const sections = computed(() =>
   settingsSections
     .filter((section) => section.value !== "access" || auth.state.profile?.role === "admin")
     .map((section) => {
-      if (route.name === section.routeName) {
+      const active = route.matched.some((record) => record.path === `/settings/${section.value}`);
+      if (active) {
         return {
           ...section,
+          active,
           stateClasses: "bg-pine! text-white!",
         };
       }
       return {
         ...section,
+        active,
         stateClasses: "bg-transparent! text-pine! hover:bg-porcelain!",
       };
     }),
@@ -68,6 +71,7 @@ const sections = computed(() =>
           section.value === 'access' ? 'max-[760px]:border-l max-[760px]:border-line' : '',
           section.stateClasses,
         ]"
+        :aria-current="section.active ? 'page' : undefined"
         :aria-controls="`settings-${section.value}-panel`"
       >
         <span>{{ section.label }}</span>

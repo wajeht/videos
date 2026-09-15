@@ -48,9 +48,26 @@ export const router = createRouter({
     },
     {
       path: "/settings/profiles",
-      name: "settings-profiles",
-      component: () => import("@/pages/settings/ProfilesPage.vue"),
       meta: { navigation: "settings", title: "Profiles" },
+      children: [
+        {
+          path: "",
+          name: "settings-profiles",
+          component: () => import("@/pages/settings/ProfilesPage.vue"),
+        },
+        {
+          path: "new",
+          name: "settings-profile-new",
+          component: () => import("@/pages/settings/ProfilesPage.vue"),
+          meta: { title: "Add profile" },
+        },
+        {
+          path: ":profileId/edit",
+          name: "settings-profile-edit",
+          component: () => import("@/pages/settings/ProfilesPage.vue"),
+          meta: { title: "Edit profile" },
+        },
+      ],
     },
     {
       path: "/settings/access",
