@@ -4,17 +4,19 @@ import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { authKey } from "@/composables/useAuth.js";
 import { api } from "@/api.js";
 import { toastKey } from "@/composables/useToast.js";
 
 import LibraryPage from "./LibraryPage.vue";
 
-function mountLibraryPage() {
+function mountLibraryPage(profile: { role: "admin" | "member" } | null = { role: "admin" }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return mount(LibraryPage, {
     global: {
       plugins: [[VueQueryPlugin, { queryClient }]],
       provide: {
+        [authKey]: { state: { profile } },
         [toastKey]: { success: vi.fn() },
       },
       stubs: { SettingsLayout: { template: "<slot />" } },
@@ -45,6 +47,20 @@ describe("settings/LibraryPage", () => {
   });
 
   afterEach(() => vi.restoreAllMocks());
+
+  it.each([null, { role: "member" as const }])(
+    "shows library status without a refresh button for non-admins: %j",
+    async (profile) => {
+      const wrapper = mountLibraryPage(profile);
+      await flushPromises();
+      expect(wrapper.get("#settings-library-panel").text()).toContain("12 playlists · 215 videos");
+      expect(wrapper.get("header h2").text()).toBe("Refresh library");
+      expect(wrapper.find("button").exists()).toBe(false);
+      expect(api.getScanStatus).toHaveBeenCalledOnce();
+      expect(api.rescanLibrary).not.toHaveBeenCalled();
+      wrapper.unmount();
+    },
+  );
 
   it("shows placeholders until the library status loads", async () => {
     let resolveScanStatus!: (value: Awaited<ReturnType<typeof api.getScanStatus>>) => void;

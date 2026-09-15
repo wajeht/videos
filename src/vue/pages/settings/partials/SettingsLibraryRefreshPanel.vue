@@ -8,10 +8,12 @@ import AppButton from "@/components/ui/AppButton.vue";
 import PanelCard from "@/components/ui/PanelCard.vue";
 import PanelCardHeader from "@/components/ui/PanelCardHeader.vue";
 import { useAsyncAction } from "@/composables/useAsyncAction.js";
+import { useAuth } from "@/composables/useAuth.js";
 import { useToast } from "@/composables/useToast.js";
 import { queryKeys, scanStatusQueryOptions } from "@/queries.js";
 import { countText } from "@/utils.js";
 
+const auth = useAuth();
 const queryClient = useQueryClient();
 const scanRequest = useQuery(scanStatusQueryOptions());
 const toast = useToast();
@@ -157,6 +159,7 @@ async function rescanLibrary(): Promise<void> {
         </div>
       </div>
       <AppButton
+        v-if="auth.state.profile?.role === 'admin'"
         class="self-end max-[600px]:w-full"
         :loading="refreshing"
         loading-label="Refreshing…"
