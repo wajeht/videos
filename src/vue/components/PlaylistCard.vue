@@ -20,7 +20,7 @@ const to = computed(() => playerLocation(props.playlist.nextVideoId, props.playl
     <IntentRouterLink
       :to="to"
       :prefetch="() => prefetch.video(playlist.nextVideoId)"
-      class="relative block aspect-video overflow-hidden bg-mist ring-1 ring-black/5"
+      class="relative block aspect-video overflow-hidden bg-mist ring-1 ring-line"
       :aria-label="`Open ${playlist.title}`"
     >
       <img
