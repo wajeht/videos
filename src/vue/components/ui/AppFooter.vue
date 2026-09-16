@@ -4,7 +4,7 @@ const appVersion = __APP_VERSION__;
 
 <template>
   <footer class="text-center">
-    © 2026 · Made by
+    © 2026 · Made with ❤️ by
     <a
       class="underline-offset-4 hover:underline"
       href="https://github.com/wajeht"
