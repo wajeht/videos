@@ -6,8 +6,7 @@ import AlertMessage from "@/components/ui/AlertMessage.vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppInput from "@/components/ui/AppInput.vue";
 import FormField from "@/components/ui/FormField.vue";
-import PanelCard from "@/components/ui/PanelCard.vue";
-import PanelCardHeader from "@/components/ui/PanelCardHeader.vue";
+import FormSection from "@/components/ui/FormSection.vue";
 import { useAsyncAction } from "@/composables/useAsyncAction.js";
 import { useAuth } from "@/composables/useAuth.js";
 import { useToast } from "@/composables/useToast.js";
@@ -54,12 +53,11 @@ async function changePassword(): Promise<void> {
 </script>
 
 <template>
-  <PanelCard>
-    <PanelCardHeader
-      title="Access"
-      description="Change the password for this private library or sign out of this device."
-    />
-    <form class="grid gap-4 p-[clamp(22px,4vw,34px)]" @submit.prevent="changePassword">
+  <FormSection
+    title="Access"
+    description="Change the password for this private library or sign out of this device."
+  >
+    <form class="grid gap-4" @submit.prevent="changePassword">
       <AlertMessage v-if="generalPasswordError">
         {{ generalPasswordError }}
       </AlertMessage>
@@ -123,5 +121,5 @@ async function changePassword(): Promise<void> {
         Change password
       </AppButton>
     </form>
-  </PanelCard>
+  </FormSection>
 </template>

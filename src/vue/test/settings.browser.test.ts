@@ -90,7 +90,7 @@ async function expectStableLibraryStatusLayout(
     await page.waitForLoadState("load");
     await page.evaluate(() => document.fonts.ready);
 
-    const panel = page.locator("#settings-library-panel > section");
+    const panel = page.getByRole("group", { name: "Refresh library", exact: true });
     const statusRow = page.locator("[data-library-status]");
     const refreshRow = page.locator("[data-last-refresh]");
     const statusSkeleton = page.locator("[data-library-status-skeleton]");

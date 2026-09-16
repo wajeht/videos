@@ -5,8 +5,7 @@ import { computed } from "vue";
 import { api, apiErrorMessage } from "@/api.js";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
 import AppButton from "@/components/ui/AppButton.vue";
-import PanelCard from "@/components/ui/PanelCard.vue";
-import PanelCardHeader from "@/components/ui/PanelCardHeader.vue";
+import FormSection from "@/components/ui/FormSection.vue";
 import { useAsyncAction } from "@/composables/useAsyncAction.js";
 import { useAuth } from "@/composables/useAuth.js";
 import { useToast } from "@/composables/useToast.js";
@@ -70,15 +69,12 @@ async function rescanLibrary(): Promise<void> {
     {{ scanError }}
   </AlertMessage>
 
-  <PanelCard class="min-h-[260px]">
-    <PanelCardHeader
-      title="Refresh library"
-      description="Check your videos folder now for new or changed videos and playlists."
-    />
-    <div
-      class="flex min-h-[180px] flex-col items-start justify-between gap-8 p-[clamp(22px,4vw,34px)]"
-      data-scan-controls
-    >
+  <FormSection
+    class="min-h-[260px]"
+    title="Refresh library"
+    description="Check your videos folder now for new or changed videos and playlists."
+  >
+    <div class="flex min-h-[180px] flex-col items-start justify-between gap-8" data-scan-controls>
       <div class="min-w-0">
         <div
           class="grid gap-6"
@@ -163,5 +159,5 @@ async function rescanLibrary(): Promise<void> {
         Refresh library
       </AppButton>
     </div>
-  </PanelCard>
+  </FormSection>
 </template>

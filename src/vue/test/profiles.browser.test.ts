@@ -57,7 +57,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(page.getByRole("button", { name: "Switch profile" })).toHaveCount(0);
   await page.goto("/settings/profiles");
   await expect(page.getByRole("link", { name: "Access", exact: true })).toBeVisible();
-  await expect(page.locator("#settings-profiles-panel > section > header")).toHaveCount(1);
+  await expect(page.locator("#settings-profiles-panel > fieldset > legend")).toHaveCount(1);
   await page.getByRole("link", { name: "Add profile" }).click();
   await expect(page).toHaveURL(/\/settings\/profiles\/new$/);
   await expect(page.getByLabel("Permissions", { exact: true })).toHaveCount(0);
@@ -129,7 +129,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   const temporaryProfile = page.getByRole("link", { name: "Edit Temporary profile", exact: true });
   await temporaryProfile.click();
   const deletePanel = page
-    .locator("section")
+    .locator("fieldset")
     .filter({
       has: page.getByRole("heading", { name: "Delete profile", exact: true }),
     })
@@ -197,7 +197,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   await page.goto("/settings/profiles");
   await expect(page.getByRole("link", { name: /^Edit / })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
-  await expect(page.locator("#settings-profiles-panel > section > header")).toHaveCount(2);
+  await expect(page.locator("#settings-profiles-panel > fieldset > legend")).toHaveCount(2);
   await page.getByLabel(/^Profile name/).fill("Renamed Member");
   await page.getByRole("button", { name: "Save profile", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Profile updated" })).toBeVisible();
@@ -240,7 +240,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   await page.getByLabel(/^Profile password/).fill("member-password");
   await page.getByRole("button", { name: "Unlock profile" }).click();
   await expect(page.getByRole("heading", { name: "Profile details" })).toBeVisible();
-  await expect(page.locator("#settings-profiles-panel > section > header")).toHaveCount(2);
+  await expect(page.locator("#settings-profiles-panel > fieldset > legend")).toHaveCount(2);
   await page.screenshot({
     path: testInfo.outputPath("member-profile-settings-mobile.png"),
     fullPage: true,

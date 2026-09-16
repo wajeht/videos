@@ -8,11 +8,10 @@ import { useAsyncAction } from "@/composables/useAsyncAction.js";
 import { useConfirm } from "@/composables/useConfirm.js";
 import { useToast } from "@/composables/useToast.js";
 import SettingsLayout from "./partials/SettingsLayout.vue";
-import PanelCardHeader from "@/components/ui/PanelCardHeader.vue";
+import FormSection from "@/components/ui/FormSection.vue";
 import NotFoundPage from "@/pages/NotFoundPage.vue";
 import IntentRouterLink from "@/components/IntentRouterLink.vue";
 import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
-import PanelCard from "@/components/ui/PanelCard.vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
 import ProfileList from "./partials/ProfileList.vue";
@@ -129,12 +128,12 @@ watch(
           :error="lock.errorMessage.value"
           @save="lock.run($event)"
         />
-        <PanelCard v-if="admin && editing?.role === 'member'">
-          <PanelCardHeader
-            title="Delete profile"
-            description="Permanently delete this profile, watch progress, and preferences."
-          />
-          <div class="grid gap-4 p-[clamp(22px,4vw,34px)]">
+        <FormSection
+          v-if="admin && editing?.role === 'member'"
+          title="Delete profile"
+          description="Permanently delete this profile, watch progress, and preferences."
+        >
+          <div class="grid gap-4">
             <AlertMessage v-if="remove.errorMessage.value">{{
               remove.errorMessage.value
             }}</AlertMessage>
@@ -147,14 +146,14 @@ watch(
               >Delete profile</AppButton
             >
           </div>
-        </PanelCard>
+        </FormSection>
       </template>
-      <PanelCard v-else>
-        <PanelCardHeader
-          :title="editRoute ? 'Edit profile' : 'Manage profiles'"
-          :description="editRoute ? undefined : 'Add profiles and manage their access.'"
-        />
-        <div class="p-[clamp(22px,4vw,34px)]">
+      <FormSection
+        v-else
+        :title="editRoute ? 'Edit profile' : 'Manage profiles'"
+        :description="editRoute ? undefined : 'Add profiles and manage their access.'"
+      >
+        <div>
           <AlertMessage v-if="profiles.isError.value" class="mt-4"
             >Could not load profiles.
             <AppButton @click="profiles.refetch()">Try again</AppButton></AlertMessage
@@ -171,7 +170,7 @@ watch(
             >
           </div>
         </div>
-      </PanelCard>
+      </FormSection>
     </section>
   </SettingsLayout>
 </template>

@@ -54,7 +54,7 @@ describe("settings/LibraryPage", () => {
       const wrapper = mountLibraryPage(profile);
       await flushPromises();
       expect(wrapper.get("#settings-library-panel").text()).toContain("12 playlists · 215 videos");
-      expect(wrapper.get("header h2").text()).toBe("Refresh library");
+      expect(wrapper.get("legend h2").text()).toBe("Refresh library");
       expect(wrapper.find("button").exists()).toBe(false);
       expect(api.getScanStatus).toHaveBeenCalledOnce();
       expect(api.rescanLibrary).not.toHaveBeenCalled();
@@ -98,8 +98,8 @@ describe("settings/LibraryPage", () => {
     const wrapper = mountLibraryPage();
     await flushPromises();
 
-    const refreshCard = wrapper.get("#settings-library-panel > section");
-    expect(refreshCard.get("header h2").text()).toBe("Refresh library");
+    const refreshCard = wrapper.get("#settings-library-panel > fieldset");
+    expect(refreshCard.get("legend h2").text()).toBe("Refresh library");
     expect(refreshCard.text()).toContain("12 playlists · 215 videos");
     expect(refreshCard.get("[data-scan-controls]").classes()).toContain("flex-col");
     expect(wrapper.get("#settings-library-panel").text()).not.toContain("Videos per page");

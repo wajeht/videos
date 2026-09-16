@@ -59,7 +59,7 @@ describe("settings/AccessPage", () => {
   it("renders only the access settings", () => {
     const wrapper = mountAccessPage();
 
-    expect(wrapper.get("header h2").text()).toBe("Access");
+    expect(wrapper.get("legend h2").text()).toBe("Access");
     expect(wrapper.text()).toContain("Use at least 15 characters.");
     expect(wrapper.get("[data-change-password]").classes()).toContain("mt-4");
     expect(wrapper.find("[data-library-status]").exists()).toBe(false);
