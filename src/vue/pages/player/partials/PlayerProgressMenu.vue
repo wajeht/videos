@@ -89,7 +89,7 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeOnOutside
         v-if="autoplayLabel"
         role="menuitemcheckbox"
         :aria-checked="autoplayEnabled"
-        class="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-mist focus-visible:bg-mist focus-visible:outline-none"
+        class="menu-action flex w-full items-center justify-between gap-3 px-3 py-2 text-left"
         @click="emit('autoplayChange', !autoplayEnabled)"
       >
         <span>{{ autoplayLabel }}</span>
@@ -99,18 +99,20 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeOnOutside
           >{{ autoplayEnabled ? "On" : "Off" }}</span
         >
       </AppButton>
+      <hr v-if="autoplayLabel" class="menu-divider" />
       <AppButton
         v-if="regenerateLabel"
         role="menuitem"
-        class="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-mist focus-visible:bg-mist focus-visible:outline-none"
+        class="menu-action flex w-full items-center gap-2 px-3 py-2 text-left"
         :loading="regenerating"
         loading-label="Updating…"
         @click="regenerateThumbnail"
         >{{ regenerateLabel }}</AppButton
       >
+      <hr v-if="regenerateLabel" class="menu-divider" />
       <AppButton
         role="menuitem"
-        class="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-mist focus-visible:bg-mist focus-visible:outline-none"
+        class="menu-action flex w-full items-center gap-2 px-3 py-2 text-left"
         :loading="resetting"
         loading-label="Resetting…"
         @click="resetProgress"
@@ -119,3 +121,24 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeOnOutside
     </div>
   </div>
 </template>
+
+<style scoped>
+.menu-action {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-link);
+  cursor: pointer;
+}
+
+.menu-action:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+
+.menu-divider {
+  margin: 4px 12px;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+}
+</style>
