@@ -62,10 +62,7 @@ const sections = computed(() =>
             :id="`settings-${section.value}-link`"
             :to="{ name: section.routeName }"
             :prefetch="section.prefetch"
-            :class="[
-              'block text-link visited:text-link max-[760px]:py-2 max-[760px]:text-center',
-              section.stateClasses,
-            ]"
+            :class="['block max-[760px]:py-2 max-[760px]:text-center', section.stateClasses]"
             :aria-current="section.active ? 'page' : undefined"
             :aria-controls="`settings-${section.value}-panel`"
           >
