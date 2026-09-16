@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, shallowRef } from "vue";
+import { computed, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useQuery } from "@tanstack/vue-query";
 import { ApiError, type ProfileDto } from "@/api.js";
 import { useAuth } from "@/composables/useAuth.js";
@@ -11,11 +12,17 @@ import ProfileAvatar from "./partials/ProfileAvatar.vue";
 import ProfileUnlockForm from "./partials/ProfileUnlockForm.vue";
 import { profilesQueryOptions } from "@/queries.js";
 const auth = useAuth();
+const route = useRoute();
+const router = useRouter();
 const profiles = useQuery(profilesQueryOptions());
-const selected = shallowRef<ProfileDto | null>(null);
-const unlock = useAsyncAction((profile: ProfileDto, password: string) =>
-  auth.selectProfile(profile.id, password),
+const selected = computed(() =>
+  profiles.data.value?.find((profile) => profile.id === route.query.unlockProfile),
 );
+const unlock = useAsyncAction(
+  (profile: ProfileDto, password: string) => auth.selectProfile(profile.id, password),
+  { onSuccess: clearSelection },
+);
+watch(() => route.query.unlockProfile, unlock.clearError);
 const passwordError = computed(() =>
   unlock.error.value instanceof ApiError &&
   unlock.error.value.message === "Incorrect profile password"
@@ -23,13 +30,26 @@ const passwordError = computed(() =>
     : "",
 );
 const generalError = computed(() => (passwordError.value ? "" : unlock.errorMessage.value));
+async function clearSelection(): Promise<void> {
+  if (!route.query.unlockProfile) return;
+  await router.replace({
+    query: { ...route.query, unlockProfile: undefined },
+    hash: route.hash,
+  });
+}
+async function showUnlock(profileId: string): Promise<void> {
+  await router.push({
+    query: { ...route.query, unlockProfile: profileId },
+    hash: route.hash,
+  });
+}
 async function select(profile: ProfileDto): Promise<void> {
   unlock.clearError();
-  if (profile.isLocked) selected.value = profile;
+  if (profile.isLocked) await showUnlock(profile.id);
   else {
     await unlock.run(profile, "");
     if (passwordError.value) {
-      selected.value = { ...profile, isLocked: true };
+      await showUnlock(profile.id);
       unlock.clearError();
     }
   }
@@ -46,10 +66,7 @@ async function select(profile: ProfileDto): Promise<void> {
         :password-error="passwordError"
         :error="generalError"
         @unlock="unlock.run(selected, $event)"
-        @cancel="
-          selected = null;
-          unlock.clearError();
-        "
+        @cancel="clearSelection"
       />
       <template v-else>
         <div class="grid justify-items-center">

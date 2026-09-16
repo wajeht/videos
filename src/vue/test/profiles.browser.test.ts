@@ -5,7 +5,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   page,
   context,
 }, testInfo) => {
-  await page.goto("/");
+  await page.goto("/settings/profiles");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   if (await page.getByRole("heading", { name: "Set up your library" }).isVisible()) {
     await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -45,6 +45,23 @@ test("selects locked profiles and limits profile management to admins", async ({
   await page.getByRole("button", { name: "Admin Admin · Locked", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Who’s watching?" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Unlock Admin" })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
+  await page.goForward();
+  await expect(page.getByRole("heading", { name: "Unlock Admin" })).toBeVisible();
+  await page.getByLabel(/^Profile password/).fill("unsent-password");
+  const unlockUrl = page.url();
+  expect(new URL(unlockUrl).pathname).toBe("/settings/profiles");
+  expect(new URL(unlockUrl).searchParams.get("unlockProfile")).toBeTruthy();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Unlock Admin" })).toBeVisible();
+  await expect(page.getByLabel(/^Profile password/)).toHaveValue("");
+  await expect(page).toHaveURL(unlockUrl);
+  await page.getByRole("button", { name: "Back to profiles" }).click();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
+  await expect(page).toHaveURL("/settings/profiles");
+  await page.getByRole("button", { name: "Admin Admin · Locked", exact: true }).click();
   await expect(page.getByRole("button", { name: "Sign out", exact: true })).toHaveCount(0);
   await page.getByLabel(/^Profile password/).fill("wrong-password");
   await page.getByRole("button", { name: "Unlock profile" }).click();
@@ -54,8 +71,12 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(
     page.getByRole("navigation", { name: "Main navigation", exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Switch profile" })).toHaveCount(0);
-  await page.goto("/settings/profiles");
+  await expect(page).toHaveURL("/settings/profiles");
+  await expect(
+    page
+      .getByRole("navigation", { name: "Main navigation", exact: true })
+      .getByRole("button", { name: "Switch profile" }),
+  ).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Access", exact: true })).toBeVisible();
   await expect(page.locator("#settings-profiles-panel > fieldset > legend")).toHaveCount(1);
   await page.getByRole("button", { name: "Add profile" }).click();
