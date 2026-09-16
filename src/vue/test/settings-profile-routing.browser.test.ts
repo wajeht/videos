@@ -17,7 +17,7 @@ test("switching from Access to a member should land on an accessible page", asyn
   await page.goto("/settings/profiles/new");
   await page.getByLabel(/^Profile name/).fill("Review Member");
   await page.getByRole("button", { name: "Create profile", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Review Member", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Edit Review Member", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Access", exact: true }).click();
   await page.getByRole("button", { name: "Switch profile", exact: true }).click();
   await page.getByRole("button", { name: "Review Member Open", exact: true }).click();
@@ -112,7 +112,7 @@ for (const scenario of [
     await expect(page).toHaveURL(/\/settings\/library$/);
     if (returning) {
       await page.getByRole("link", { name: "Profiles", exact: true }).click();
-      await page.getByRole("link", { name: "Add profile", exact: true }).click();
+      await page.getByRole("button", { name: "Add profile", exact: true }).click();
       await page.getByLabel(/^Profile name/).fill("New draft");
     }
     release();

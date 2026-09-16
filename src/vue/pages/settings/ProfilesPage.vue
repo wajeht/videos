@@ -10,8 +10,6 @@ import { useToast } from "@/composables/useToast.js";
 import SettingsLayout from "./partials/SettingsLayout.vue";
 import FormSection from "@/components/ui/FormSection.vue";
 import NotFoundPage from "@/pages/NotFoundPage.vue";
-import IntentRouterLink from "@/components/IntentRouterLink.vue";
-import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
 import AppButton from "@/components/ui/AppButton.vue";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
 import ProfileList from "./partials/ProfileList.vue";
@@ -21,7 +19,6 @@ import { profilesQueryOptions } from "@/queries.js";
 const auth = useAuth();
 const route = useRoute();
 const router = useRouter();
-const prefetch = useRoutePrefetch();
 const confirmation = useConfirm();
 const toast = useToast();
 const admin = computed(() => auth.state.profile?.role === "admin");
@@ -160,12 +157,10 @@ watch(
           >
           <p v-if="profiles.isPending.value" class="mt-4" role="status">Loading profiles…</p>
           <ProfileList v-if="!editRoute && profiles.data.value" :profiles="profiles.data.value" />
-          <div v-if="!editRoute" class="mt-4 flex justify-end border-t border-line pt-6">
+          <div v-if="!editRoute" class="mt-4 flex justify-end">
             <AppButton
               class="max-[600px]:w-full"
-              :as="IntentRouterLink"
-              :to="{ name: 'settings-profile-new' }"
-              :prefetch="prefetch.settingsProfiles"
+              @click="router.push({ name: 'settings-profile-new' })"
               >Add profile</AppButton
             >
           </div>
