@@ -121,7 +121,7 @@ onBeforeUnmount(() => descriptionObserver?.disconnect());
 
     <AppButton
       v-if="expandable"
-      class="mx-auto mt-2 hidden min-h-9 items-center justify-center gap-2 px-2 max-[860px]:flex"
+      class="mx-auto mt-2 hidden min-h-9 cursor-pointer items-center justify-center gap-2 border-0 bg-transparent px-2 text-link hover:bg-transparent hover:underline max-[860px]:flex"
       :aria-controls="detailsId"
       :aria-expanded="expanded"
       @click="toggleExpanded"
