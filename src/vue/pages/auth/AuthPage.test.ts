@@ -66,7 +66,7 @@ describe("AuthPage", () => {
 
     expect(githubLink.text()).toBe("@wajeht");
     expect(githubLink.attributes("rel")).toBe("noreferrer");
-    expect(wrapper.text()).toContain("© 2026 · Made with ❤️ by @wajeht . v0.1.0");
+    expect(wrapper.text()).toContain("© 2026 · Made by @wajeht . v0.1.0");
   });
 
   it("requires 15 characters when creating a password", () => {
