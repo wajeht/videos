@@ -81,9 +81,7 @@ async function logout(): Promise<void> {
         </div>
       </aside>
 
-      <div
-        class="min-w-0 self-stretch border-0 border-l border-solid border-line pl-[31px] max-[760px]:border-l-0 max-[760px]:pl-0"
-      >
+      <div class="min-w-0 self-stretch pl-8 max-[760px]:pl-0">
         <slot />
       </div>
 
