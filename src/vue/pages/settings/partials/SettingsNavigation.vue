@@ -52,22 +52,26 @@ const sections = computed(() =>
 
 <template>
   <nav aria-label="Settings sections">
-    <div class="grid gap-1 max-[760px]:auto-cols-fr max-[760px]:grid-flow-col max-[760px]:gap-0">
-      <IntentRouterLink
-        v-for="section in sections"
-        :id="`settings-${section.value}-link`"
-        :key="section.value"
-        :to="{ name: section.routeName }"
-        :prefetch="section.prefetch"
-        :class="[
-          'flex min-h-10 w-full items-center py-2 text-left max-[760px]:justify-center',
-          section.stateClasses,
-        ]"
-        :aria-current="section.active ? 'page' : undefined"
-        :aria-controls="`settings-${section.value}-panel`"
-      >
-        <span>{{ section.label }}</span>
-      </IntentRouterLink>
-    </div>
+    <ul
+      class="m-0 list-none p-0 max-[760px]:grid max-[760px]:auto-cols-fr max-[760px]:grid-flow-col"
+    >
+      <li v-for="(section, index) in sections" :key="section.value">
+        <IntentRouterLink
+          :id="`settings-${section.value}-link`"
+          :to="{ name: section.routeName }"
+          :prefetch="section.prefetch"
+          :class="['block max-[760px]:py-2 max-[760px]:text-center', section.stateClasses]"
+          :aria-current="section.active ? 'page' : undefined"
+          :aria-controls="`settings-${section.value}-panel`"
+        >
+          {{ section.label }}
+        </IntentRouterLink>
+        <hr
+          v-if="index < sections.length - 1"
+          aria-hidden="true"
+          class="my-[15px] border-0 border-t border-solid border-line max-[760px]:hidden"
+        />
+      </li>
+    </ul>
   </nav>
 </template>

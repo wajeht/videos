@@ -62,9 +62,12 @@ describe("SettingsLayout", () => {
     expect(wrapper.get("[data-settings-layout]").classes()).toEqual(
       expect.arrayContaining(["grid-cols-[240px_minmax(0,1fr)]", "max-[760px]:grid-cols-1"]),
     );
-    expect(wrapper.get('[aria-label="Settings sections"]').text()).toContain(
-      "LibraryProfilesAccess",
-    );
+    expect(
+      wrapper
+        .get('[aria-label="Settings sections"]')
+        .findAll("a")
+        .map((link) => link.text()),
+    ).toEqual(["Library", "Profiles", "Access"]);
     expect(wrapper.get("[data-settings-page]").element.tagName).toBe("SECTION");
     expect(wrapper.get("[data-mobile-sign-out]").text()).toBe("Sign out");
     expect(wrapper.get("[data-desktop-sign-out]").text()).toBe("Sign out");

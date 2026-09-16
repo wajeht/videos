@@ -88,7 +88,10 @@ function togglePanel(panel: FilterType): void {
         :placeholder="view === 'playlists' ? 'Search playlists' : 'Search videos'"
         type="search"
       />
-      <AppButton v-if="hasActiveFilters" class="justify-self-start underline" @click="emit('clear')"
+      <AppButton
+        v-if="hasActiveFilters"
+        class="justify-self-start cursor-pointer border-0 bg-transparent p-0 text-link hover:bg-transparent hover:underline"
+        @click="emit('clear')"
         >Clear filters</AppButton
       >
       <PanelCard>
@@ -152,7 +155,7 @@ function togglePanel(panel: FilterType): void {
         <AppButton
           v-if="props.hasActiveFilters"
           data-clear-filters="mobile"
-          class="inline-flex min-h-9 items-center underline"
+          class="inline-flex min-h-9 cursor-pointer items-center border-0 bg-transparent p-0 text-link hover:bg-transparent hover:underline"
           @click="emit('clear')"
         >
           Clear filters

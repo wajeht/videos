@@ -59,8 +59,6 @@ describe("SettingsNavigation", () => {
     expect(sectionLinks[0]?.attributes("aria-current")).toBe("page");
     expect(sectionLinks[2]?.attributes("aria-current")).toBeUndefined();
     expect(sectionLinks[0]?.classes()).toContain("font-bold");
-    expect(sectionLinks[0]?.classes()).toContain("min-h-10");
-    expect(sectionLinks[0]?.classes()).not.toContain("min-h-12");
     expect(sectionLinks[0]?.classes().some((className) => className.includes("shadow"))).toBe(
       false,
     );
