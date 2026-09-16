@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 
 import IntentRouterLink from "@/components/IntentRouterLink.vue";
+import FormSection from "@/components/ui/FormSection.vue";
 import { useAuth } from "@/composables/useAuth.js";
 import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
 
@@ -52,26 +53,31 @@ const sections = computed(() =>
 
 <template>
   <nav aria-label="Settings sections">
-    <ul
-      class="m-0 list-none p-0 max-[760px]:grid max-[760px]:auto-cols-fr max-[760px]:grid-flow-col"
-    >
-      <li v-for="(section, index) in sections" :key="section.value">
-        <IntentRouterLink
-          :id="`settings-${section.value}-link`"
-          :to="{ name: section.routeName }"
-          :prefetch="section.prefetch"
-          :class="['block max-[760px]:py-2 max-[760px]:text-center', section.stateClasses]"
-          :aria-current="section.active ? 'page' : undefined"
-          :aria-controls="`settings-${section.value}-panel`"
-        >
-          {{ section.label }}
-        </IntentRouterLink>
-        <hr
-          v-if="index < sections.length - 1"
-          aria-hidden="true"
-          class="my-[15px] border-0 border-t border-solid border-line max-[760px]:hidden"
-        />
-      </li>
-    </ul>
+    <FormSection title="Settings">
+      <ul
+        class="m-0 list-none p-0 max-[760px]:grid max-[760px]:auto-cols-fr max-[760px]:grid-flow-col"
+      >
+        <li v-for="(section, index) in sections" :key="section.value">
+          <IntentRouterLink
+            :id="`settings-${section.value}-link`"
+            :to="{ name: section.routeName }"
+            :prefetch="section.prefetch"
+            :class="[
+              'block text-link visited:text-link max-[760px]:py-2 max-[760px]:text-center',
+              section.stateClasses,
+            ]"
+            :aria-current="section.active ? 'page' : undefined"
+            :aria-controls="`settings-${section.value}-panel`"
+          >
+            {{ section.label }}
+          </IntentRouterLink>
+          <hr
+            v-if="index < sections.length - 1"
+            aria-hidden="true"
+            class="my-[15px] border-0 border-t border-solid border-line max-[760px]:hidden"
+          />
+        </li>
+      </ul>
+    </FormSection>
   </nav>
 </template>
