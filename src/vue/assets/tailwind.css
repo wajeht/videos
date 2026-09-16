@@ -177,3 +177,17 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+@layer components {
+  @media (width > 760px) {
+    .sidebar-layout {
+      grid-template-columns: 240px minmax(0, 1fr);
+      column-gap: 2rem;
+    }
+
+    .sidebar-column {
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+    }
+  }
+}

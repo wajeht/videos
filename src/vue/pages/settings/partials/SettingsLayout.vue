@@ -56,10 +56,10 @@ async function logout(): Promise<void> {
     </AlertMessage>
 
     <div
-      class="mt-6 grid grid-cols-[240px_minmax(0,1fr)] items-start max-[760px]:grid-cols-1 max-[760px]:gap-8"
+      class="sidebar-layout mt-6 grid items-start max-[760px]:grid-cols-1 max-[760px]:gap-8"
       data-settings-layout
     >
-      <aside class="grid gap-[30px] pr-10 max-[760px]:pr-0">
+      <aside class="sidebar-column grid gap-[30px]">
         <SettingsNavigation />
         <div class="grid gap-3 max-[760px]:hidden" data-desktop-sign-out-container>
           <AppButton
@@ -81,7 +81,7 @@ async function logout(): Promise<void> {
         </div>
       </aside>
 
-      <div class="min-w-0 self-stretch pl-8 max-[760px]:pl-0">
+      <div class="min-w-0 self-stretch">
         <slot />
       </div>
 

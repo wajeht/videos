@@ -61,14 +61,14 @@ const displayedVideos = computed(() =>
       />
       <div
         data-testid="library-layout"
-        class="mt-6 grid grid-cols-[240px_minmax(0,1fr)] items-start gap-8 max-[760px]:mt-1 max-[760px]:grid-cols-1 max-[760px]:gap-1"
+        class="sidebar-layout mt-6 grid items-start max-[760px]:mt-1 max-[760px]:grid-cols-1 max-[760px]:gap-1"
       >
         <LibraryFiltersToolbar
           v-model:author="selectedAuthor"
           v-model:query="query"
           v-model:tag="selectedTag"
           v-model:view="selectedView"
-          class="sticky top-[90px] max-h-[calc(100dvh-114px)] overflow-y-auto max-[760px]:top-[calc(66px+env(safe-area-inset-top))] max-[760px]:z-30 max-[760px]:-mx-5 max-[760px]:max-h-none max-[760px]:overflow-visible max-[760px]:bg-porcelain max-[760px]:p-5"
+          class="sidebar-column sticky top-[90px] max-h-[calc(100dvh-114px)] max-[760px]:top-[calc(66px+env(safe-area-inset-top))] max-[760px]:z-30 max-[760px]:-mx-5 max-[760px]:max-h-none max-[760px]:overflow-visible max-[760px]:bg-porcelain max-[760px]:p-5"
           data-testid="library-filter-column"
           :authors="library.authors"
           :has-active-filters="hasActiveFilters"

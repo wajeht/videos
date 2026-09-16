@@ -60,7 +60,7 @@ describe("SettingsLayout", () => {
     expect(pageHeader.get("h1").text()).toBe("Settings");
     expect(pageHeader.text()).toContain("Videos settings");
     expect(wrapper.get("[data-settings-layout]").classes()).toEqual(
-      expect.arrayContaining(["grid-cols-[240px_minmax(0,1fr)]", "max-[760px]:grid-cols-1"]),
+      expect.arrayContaining(["sidebar-layout", "max-[760px]:grid-cols-1"]),
     );
     expect(
       wrapper
