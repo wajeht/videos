@@ -26,20 +26,25 @@ test("switching from Access to a member should land on an accessible page", asyn
   await expect(page.getByRole("heading", { name: "Profile details", exact: true })).toBeVisible();
 });
 
-for (const scenario of ["create", "update", "return", "update-return", "lock-return"] as const) {
+for (const scenario of [
+  "create",
+  "update",
+  "return",
+  "update-return",
+  "lock-return",
+  "delete-return",
+] as const) {
   test(`finishing ${scenario} preserves later navigation`, async ({ page }) => {
     await authenticate(page);
     const updating = scenario === "update" || scenario === "update-return";
     const locking = scenario === "lock-return";
-    const returning = scenario === "return" || scenario === "update-return" || locking;
+    const deleting = scenario === "delete-return";
+    const returning = scenario === "return" || scenario === "update-return" || locking || deleting;
     await page.goto("/settings/profiles/new");
-    if (updating || locking) {
+    if (updating || locking || deleting) {
       await page.getByLabel(/^Profile name/).fill(`Routing ${scenario}`);
       await page.getByRole("button", { name: "Create profile", exact: true }).click();
-      const row = page
-        .getByRole("row")
-        .filter({ has: page.getByRole("heading", { name: `Routing ${scenario}`, exact: true }) });
-      await row.getByRole("link", { name: "Edit", exact: true }).click();
+      await page.getByRole("link", { name: `Edit Routing ${scenario}`, exact: true }).click();
     }
     let release!: () => void;
     const paused = new Promise<void>((resolve) => {
@@ -49,18 +54,38 @@ for (const scenario of ["create", "update", "return", "update-return", "lock-ret
     const requested = new Promise<void>((resolve) => {
       started = resolve;
     });
-    const operation = updating ? "update" : "create";
+    let operation: "create" | "update" | "lock" | "delete" = "create";
+    if (updating) operation = "update";
+    if (locking) operation = "lock";
+    if (deleting) operation = "delete";
     const action = {
-      create: { path: "**/api/profiles", button: "Create profile", message: "Profile created" },
-      update: { path: "**/api/profiles/*", button: "Save profile", message: "Profile updated" },
+      create: {
+        method: "POST",
+        path: "**/api/profiles",
+        button: "Create profile",
+        message: "Profile created",
+      },
+      update: {
+        method: "PUT",
+        path: "**/api/profiles/*",
+        button: "Save profile",
+        message: "Profile updated",
+      },
+      delete: {
+        method: "DELETE",
+        path: "**/api/profiles/*",
+        button: "Delete profile",
+        message: "Profile deleted",
+      },
       lock: {
+        method: "PUT",
         path: "**/api/profiles/*/password",
         button: "Set password",
         message: "Profile password updated",
       },
-    }[locking ? "lock" : operation];
+    }[operation];
     await page.route(action.path, async (route) => {
-      if (route.request().method() === (updating || locking ? "PUT" : "POST")) {
+      if (route.request().method() === action.method) {
         started();
         await paused;
       }
@@ -69,13 +94,19 @@ for (const scenario of ["create", "update", "return", "update-return", "lock-ret
     if (locking) {
       await page.getByLabel(/^New profile password/).fill("member-password");
       await page.getByLabel(/^Confirm profile password/).fill("member-password");
-    } else await page.getByLabel(/^Profile name/).fill(`Slow ${scenario}`);
+    } else if (!deleting) await page.getByLabel(/^Profile name/).fill(`Slow ${scenario}`);
     await page
       .getByRole("button", {
         name: action.button,
         exact: true,
       })
       .click();
+    if (deleting) {
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Delete profile", exact: true })
+        .click();
+    }
     await requested;
     await page.getByRole("link", { name: "Library", exact: true }).click();
     await expect(page).toHaveURL(/\/settings\/library$/);
