@@ -23,6 +23,11 @@ describe("AuthPage", () => {
     const password = wrapper.get('input[autocomplete="current-password"]');
 
     expect(password.attributes("minlength")).toBeUndefined();
+    expect(wrapper.findAll("h1, h2").map((heading) => heading.text())).toEqual([
+      "Welcome back",
+      "Details",
+    ]);
+    expect(wrapper.get("form > fieldset > legend").text()).toBe("Details");
     expect(wrapper.text()).toContain("Please sign in to continue.");
     expect(wrapper.text()).not.toContain("Use at least 15 characters.");
   });
@@ -147,6 +152,9 @@ describe("AuthPage", () => {
     expect(wrapper.find('input[minlength="15"]').exists()).toBe(false);
     await wrapper.get('input[maxlength="40"]').setValue("Owner");
     const passwords = wrapper.findAll('input[type="password"]');
+    const passwordHelpId = passwords[0]!.attributes("aria-describedby");
+    expect(passwordHelpId).toBeTruthy();
+    expect(wrapper.get(`[id="${passwordHelpId}"]`).text()).toBe("Use at least 8 characters.");
     await passwords[0]!.setValue("admin-profile-password");
     await passwords[1]!.setValue("different-password");
     await wrapper.get("form").trigger("submit");

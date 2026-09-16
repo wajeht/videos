@@ -32,6 +32,11 @@ describe("profile picker", () => {
       .trigger("click");
     expect(selectProfile).toHaveBeenCalledTimes(1);
     expect(wrapper.get("h1").text()).toBe("Unlock Private");
+    expect(wrapper.findAll("h1, h2").map((heading) => heading.text())).toEqual([
+      "Unlock Private",
+      "Details",
+    ]);
+    expect(wrapper.get("form > fieldset > legend").text()).toBe("Details");
     expect(wrapper.text()).not.toContain("Sign out");
     expect(wrapper.text()).not.toContain("Who’s watching?");
     expect(wrapper.text()).not.toContain("Your progress. Your place in the library.");

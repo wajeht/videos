@@ -5,6 +5,7 @@ import AlertMessage from "@/components/ui/AlertMessage.vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppInput from "@/components/ui/AppInput.vue";
 import FormField from "@/components/ui/FormField.vue";
+import FormSection from "@/components/ui/FormSection.vue";
 
 const props = defineProps<{
   busy: boolean;
@@ -57,7 +58,7 @@ function submit(): void {
 </script>
 
 <template>
-  <form class="py-0" @submit.prevent="submit">
+  <form @submit.prevent="submit">
     <h1>
       {{ isSetup ? "Set up your library" : "Welcome back" }}
     </h1>
@@ -76,124 +77,127 @@ function submit(): void {
     <p v-if="isSetup" class="mt-6" aria-live="polite">
       {{ step === "library" ? "Step 1 of 2 · Library password" : "Step 2 of 2 · Admin profile" }}
     </p>
-    <input
-      class="sr-only"
-      name="username"
-      value="admin"
-      autocomplete="username"
-      readonly
-      tabindex="-1"
-    />
-
-    <FormField
-      v-if="isSetup && step === 'library' && setupTokenRequired"
-      v-slot="{ inputId, describedBy, invalid }"
-      class="mt-6"
-      label="Setup token"
-      help-text="Enter the one-time setup token configured on your server."
-      required
-    >
-      <AppInput
-        :id="inputId"
-        v-model="setupToken"
-        :aria-describedby="describedBy"
-        :invalid="invalid"
-        type="password"
-        autocomplete="one-time-code"
-        required
+    <FormSection title="Details" class="mt-6">
+      <input
+        class="sr-only"
+        aria-label="Username"
+        name="username"
+        value="admin"
+        autocomplete="username"
+        readonly
+        tabindex="-1"
       />
-    </FormField>
 
-    <FormField
-      v-if="!isSetup || step === 'library'"
-      v-slot="{ inputId, describedBy, invalid }"
-      class="mt-6"
-      label="Password"
-      :help-text="isSetup ? 'Use at least 15 characters.' : undefined"
-      :error="passwordError"
-      required
-    >
-      <AppInput
-        :id="inputId"
-        v-model="password"
-        :aria-describedby="describedBy"
-        :invalid="invalid"
-        type="password"
-        :autocomplete="isSetup ? 'new-password' : 'current-password'"
-        :minlength="isSetup ? 15 : undefined"
-        maxlength="72"
-        required
-        autofocus
-      />
-    </FormField>
-
-    <FormField
-      v-if="isSetup && step === 'library'"
-      v-slot="{ inputId, describedBy, invalid }"
-      class="mt-4"
-      label="Confirm password"
-      :error="formError"
-      required
-    >
-      <AppInput
-        :id="inputId"
-        v-model="confirmPassword"
-        :aria-describedby="describedBy"
-        :invalid="invalid"
-        type="password"
-        autocomplete="new-password"
-        minlength="15"
-        maxlength="72"
-        required
-      />
-    </FormField>
-
-    <fieldset v-if="isSetup && step === 'admin'" class="mt-6 grid gap-4">
-      <legend class="sr-only">Your admin profile</legend>
-      <p>
-        This profile manages the library. Keep its password separate from the shared app password.
-      </p>
-      <FormField v-slot="field" label="Profile name" required
-        ><AppInput
-          ref="adminNameInput"
-          :id="field.inputId"
-          v-model="adminName"
-          maxlength="40"
-          required
-      /></FormField>
       <FormField
-        v-slot="field"
-        label="Admin profile password"
-        help-text="Use at least 8 characters."
+        v-if="isSetup && step === 'library' && setupTokenRequired"
+        v-slot="{ inputId, describedBy, invalid }"
+        label="Setup token"
+        help-text="Enter the one-time setup token configured on your server."
         required
-        ><AppInput
-          :id="field.inputId"
-          v-model="adminPassword"
+      >
+        <AppInput
+          :id="inputId"
+          v-model="setupToken"
+          :aria-describedby="describedBy"
+          :invalid="invalid"
           type="password"
-          autocomplete="new-password"
-          minlength="8"
+          autocomplete="one-time-code"
+          required
+        />
+      </FormField>
+
+      <FormField
+        v-if="!isSetup || step === 'library'"
+        v-slot="{ inputId, describedBy, invalid }"
+        :class="isSetup && setupTokenRequired ? 'mt-4' : undefined"
+        label="Password"
+        :help-text="isSetup ? 'Use at least 15 characters.' : undefined"
+        :error="passwordError"
+        required
+      >
+        <AppInput
+          :id="inputId"
+          v-model="password"
+          :aria-describedby="describedBy"
+          :invalid="invalid"
+          type="password"
+          :autocomplete="isSetup ? 'new-password' : 'current-password'"
+          :minlength="isSetup ? 15 : undefined"
           maxlength="72"
           required
-      /></FormField>
+          autofocus
+        />
+      </FormField>
+
       <FormField
-        v-slot="field"
-        label="Confirm admin profile password"
-        :error="adminPasswordError"
+        v-if="isSetup && step === 'library'"
+        v-slot="{ inputId, describedBy, invalid }"
+        class="mt-4"
+        label="Confirm password"
+        :error="formError"
         required
-        ><AppInput
-          :id="field.inputId"
-          v-model="confirmAdminPassword"
-          :aria-describedby="field.describedBy"
-          :invalid="field.invalid"
+      >
+        <AppInput
+          :id="inputId"
+          v-model="confirmPassword"
+          :aria-describedby="describedBy"
+          :invalid="invalid"
           type="password"
           autocomplete="new-password"
+          minlength="15"
+          maxlength="72"
           required
-      /></FormField>
-    </fieldset>
-    <div class="mt-6 grid auto-cols-fr grid-flow-col gap-3">
-      <AppButton type="submit" :loading="busy" loading-label="Please wait…">
-        {{ isSetup ? (step === "library" ? "Continue" : "Finish setup") : "Sign in" }}
-      </AppButton>
-    </div>
+        />
+      </FormField>
+
+      <div v-if="isSetup && step === 'admin'" class="grid gap-4">
+        <p>
+          This profile manages the library. Keep its password separate from the shared app password.
+        </p>
+        <FormField v-slot="field" label="Profile name" required
+          ><AppInput
+            ref="adminNameInput"
+            :id="field.inputId"
+            v-model="adminName"
+            maxlength="40"
+            required
+        /></FormField>
+        <FormField
+          v-slot="field"
+          label="Admin profile password"
+          help-text="Use at least 8 characters."
+          required
+          ><AppInput
+            :id="field.inputId"
+            v-model="adminPassword"
+            :aria-describedby="field.describedBy"
+            :invalid="field.invalid"
+            type="password"
+            autocomplete="new-password"
+            minlength="8"
+            maxlength="72"
+            required
+        /></FormField>
+        <FormField
+          v-slot="field"
+          label="Confirm admin profile password"
+          :error="adminPasswordError"
+          required
+          ><AppInput
+            :id="field.inputId"
+            v-model="confirmAdminPassword"
+            :aria-describedby="field.describedBy"
+            :invalid="field.invalid"
+            type="password"
+            autocomplete="new-password"
+            required
+        /></FormField>
+      </div>
+      <div class="mt-6 grid auto-cols-fr grid-flow-col gap-3">
+        <AppButton type="submit" :loading="busy" loading-label="Please wait…">
+          {{ isSetup ? (step === "library" ? "Continue" : "Finish setup") : "Sign in" }}
+        </AppButton>
+      </div>
+    </FormSection>
   </form>
 </template>
