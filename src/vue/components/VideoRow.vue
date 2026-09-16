@@ -25,7 +25,7 @@ const prefetch = useRoutePrefetch();
       sidebar
         ? 'min-h-14 grid-cols-[72px_minmax(0,1fr)_30px] gap-2 px-3'
         : 'min-h-[62px] grid-cols-[42px_minmax(0,1fr)_auto_42px] gap-3 px-4 max-[600px]:grid-cols-[31px_minmax(0,1fr)_32px] max-[600px]:gap-[7px] max-[600px]:px-[10px]',
-      active && 'bg-mist shadow-[inset_4px_0_#d58b3b]',
+      active && 'bg-mist shadow-[inset_4px_0_var(--color-link)]',
     ]"
   >
     <span v-if="sidebar" class="relative aspect-video w-[72px] overflow-hidden bg-mist">

@@ -28,7 +28,7 @@ const segments = computed(() => {
 
 <template>
   <template v-for="(segment, index) in segments" :key="index">
-    <mark v-if="segment.highlighted" class="bg-link/45 px-px text-inherit">{{ segment.text }}</mark>
+    <mark v-if="segment.highlighted">{{ segment.text }}</mark>
     <template v-else>{{ segment.text }}</template>
   </template>
 </template>

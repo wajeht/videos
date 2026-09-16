@@ -77,7 +77,7 @@ defineExpose({ video });
     </div>
     <div
       v-if="ended"
-      class="absolute inset-0 z-[3] grid place-items-center content-center bg-[rgb(18_22_28_/_92%)] p-8 text-center backdrop-blur-lg"
+      class="absolute inset-0 z-[3] grid place-items-center content-center bg-surface p-8 text-center text-ink"
     >
       <span>Video complete</span>
       <h2 class="mt-4">

@@ -95,7 +95,7 @@ async function rescanLibrary(): Promise<void> {
               class="mt-2"
               :class="{
                 'font-semibold text-clay-ink': scanStatus?.status === 'failed',
-                'font-semibold text-link':
+                'font-semibold text-ink':
                   scanStatus?.status !== 'failed' && Boolean(scanStatus?.warnings.length),
                 'text-muted': scanStatus?.status !== 'failed' && !scanStatus?.warnings.length,
               }"
@@ -135,7 +135,7 @@ async function rescanLibrary(): Promise<void> {
             </time>
           </div>
         </div>
-        <div v-if="scanStatus?.warnings.length" class="mt-5 border border-link/25 bg-link/10 p-4">
+        <div v-if="scanStatus?.warnings.length" class="mt-5 border border-line bg-mist p-4">
           <p>Review these files, correct each listed problem, then refresh the library.</p>
           <ul class="mt-3 grid gap-3" aria-label="Library issues">
             <li
