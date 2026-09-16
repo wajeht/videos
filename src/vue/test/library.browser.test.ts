@@ -111,6 +111,10 @@ test("uses responsive library filters and a mobile drawer", async ({ page }) => 
   const drawer = page.getByRole("dialog", { name: "Authors" });
   const closeButton = drawer.getByRole("button", { name: "Close authors filters" });
   await expect(drawer).toBeVisible();
+  await expect(drawer).toHaveCSS("border-top-width", "0px");
+  await expect(drawer).toHaveCSS("color", "rgb(51, 51, 51)");
+  await expect(drawer.getByRole("group", { name: "Authors" })).toHaveCSS("border-top-width", "0px");
+  await expect(drawer.getByRole("group", { name: "Authors" })).toHaveCSS("padding-left", "0px");
   await expect(closeButton).toBeFocused();
 
   await page.keyboard.press("Escape");
@@ -140,6 +144,7 @@ test("uses responsive library filters and a mobile drawer", async ({ page }) => 
   const desktopAuthors = page.getByRole("group", { name: "Authors" });
   const desktopTags = page.getByRole("group", { name: "Tags" });
   await expect(desktopAuthors).toBeVisible();
+  await expect(desktopAuthors).toHaveCSS("border-top-width", "1px");
   await expect(page.getByRole("group", { name: "Videos per page" })).toBeVisible();
   await expect(page.locator('input[name="library-desktop-page-size"][value="24"]')).toBeChecked();
 

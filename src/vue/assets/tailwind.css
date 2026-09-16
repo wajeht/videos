@@ -58,6 +58,10 @@
     outline-offset: 2px;
   }
 
+  dialog {
+    color: var(--color-ink);
+  }
+
   img,
   picture,
   video,

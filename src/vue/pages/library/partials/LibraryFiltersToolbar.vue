@@ -172,6 +172,7 @@ function togglePanel(panel: FilterType): void {
     >
       <LibraryPlaylistFilter
         v-if="activeMobilePanel === 'view'"
+        class="m-0 border-0 p-0"
         v-model="view"
         hide-label
         name="library-mobile-view"
@@ -179,6 +180,7 @@ function togglePanel(panel: FilterType): void {
       />
       <LibraryFilterGroup
         v-else-if="activeMobilePanel === 'author'"
+        class="m-0 border-0 p-0"
         v-model="mobilePanelValue"
         all-label="No authors"
         hide-label
@@ -189,6 +191,7 @@ function togglePanel(panel: FilterType): void {
       />
       <LibraryPageSizeFilter
         v-else-if="activeMobilePanel === 'pageSize'"
+        class="m-0 border-0 p-0"
         v-model="pageSize"
         hide-label
         :disabled="pageSizeDisabled"
@@ -198,6 +201,7 @@ function togglePanel(panel: FilterType): void {
       />
       <LibraryFilterGroup
         v-else
+        class="m-0 border-0 p-0"
         v-model="mobilePanelValue"
         all-label="No tags"
         hide-label
