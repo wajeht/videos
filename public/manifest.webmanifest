@@ -26,14 +26,14 @@
   "screenshots": [
     {
       "src": "/pwa-library-narrow.png",
-      "sizes": "390x844",
+      "sizes": "616x1334",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Videos sign-in on mobile"
     },
     {
       "src": "/pwa-library-wide.png",
-      "sizes": "1440x900",
+      "sizes": "2275x1422",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Videos sign-in on desktop"
