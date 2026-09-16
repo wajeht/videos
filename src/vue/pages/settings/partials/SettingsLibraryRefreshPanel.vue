@@ -70,7 +70,7 @@ async function rescanLibrary(): Promise<void> {
     {{ scanError }}
   </AlertMessage>
 
-  <PanelCard class="min-h-[260px]" :elevated="false" padding="none">
+  <PanelCard class="min-h-[260px]">
     <PanelCardHeader
       title="Refresh library"
       description="Check your videos folder now for new or changed videos and playlists."
@@ -87,19 +87,19 @@ async function rescanLibrary(): Promise<void> {
         >
           <span v-if="loadingScanStatus" class="sr-only">Loading library status</span>
           <div data-library-status>
-            <p class="text-xs font-bold text-ink">Library status</p>
+            <p>Library status</p>
             <p
               v-if="loadingScanStatus"
-              class="mt-2 h-5 w-44 max-w-full animate-pulse rounded bg-mist motion-reduce:animate-none"
+              class="mt-2 h-[1lh] w-44 max-w-full animate-pulse bg-mist motion-reduce:animate-none"
               aria-hidden="true"
               data-library-status-skeleton
             />
             <p
               v-else
-              class="mt-2 text-sm"
+              class="mt-2"
               :class="{
                 'font-semibold text-clay-ink': scanStatus?.status === 'failed',
-                'font-semibold text-belt':
+                'font-semibold text-link':
                   scanStatus?.status !== 'failed' && Boolean(scanStatus?.warnings.length),
                 'text-muted': scanStatus?.status !== 'failed' && !scanStatus?.warnings.length,
               }"
@@ -112,7 +112,7 @@ async function rescanLibrary(): Promise<void> {
                 scanStatus?.completedAt &&
                 scanStatus.warnings.length
               "
-              class="mt-1.5 text-xs leading-5 text-muted"
+              class="mt-1.5"
             >
               {{ countText(scanStatus.playlistCount, "playlist") }} ·
               {{ countText(scanStatus.videoCount, "video") }}
@@ -120,40 +120,35 @@ async function rescanLibrary(): Promise<void> {
           </div>
 
           <div v-if="loadingScanStatus || scanStatus?.completedAt" data-last-refresh>
-            <p class="text-xs font-bold text-ink">
+            <p>
               <template v-if="scanStatus?.status === 'failed'">Last refresh attempt</template>
               <template v-else>Last refreshed</template>
             </p>
             <div
               v-if="loadingScanStatus"
-              class="mt-2 h-5 w-36 max-w-full animate-pulse rounded bg-mist motion-reduce:animate-none"
+              class="mt-2 h-[1lh] w-36 max-w-full animate-pulse bg-mist motion-reduce:animate-none"
               aria-hidden="true"
               data-last-refresh-skeleton
             />
             <time
               v-else-if="scanStatus?.completedAt"
-              class="mt-2 block text-sm text-muted"
+              class="mt-2 block"
               :datetime="scanStatus.completedAt"
             >
               {{ lastRefreshText }}
             </time>
           </div>
         </div>
-        <div
-          v-if="scanStatus?.warnings.length"
-          class="mt-5 rounded-[7px] border border-belt/25 bg-belt/10 p-4"
-        >
-          <p class="text-[.78rem] leading-5 text-muted">
-            Review these files, correct each listed problem, then refresh the library.
-          </p>
+        <div v-if="scanStatus?.warnings.length" class="mt-5 border border-link/25 bg-link/10 p-4">
+          <p>Review these files, correct each listed problem, then refresh the library.</p>
           <ul class="mt-3 grid gap-3" aria-label="Library issues">
             <li
               v-for="warning in scanStatus.warnings"
               :key="`${warning.path}:${warning.message}`"
-              class="grid gap-1 text-[.78rem] leading-5"
+              class="grid gap-1"
             >
-              <code class="break-all font-semibold text-ink">{{ warning.path }}</code>
-              <span class="text-muted">{{ warning.message }}</span>
+              <code class="break-all">{{ warning.path }}</code>
+              <span>{{ warning.message }}</span>
             </li>
           </ul>
         </div>

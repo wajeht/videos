@@ -22,7 +22,7 @@ const prefetch = useRoutePrefetch();
       :heading-level="2"
     >
       <template #actions>
-        <AppButton :as="IntentRouterLink" to="/videos" :prefetch="prefetch.videos" size="lg"
+        <AppButton :as="IntentRouterLink" to="/videos" :prefetch="prefetch.videos"
           >Browse videos</AppButton
         >
       </template>

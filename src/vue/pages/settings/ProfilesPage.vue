@@ -129,7 +129,7 @@ watch(
           :error="lock.errorMessage.value"
           @save="lock.run($event)"
         />
-        <PanelCard v-if="admin && editing?.role === 'member'" :elevated="false" padding="none">
+        <PanelCard v-if="admin && editing?.role === 'member'">
           <PanelCardHeader
             title="Delete profile"
             description="Permanently delete this profile, watch progress, and preferences."
@@ -140,7 +140,6 @@ watch(
             }}</AlertMessage>
             <AppButton
               class="justify-self-end max-[600px]:w-full"
-              variant="danger"
               :disabled="save.pending.value || lock.pending.value"
               :loading="remove.pending.value"
               loading-label="Deleting…"
@@ -150,7 +149,7 @@ watch(
           </div>
         </PanelCard>
       </template>
-      <PanelCard v-else :elevated="false" padding="none">
+      <PanelCard v-else>
         <PanelCardHeader
           :title="editRoute ? 'Edit profile' : 'Manage profiles'"
           :description="editRoute ? undefined : 'Add profiles and manage their access.'"
@@ -158,9 +157,7 @@ watch(
         <div class="p-[clamp(22px,4vw,34px)]">
           <AlertMessage v-if="profiles.isError.value" class="mt-4"
             >Could not load profiles.
-            <AppButton variant="secondary" @click="profiles.refetch()"
-              >Try again</AppButton
-            ></AlertMessage
+            <AppButton @click="profiles.refetch()">Try again</AppButton></AlertMessage
           >
           <p v-if="profiles.isPending.value" class="mt-4" role="status">Loading profiles…</p>
           <ProfileList v-if="!editRoute && profiles.data.value" :profiles="profiles.data.value" />

@@ -62,23 +62,20 @@ async function select(profile: ProfileDto): Promise<void> {
         <p v-if="profiles.isPending.value" class="mt-8" role="status">Loading profiles…</p>
         <AlertMessage v-if="profiles.isError.value" class="mt-8"
           >Could not load profiles.
-          <AppButton variant="secondary" @click="profiles.refetch()"
-            >Try again</AppButton
-          ></AlertMessage
+          <AppButton @click="profiles.refetch()">Try again</AppButton></AlertMessage
         >
         <AlertMessage v-if="generalError" class="mt-8">{{ generalError }}</AlertMessage>
         <div class="mt-10 flex flex-wrap justify-center gap-6">
           <AppButton
             v-for="profile in profiles.data.value"
             :key="profile.id"
-            variant="unstyled"
-            class="grid w-28 justify-items-center gap-3 rounded-[8px] p-2 text-ink transition-colors duration-[160ms] hover:bg-porcelain"
+            class="grid w-28 justify-items-center gap-3 p-2 transition-colors duration-[160ms] hover:bg-porcelain"
             :disabled="unlock.pending.value"
             @click="select(profile)"
           >
             <ProfileAvatar :name="profile.name" />
-            <span class="max-w-full break-words font-bold">{{ profile.name }}</span>
-            <span class="text-xs text-muted"
+            <span class="max-w-full break-words">{{ profile.name }}</span>
+            <span
               >{{ profile.role === "admin" ? "Admin · " : ""
               }}{{ profile.isLocked ? "Locked" : "Open" }}</span
             >

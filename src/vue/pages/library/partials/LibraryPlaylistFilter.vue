@@ -11,13 +11,11 @@ const selected = defineModel<LibraryView>({ required: true });
 
 <template>
   <fieldset>
-    <legend :class="hideLabel ? 'sr-only' : 'mb-3 text-[.72rem] font-extrabold text-ink'">
-      View
-    </legend>
-    <ul class="space-y-2 text-[.86rem]">
+    <legend :class="hideLabel ? 'sr-only' : 'mb-3'">View</legend>
+    <ul class="list-none p-0 space-y-2">
       <li>
         <label
-          class="flex cursor-pointer items-center gap-2.5 text-ink max-[760px]:min-h-11"
+          class="flex cursor-pointer items-center gap-2.5 max-[760px]:min-h-11"
           @pointerenter="emit('prefetch', 'videos')"
         >
           <input
@@ -25,7 +23,7 @@ const selected = defineModel<LibraryView>({ required: true });
             type="radio"
             :name="name"
             value="videos"
-            class="h-4 w-4 border-line text-ink focus-visible:ring-belt-light"
+            class="h-4 w-4 border-line focus-visible:ring-link"
             @focus="emit('prefetch', 'videos')"
             @pointerdown="emit('prefetch', 'videos')"
           />
@@ -34,7 +32,7 @@ const selected = defineModel<LibraryView>({ required: true });
       </li>
       <li>
         <label
-          class="flex cursor-pointer items-center gap-2.5 text-ink max-[760px]:min-h-11"
+          class="flex cursor-pointer items-center gap-2.5 max-[760px]:min-h-11"
           @pointerenter="emit('prefetch', 'playlists')"
         >
           <input
@@ -42,7 +40,7 @@ const selected = defineModel<LibraryView>({ required: true });
             type="radio"
             :name="name"
             value="playlists"
-            class="h-4 w-4 border-line text-ink focus-visible:ring-belt-light"
+            class="h-4 w-4 border-line focus-visible:ring-link"
             @focus="emit('prefetch', 'playlists')"
             @pointerdown="emit('prefetch', 'playlists')"
           />

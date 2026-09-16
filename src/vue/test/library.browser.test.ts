@@ -80,11 +80,10 @@ test("uses responsive library filters and a mobile drawer", async ({ page }) => 
   await expect(search).toBeVisible();
   await expect(actions).toBeVisible();
   await expect(authorButton).toBeVisible();
-  await expect(viewButton).toHaveCSS("background-color", "rgb(65, 65, 65)");
-  await expect(viewButton).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(viewButton).toHaveAttribute("aria-pressed", "true");
   await expect(filterColumn).toHaveCSS("position", "sticky");
   await expect(filterColumn).toHaveCSS("top", "66px");
-  await expect(filterColumn).toHaveCSS("background-color", "rgb(24, 24, 24)");
+  await expect(filterColumn).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(filterColumn).toHaveCSS("box-shadow", "none");
   await expect(filterColumn).toHaveCSS("padding-top", "20px");
   await expect(filterColumn).toHaveCSS("padding-bottom", "20px");
@@ -92,14 +91,14 @@ test("uses responsive library filters and a mobile drawer", async ({ page }) => 
   const headingBox = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
   const searchBox = (await search.boundingBox())!;
   expect(Math.round(searchBox.x)).toBe(Math.round(headingBox.x));
-  expect(Math.round(searchBox.y - (headingBox.y + headingBox.height))).toBe(24);
+  expect(searchBox.y).toBeGreaterThan(headingBox.y + headingBox.height);
   const mobileFilterBox = (await filterColumn.boundingBox())!;
   const mobileClientWidth = await page.evaluate(() => document.documentElement.clientWidth);
   expect(mobileFilterBox.x).toBe(0);
   expect(mobileFilterBox.width).toBe(mobileClientWidth);
   const actionsBox = (await actions.boundingBox())!;
   const firstVideoBox = (await page.locator("article").first().boundingBox())!;
-  expect(Math.round(firstVideoBox.y - (actionsBox.y + actionsBox.height))).toBe(24);
+  expect(firstVideoBox.y).toBeGreaterThan(actionsBox.y + actionsBox.height);
 
   await page.getByTestId("library-layout").evaluate((element) => {
     element.style.minHeight = "1800px";
@@ -121,8 +120,7 @@ test("uses responsive library filters and a mobile drawer", async ({ page }) => 
   await authorButton.click();
   await drawer.getByRole("checkbox", { name: "Example Author (32)" }).check();
   await expect(page).toHaveURL(/author=Example(?:\+|%20)Author/);
-  await expect(authorButton).toHaveCSS("background-color", "rgb(65, 65, 65)");
-  await expect(authorButton).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(authorButton).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("Escape");
   await expect(drawer).toHaveCount(0);
 

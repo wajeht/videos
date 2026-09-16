@@ -18,7 +18,7 @@ const name = shallowRef(props.profile?.name ?? "");
 const password = shallowRef("");
 </script>
 <template>
-  <PanelCard :elevated="false" padding="none">
+  <PanelCard>
     <PanelCardHeader
       :title="profile ? (admin ? `Edit ${profile.name}` : 'Profile details') : 'Add profile'"
     />
@@ -51,9 +51,7 @@ const password = shallowRef("");
       <div
         class="mt-4 flex flex-wrap justify-end gap-3 max-[600px]:grid max-[600px]:auto-cols-fr max-[600px]:grid-flow-col"
       >
-        <AppButton v-if="admin" variant="secondary" :disabled="busy" @click="emit('cancel')">
-          Cancel
-        </AppButton>
+        <AppButton v-if="admin" :disabled="busy" @click="emit('cancel')"> Cancel </AppButton>
         <AppButton type="submit" :loading="busy">{{
           profile ? "Save profile" : "Create profile"
         }}</AppButton>

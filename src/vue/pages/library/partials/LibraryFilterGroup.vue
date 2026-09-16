@@ -37,14 +37,14 @@ function prefetchOption(name: string): void {
 
 <template>
   <fieldset>
-    <legend :class="hideLabel ? 'sr-only' : 'mb-3 text-[.72rem] font-extrabold text-ink'">
+    <legend :class="hideLabel ? 'sr-only' : 'mb-3'">
       {{ label }}
     </legend>
-    <p v-if="!visible.length" class="text-[.82rem] text-muted">{{ allLabel }}</p>
-    <ul v-else class="space-y-2 text-[.86rem]">
+    <p v-if="!visible.length">{{ allLabel }}</p>
+    <ul v-else class="list-none p-0 space-y-2">
       <li v-for="option in visible" :key="option.name">
         <label
-          class="flex cursor-pointer items-center gap-2.5 text-ink max-[760px]:min-h-11"
+          class="flex cursor-pointer items-center gap-2.5 max-[760px]:min-h-11"
           @pointerenter="prefetchOption(option.name)"
         >
           <input
@@ -52,7 +52,7 @@ function prefetchOption(name: string): void {
             type="checkbox"
             :name="name"
             :value="option.name"
-            class="h-4 w-4 rounded border-line text-ink focus-visible:ring-belt-light"
+            class="h-4 w-4 border-line focus-visible:ring-link"
             @focus="prefetchOption(option.name)"
             @pointerdown="prefetchOption(option.name)"
           />
@@ -62,8 +62,7 @@ function prefetchOption(name: string): void {
     </ul>
     <AppButton
       v-if="allOptions.length > collapsedLimit"
-      variant="unstyled"
-      class="mt-3 text-[.75rem] font-bold text-ink underline"
+      class="mt-3 underline"
       @click="expanded = !expanded"
     >
       {{ expanded ? "Show fewer" : `Show all ${allOptions.length}` }}

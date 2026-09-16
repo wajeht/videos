@@ -54,7 +54,6 @@ describe("PlayerProgressMenu", () => {
         label: "Playlist actions",
         resetLabel: "Reset playlist progress",
         resetting: false,
-        tone: "light",
       },
     });
 

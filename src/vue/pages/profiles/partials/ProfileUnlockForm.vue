@@ -11,7 +11,7 @@ const password = shallowRef("");
 </script>
 <template>
   <form class="mx-auto grid max-w-sm gap-4 text-left" @submit.prevent="emit('unlock', password)">
-    <h1 class="text-xl font-bold">Unlock {{ profile.name }}</h1>
+    <h1>Unlock {{ profile.name }}</h1>
     <AlertMessage v-if="error">{{ error }}</AlertMessage>
     <FormField v-slot="field" label="Profile password" :error="passwordError" required>
       <AppInput
@@ -28,9 +28,7 @@ const password = shallowRef("");
       />
     </FormField>
     <div class="grid grid-cols-2 gap-3">
-      <AppButton variant="secondary" :disabled="busy" @click="emit('cancel')"
-        >Back to profiles</AppButton
-      >
+      <AppButton :disabled="busy" @click="emit('cancel')">Back to profiles</AppButton>
       <AppButton type="submit" :loading="busy">Unlock profile</AppButton>
     </div>
   </form>

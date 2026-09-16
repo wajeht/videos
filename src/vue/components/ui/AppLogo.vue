@@ -6,9 +6,9 @@ withDefaults(defineProps<{ showText?: boolean; textClass?: string }>(), {
 </script>
 
 <template>
-  <span class="inline-flex items-center gap-3 font-display text-xl font-semibold">
+  <span class="inline-flex items-center gap-3">
     <span
-      class="relative grid h-6 w-9 place-items-center rounded-[2px] border-2 border-current"
+      class="relative grid h-6 w-9 place-items-center border-2 border-current"
       aria-hidden="true"
     >
       <i class="absolute top-[2px] left-[3px] h-[3px] w-[5px] bg-current" />

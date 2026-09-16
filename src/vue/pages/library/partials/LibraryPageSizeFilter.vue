@@ -18,13 +18,11 @@ const selected = defineModel<LibraryPageSize>({ required: true });
 
 <template>
   <fieldset :disabled="disabled">
-    <legend :class="hideLabel ? 'sr-only' : 'mb-3 text-[.72rem] font-extrabold text-ink'">
-      Videos per page
-    </legend>
-    <ul class="space-y-2 text-[.86rem]">
+    <legend :class="hideLabel ? 'sr-only' : 'mb-3'">Videos per page</legend>
+    <ul class="list-none p-0 space-y-2">
       <li v-for="size in LIBRARY_PAGE_SIZES" :key="size">
         <label
-          class="flex cursor-pointer items-center gap-2.5 text-ink max-[760px]:min-h-11"
+          class="flex cursor-pointer items-center gap-2.5 max-[760px]:min-h-11"
           @pointerenter="emit('prefetch', size)"
         >
           <input
@@ -32,7 +30,7 @@ const selected = defineModel<LibraryPageSize>({ required: true });
             type="radio"
             :name="name"
             :value="size"
-            class="h-4 w-4 border-line text-ink focus-visible:ring-belt-light"
+            class="h-4 w-4 border-line focus-visible:ring-link"
             @focus="emit('prefetch', size)"
             @pointerdown="emit('prefetch', size)"
           />
@@ -40,6 +38,6 @@ const selected = defineModel<LibraryPageSize>({ required: true });
         </label>
       </li>
     </ul>
-    <p v-if="error" class="mt-1.5 text-xs text-clay-ink" role="alert">{{ error }}</p>
+    <p v-if="error" class="mt-1.5 text-clay-ink" role="alert">{{ error }}</p>
   </fieldset>
 </template>

@@ -30,7 +30,7 @@ defineExpose({ video });
 
 <template>
   <div
-    class="relative mx-auto mb-[26px] grid aspect-video max-h-[calc(100vh-260px)] w-full place-items-center overflow-hidden rounded-[6px] border border-white/10 bg-black shadow-[0_28px_80px_rgb(0_0_0_/_38%)]"
+    class="relative mx-auto mb-[26px] grid aspect-video max-h-[calc(100vh-260px)] w-full place-items-center overflow-hidden border border-white/10 bg-black"
   >
     <video
       ref="video"
@@ -45,32 +45,31 @@ defineExpose({ video });
     />
     <div
       v-if="loading"
-      class="absolute inset-0 grid place-items-center content-center bg-pine-deep p-8 text-center"
+      class="absolute inset-0 grid place-items-center content-center bg-pine-deep p-8 text-center text-white"
       role="status"
     >
       <div
         class="h-10 w-10 animate-spin rounded-full border-[3px] border-white/20 border-t-white"
       />
-      <p class="mt-4 text-sm text-white/58">Preparing video…</p>
+      <p class="mt-4 text-white/58">Preparing video…</p>
     </div>
     <div
       v-else-if="playback?.kind === 'converting'"
-      class="absolute inset-0 grid place-items-center content-center bg-pine-deep p-8 text-center"
+      class="absolute inset-0 grid place-items-center content-center bg-pine-deep p-8 text-center text-white"
       role="status"
     >
-      <h2 class="font-display text-3xl">Preparing this video</h2>
-      <p class="mt-2 text-sm text-white/58">{{ playback.progress }}% complete.</p>
+      <h2>Preparing this video</h2>
+      <p class="mt-2 text-white/58">{{ playback.progress }}% complete.</p>
     </div>
     <div
       v-else-if="error"
-      class="absolute inset-0 grid place-items-center content-center bg-pine-deep p-8 text-center"
+      class="absolute inset-0 grid place-items-center content-center bg-pine-deep p-8 text-center text-white"
     >
-      <h2 class="font-display text-3xl">Video unavailable</h2>
-      <p class="mt-2 text-sm text-white/58">{{ error }}</p>
+      <h2>Video unavailable</h2>
+      <p class="mt-2 text-white/58">{{ error }}</p>
       <AppButton
         v-if="playback?.kind === 'error'"
         class="mt-5"
-        variant="inverse"
         :loading="retrying"
         @click="emit('retry')"
         >Try again</AppButton
@@ -80,8 +79,8 @@ defineExpose({ video });
       v-if="ended"
       class="absolute inset-0 z-[3] grid place-items-center content-center bg-[rgb(18_22_28_/_92%)] p-8 text-center backdrop-blur-lg"
     >
-      <span class="text-xs font-extrabold text-belt-light">Video complete</span>
-      <h2 class="mt-4 font-display text-3xl">
+      <span>Video complete</span>
+      <h2 class="mt-4">
         {{ nextVideo ? "Ready for the next video?" : "Finished." }}
       </h2>
       <AppButton
@@ -90,7 +89,6 @@ defineExpose({ video });
         :to="playerLocation(nextVideo.id, nextVideo.playlistId)"
         :prefetch="() => prefetch.video(nextVideo!.id)"
         class="mt-5"
-        variant="inverse"
         >Next video →</AppButton
       >
     </div>

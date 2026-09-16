@@ -13,15 +13,12 @@ const confirmation = useConfirm();
     size="sm"
     @close="confirmation.cancel"
   >
-    <p class="leading-6 text-muted">{{ confirmation.active.value?.message }}</p>
+    <p>{{ confirmation.active.value?.message }}</p>
     <template #footer>
-      <AppButton variant="secondary" autofocus @click="confirmation.cancel">
+      <AppButton autofocus @click="confirmation.cancel">
         {{ confirmation.active.value?.cancelLabel }}
       </AppButton>
-      <AppButton
-        :variant="confirmation.active.value?.variant === 'danger' ? 'danger' : 'primary'"
-        @click="confirmation.accept"
-      >
+      <AppButton @click="confirmation.accept">
         {{ confirmation.active.value?.confirmLabel }}
       </AppButton>
     </template>

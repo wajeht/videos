@@ -137,7 +137,6 @@ const displayedVideos = computed(() =>
               data-testid="load-more-videos"
               :loading="loadingMore"
               loading-label="Loading more…"
-              size="lg"
               @click="loadMore"
             >
               Load more

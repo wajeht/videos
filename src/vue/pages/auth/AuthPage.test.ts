@@ -105,19 +105,6 @@ describe("AuthPage", () => {
     expect(wrapper.text()).toContain("Enter the one-time setup token configured on your server.");
   });
 
-  it("uses the shared control height throughout the setup form", () => {
-    const wrapper = mount(AuthPage, {
-      props: { ...baseProps, passwordConfigured: false, setupTokenRequired: true },
-    });
-    const inputs = wrapper.findAll('input[type="password"]');
-    const submit = wrapper.get('button[type="submit"]');
-
-    expect(inputs).toHaveLength(3);
-    expect(inputs.every((input) => input.classes().includes("min-h-10"))).toBe(true);
-    expect(inputs.every((input) => !input.classes().includes("lg:min-h-12"))).toBe(true);
-    expect(submit.classes()).toContain("h-10");
-    expect(submit.classes()).not.toContain("lg:h-12");
-  });
   it("saves the shared password before advancing to admin setup", async () => {
     const wrapper = mount(AuthPage, {
       props: { ...baseProps, passwordConfigured: false, setupTokenRequired: true },

@@ -33,13 +33,10 @@ describe("AppInput", () => {
     expect(wrapper.get("button").attributes("aria-label")).toBe("Show password");
   });
 
-  it("uses the error border instead of the default border when invalid", () => {
+  it("announces invalid inputs to assistive technology", () => {
     const wrapper = mount(AppInput, { props: { invalid: true } });
     const input = wrapper.get("input");
 
-    expect(input.classes()).toContain("border-clay");
-    expect(input.classes()).toContain("focus:border-clay");
-    expect(input.classes()).not.toContain("border-line");
-    expect(input.classes()).not.toContain("focus:border-muted");
+    expect(input.attributes("aria-invalid")).toBe("true");
   });
 });

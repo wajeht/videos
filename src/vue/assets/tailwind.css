@@ -1,66 +1,169 @@
-@import "tailwindcss";
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
 
 @theme {
-  --color-surface: #222222;
-  --color-clay-ink: #f0aaa5;
-  --color-canvas: #1c1c1c;
-  --color-porcelain: #181818;
-  --color-ink: #ececec;
-  --color-pine: #414141;
+  --color-surface: #ffffff;
+  --color-clay-ink: #b00020;
+  --color-canvas: #ffffff;
+  --color-porcelain: #ffffff;
+  --color-ink: #333333;
+  --color-pine: #efefef;
   --color-pine-deep: #121212;
-  --color-mist: #2c2c2c;
-  --color-belt: #d58b3b;
-  --color-belt-ink: #e5aa64;
-  --color-belt-light: #e5aa64;
+  --color-mist: #f8f9fa;
+  --color-link: #0000ee;
+  --color-link-visited: #551a8b;
+  --color-input: #ffffff;
+  --color-button-hover: #e5e5e5;
   --color-clay: #b74845;
   --color-clay-deep: #943735;
-  --color-clay-soft: #382525;
-  --color-line: #3b3b3b;
-  --color-muted: #aaaaaa;
-  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --color-clay-soft: #fff0f2;
+  --color-line: #dddddd;
+  --color-muted: #666666;
+  --font-body: system-ui, -apple-system, sans-serif;
   --font-display: var(--font-body);
-  --shadow-card: 0 4px 16px rgb(0 0 0 / 18%);
+  --shadow-card: none;
 }
 
+/* Browser foundations shared with Bang; page components own outer spacing. */
 @layer base {
   html {
-    color-scheme: dark;
-    @apply min-w-80 bg-porcelain;
-  }
-
-  body {
-    @apply m-0 min-h-screen min-w-80 bg-porcelain font-body text-ink;
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-  }
-
-  button,
-  input,
-  select {
-    font: inherit;
-  }
-
-  input[type="checkbox"],
-  input[type="radio"] {
-    accent-color: var(--color-ink);
-  }
-
-  button,
-  a {
+    color-scheme: light;
+    accent-color: var(--color-link);
+    scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
   }
 
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  * {
+    margin: 0;
+  }
+
+  body {
+    min-width: 320px;
+    color: var(--color-ink);
+    background-color: var(--color-surface);
+    font-family: var(--font-body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
+  }
+
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+    padding: 5px 10px;
+  }
+
+  button {
+    border: 1px solid var(--color-line);
+    border-radius: 4px;
+  }
+
+  button:hover {
+    background: var(--color-button-hover);
+  }
+
+  /* Keep text controls consistent in Safari, while retaining native select arrows. */
+  input[type="text"],
+  input[type="email"],
+  input[type="url"],
+  input[type="search"],
+  input[type="number"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="month"],
+  input[type="week"],
+  input[type="time"],
+  input[type="tel"],
+  input[type="password"],
+  select,
+  textarea {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 1px solid var(--color-line);
+    border-radius: 4px;
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+  }
+
+  input[type="search"]::-webkit-search-decoration,
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-results-button,
+  input[type="search"]::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+  }
+
+  select {
+    -webkit-appearance: auto;
+    appearance: auto;
+  }
+
+  fieldset {
+    margin-bottom: 1em;
+    padding: 1em;
+    border: 1px solid var(--color-line);
+    border-radius: 4px;
+    min-width: 0;
+  }
+
+  legend {
+    font-weight: bold;
+    padding: 0 0.5em;
+  }
+
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  pre {
+    overflow-wrap: break-word;
+  }
+
   a {
-    color: inherit;
+    color: var(--color-link);
     text-decoration: none;
   }
 
-  button:focus-visible,
-  a:focus-visible,
-  input:focus-visible,
-  select:focus-visible,
-  video:focus-visible {
-    @apply outline-3 outline-offset-3 outline-belt-ink;
+  a:visited {
+    color: var(--color-link-visited);
+  }
+
+  a:hover,
+  summary:hover {
+    text-decoration: underline;
+  }
+
+  summary {
+    color: var(--color-link);
+  }
+
+  input[aria-invalid="true"],
+  select[aria-invalid="true"] {
+    border-color: var(--color-clay);
   }
 }
 

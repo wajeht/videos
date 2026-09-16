@@ -39,26 +39,20 @@ const sections = computed(() =>
         return {
           ...section,
           active,
-          stateClasses: "bg-pine! text-white!",
+          stateClasses: "underline font-bold",
         };
       }
       return {
         ...section,
         active,
-        stateClasses: "bg-transparent! text-ink! hover:bg-porcelain!",
+        stateClasses: "",
       };
     }),
 );
 </script>
 
 <template>
-  <PanelCard
-    as="nav"
-    class="p-8 max-[760px]:p-0"
-    :elevated="false"
-    padding="none"
-    aria-label="Settings sections"
-  >
+  <PanelCard as="nav" class="p-8 max-[760px]:p-0" aria-label="Settings sections">
     <div class="grid gap-1 max-[760px]:auto-cols-fr max-[760px]:grid-flow-col max-[760px]:gap-0">
       <IntentRouterLink
         v-for="section in sections"
@@ -67,7 +61,7 @@ const sections = computed(() =>
         :to="{ name: section.routeName }"
         :prefetch="section.prefetch"
         :class="[
-          'flex h-10 w-full items-center rounded-[7px] px-3.5 text-left text-[.82rem] font-bold transition-[background,color] duration-[160ms] max-[760px]:justify-center max-[760px]:rounded-none max-[760px]:px-0',
+          'flex h-10 w-full items-center rounded-[4px] px-3.5 text-left text-[.82rem] font-bold transition-[background,color] duration-[160ms] max-[760px]:justify-center max-[760px]:rounded-none max-[760px]:px-0',
           section.value === 'access' ? 'max-[760px]:border-l max-[760px]:border-line' : '',
           section.stateClasses,
         ]"

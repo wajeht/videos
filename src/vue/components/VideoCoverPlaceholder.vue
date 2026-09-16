@@ -18,7 +18,7 @@ const initials = computed(() => {
 
 <template>
   <div
-    class="grid place-items-center bg-mist font-display font-semibold text-muted"
+    class="grid place-items-center bg-mist"
     :class="compact ? 'text-base' : 'text-[clamp(2rem,4vw,3.75rem)]'"
     aria-hidden="true"
   >

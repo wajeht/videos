@@ -76,17 +76,13 @@ onBeforeUnmount(() => descriptionObserver?.disconnect());
 </script>
 
 <template>
-  <section v-if="video" class="mt-4 text-white" aria-labelledby="video-title">
+  <section v-if="video" class="mt-4" aria-labelledby="video-title">
     <header class="flex items-start justify-between gap-3">
       <div class="min-w-0 flex-1">
-        <h1 id="video-title" class="font-display text-[clamp(1.35rem,2vw,2rem)] leading-[1.1]">
+        <h1 id="video-title">
           {{ video.title }}
         </h1>
-        <AuthorLinks
-          v-if="video.authors.length"
-          class="mt-2 block text-sm font-semibold text-white/72"
-          :authors="video.authors"
-        />
+        <AuthorLinks v-if="video.authors.length" class="mt-2 block" :authors="video.authors" />
       </div>
       <PlayerProgressMenu
         label="Video actions"
@@ -102,12 +98,12 @@ onBeforeUnmount(() => descriptionObserver?.disconnect());
     <div
       v-if="video.description || video.chapters.length"
       :id="detailsId"
-      class="mt-4 border-t border-white/10 pt-4"
+      class="mt-4 border-t border-line pt-4"
     >
       <p
         v-if="video.description"
         ref="description"
-        class="max-w-[780px] text-sm leading-relaxed text-white/62"
+        class="max-w-[780px]"
         :class="expanded ? '' : 'max-[860px]:line-clamp-4'"
       >
         {{ video.description }}
@@ -125,8 +121,7 @@ onBeforeUnmount(() => descriptionObserver?.disconnect());
 
     <AppButton
       v-if="expandable"
-      variant="unstyled"
-      class="mx-auto mt-2 hidden min-h-9 items-center justify-center gap-2 px-2 text-xs font-bold text-white/62 hover:text-white max-[860px]:flex"
+      class="mx-auto mt-2 hidden min-h-9 items-center justify-center gap-2 px-2 max-[860px]:flex"
       :aria-controls="detailsId"
       :aria-expanded="expanded"
       @click="toggleExpanded"

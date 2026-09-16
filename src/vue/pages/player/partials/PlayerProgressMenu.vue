@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from "vue";
+import { onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from "vue";
 
 import AppButton from "@/components/ui/AppButton.vue";
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     label: string;
     resetLabel: string;
@@ -12,9 +12,8 @@ const props = withDefaults(
     autoplayLabel?: string;
     regenerateLabel?: string;
     regenerating?: boolean;
-    tone?: "dark" | "light";
   }>(),
-  { autoplayEnabled: false, tone: "dark", regenerating: false },
+  { autoplayEnabled: false, regenerating: false },
 );
 const emit = defineEmits<{
   autoplayChange: [enabled: boolean];
@@ -25,19 +24,6 @@ const emit = defineEmits<{
 const open = shallowRef(false);
 const root = useTemplateRef<HTMLElement>("root");
 const trigger = useTemplateRef<HTMLButtonElement>("trigger");
-const triggerClasses = computed(() =>
-  props.tone === "light"
-    ? "text-ink/58 hover:bg-white/8 hover:text-ink focus-visible:outline-belt-light"
-    : "text-white/58 hover:bg-white/8 hover:text-white focus-visible:outline-belt-light",
-);
-const panelClasses = computed(() =>
-  props.tone === "light" ? "border-line bg-surface" : "border-white/12 bg-pine",
-);
-const itemClasses = computed(() =>
-  props.tone === "light"
-    ? "text-ink hover:bg-white/8 focus-visible:bg-white/8"
-    : "text-white/78 hover:bg-white/8 focus-visible:bg-white/8",
-);
 
 function close(): void {
   open.value = false;
@@ -75,8 +61,7 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeOnOutside
     <button
       ref="trigger"
       type="button"
-      class="grid h-9 w-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-lg leading-none focus-visible:outline-2 focus-visible:outline-offset-2"
-      :class="triggerClasses"
+      class="grid h-9 w-9 cursor-pointer place-items-center border-0 bg-transparent hover:bg-mist focus-visible:outline-2 focus-visible:outline-offset-2"
       :aria-label="label"
       aria-haspopup="menu"
       :aria-expanded="open"
@@ -89,7 +74,7 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeOnOutside
       </span>
       <span
         v-if="autoplayLabel && autoplayEnabled"
-        class="player-progress-menu-autoplay-indicator absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full border-2 border-porcelain bg-belt"
+        class="player-progress-menu-autoplay-indicator rounded-full absolute top-0.5 right-0.5 h-2.5 w-2.5 border-2 border-porcelain bg-link"
         aria-hidden="true"
       />
     </button>
@@ -98,41 +83,34 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeOnOutside
       v-if="open"
       role="menu"
       :aria-label="label"
-      class="absolute right-0 z-20 mt-2 min-w-56 rounded-[7px] border p-1"
-      :class="panelClasses"
+      class="absolute right-0 z-20 mt-2 min-w-56 border border-line bg-surface p-1"
     >
       <AppButton
         v-if="autoplayLabel"
-        variant="unstyled"
         role="menuitemcheckbox"
         :aria-checked="autoplayEnabled"
-        class="flex w-full items-center justify-between gap-3 rounded-[5px] px-3 py-2 text-left text-sm focus-visible:outline-none"
-        :class="itemClasses"
+        class="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-mist focus-visible:bg-mist focus-visible:outline-none"
         @click="emit('autoplayChange', !autoplayEnabled)"
       >
         <span>{{ autoplayLabel }}</span>
         <span
-          class="rounded-full px-2 py-0.5 text-[.65rem] font-extrabold"
-          :class="autoplayEnabled ? 'bg-belt/18 text-belt-ink' : 'bg-mist text-muted'"
+          class="px-2 py-0.5"
+          :class="autoplayEnabled ? 'bg-link/18 text-link' : 'bg-mist text-muted'"
           >{{ autoplayEnabled ? "On" : "Off" }}</span
         >
       </AppButton>
       <AppButton
         v-if="regenerateLabel"
-        variant="unstyled"
         role="menuitem"
-        class="flex w-full items-center gap-2 rounded-[5px] px-3 py-2 text-left text-sm focus-visible:outline-none"
-        :class="itemClasses"
+        class="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-mist focus-visible:bg-mist focus-visible:outline-none"
         :loading="regenerating"
         loading-label="Updating…"
         @click="regenerateThumbnail"
         >{{ regenerateLabel }}</AppButton
       >
       <AppButton
-        variant="unstyled"
         role="menuitem"
-        class="flex w-full items-center gap-2 rounded-[5px] px-3 py-2 text-left text-sm focus-visible:outline-none"
-        :class="itemClasses"
+        class="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-mist focus-visible:bg-mist focus-visible:outline-none"
         :loading="resetting"
         loading-label="Resetting…"
         @click="resetProgress"

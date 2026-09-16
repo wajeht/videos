@@ -22,14 +22,14 @@ const titleId = `playlist-title-${useId()}`;
 <template>
   <aside
     v-if="playlist"
-    class="sticky top-0 flex h-[calc(100vh-66px)] flex-col border-l border-line bg-porcelain text-ink max-[860px]:static max-[860px]:mx-[clamp(20px,3vw,50px)] max-[860px]:mb-10 max-[860px]:h-auto max-[860px]:w-auto max-[860px]:overflow-hidden max-[860px]:rounded-[7px] max-[860px]:border max-[860px]:border-line max-[600px]:mx-3"
+    class="sticky top-0 flex h-[calc(100vh-66px)] flex-col border-l border-line bg-porcelain max-[860px]:static max-[860px]:mx-[clamp(20px,3vw,50px)] max-[860px]:mb-10 max-[860px]:h-auto max-[860px]:w-auto max-[860px]:overflow-hidden max-[860px]:border max-[860px]:border-line max-[600px]:mx-3"
     :aria-labelledby="titleId"
   >
     <header class="flex items-start justify-between border-b border-line px-5 py-5">
       <div class="min-w-0">
-        <p class="text-xs font-extrabold text-belt">Playlist</p>
-        <h2 :id="titleId" class="mt-2 font-display text-lg font-bold">{{ playlist.title }}</h2>
-        <p class="mt-1 text-xs text-muted">Video {{ currentIndex + 1 }} of {{ videos.length }}</p>
+        <p>Playlist</p>
+        <h2 :id="titleId" class="mt-2">{{ playlist.title }}</h2>
+        <p class="mt-1">Video {{ currentIndex + 1 }} of {{ videos.length }}</p>
       </div>
       <PlayerProgressMenu
         label="Playlist actions"
@@ -37,16 +37,13 @@ const titleId = `playlist-title-${useId()}`;
         :autoplay-enabled="autoplayNext"
         reset-label="Reset playlist progress"
         :resetting="resetting"
-        tone="light"
         @autoplay-change="$emit('autoplayChange', $event)"
         @reset="$emit('reset')"
       />
     </header>
     <div class="flex-1 overflow-y-auto max-[860px]:overflow-visible">
       <section v-for="section in playlist.sections" :key="section.id ?? 'direct'">
-        <h3
-          class="sticky top-0 z-[2] border-y border-line bg-mist px-4 py-3 font-display text-xs font-extrabold text-ink"
-        >
+        <h3 class="sticky top-0 z-[2] border-y border-line bg-mist px-4 py-3">
           {{ section.title }}
         </h3>
         <VideoRow

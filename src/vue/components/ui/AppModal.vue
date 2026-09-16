@@ -28,7 +28,7 @@ const { handleBackdrop, handleCancel } = useModalDialog(() => props.open, reques
   <Teleport to="body">
     <dialog
       ref="dialog"
-      class="m-auto max-h-[calc(100vh-40px)] w-[calc(100%-40px)] overflow-hidden rounded-[12px] border border-line bg-surface p-0 text-ink shadow-[0_28px_90px_rgb(18_22_28_/_38%)] backdrop:bg-pine-deep/45"
+      class="m-auto max-h-[calc(100vh-40px)] w-[calc(100%-40px)] overflow-hidden border border-line bg-surface p-0 backdrop:bg-pine-deep/45"
       :class="
         {
           sm: 'min-[601px]:max-w-[430px]',
@@ -42,10 +42,9 @@ const { handleBackdrop, handleCancel } = useModalDialog(() => props.open, reques
     >
       <section @click.stop>
         <header class="flex items-start justify-between gap-5 border-b border-line px-6 py-5">
-          <h2 :id="titleId" class="font-display text-2xl font-extrabold">{{ title }}</h2>
+          <h2 :id="titleId">{{ title }}</h2>
           <AppButton
-            variant="unstyled"
-            class="grid h-9 w-9 place-items-center rounded-full text-2xl text-muted hover:bg-mist hover:text-ink"
+            class="grid h-9 w-9 place-items-center hover:bg-mist"
             :aria-label="closeLabel"
             @click="requestClose"
           >

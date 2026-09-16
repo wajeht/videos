@@ -18,7 +18,7 @@ const describedBy = computed(() => [helpId.value, errorId.value].filter(Boolean)
 
 <template>
   <div>
-    <label :for="inputId" class="block text-sm font-medium text-ink">
+    <label :for="inputId" class="block">
       {{ label }}<span v-if="required" class="text-clay-ink" aria-hidden="true"> *</span>
     </label>
     <div class="mt-2">
@@ -28,10 +28,10 @@ const describedBy = computed(() => [helpId.value, errorId.value].filter(Boolean)
         :invalid="Boolean(error)"
       />
     </div>
-    <p v-if="helpText" :id="helpId" class="mt-1.5 text-xs leading-5 text-muted">
+    <p v-if="helpText" :id="helpId" class="mt-1.5">
       {{ helpText }}
     </p>
-    <p v-if="error" :id="errorId" class="mt-1.5 text-xs text-clay-ink" role="alert">
+    <p v-if="error" :id="errorId" class="mt-1.5 text-clay-ink" role="alert">
       {{ error }}
     </p>
   </div>

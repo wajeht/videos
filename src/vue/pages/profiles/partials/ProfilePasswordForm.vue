@@ -22,7 +22,7 @@ function submit(): void {
 }
 </script>
 <template>
-  <PanelCard :elevated="false" padding="none">
+  <PanelCard>
     <PanelCardHeader
       title="Profile lock"
       description="Changing the lock requires this profile to be unlocked again on every device."
@@ -67,7 +67,6 @@ function submit(): void {
       >
         <AppButton
           v-if="props.profile.role === 'member' && props.profile.isLocked"
-          variant="secondary"
           :disabled="busy"
           @click="emit('save', null)"
           >Remove lock</AppButton

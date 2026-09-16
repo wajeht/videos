@@ -54,7 +54,7 @@ async function changePassword(): Promise<void> {
 </script>
 
 <template>
-  <PanelCard :elevated="false" padding="none">
+  <PanelCard>
     <PanelCardHeader
       title="Access"
       description="Change the password for this private library or sign out of this device."

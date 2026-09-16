@@ -64,17 +64,13 @@ async function logout(): Promise<void> {
         <div class="grid gap-3 max-[760px]:hidden" data-desktop-sign-out-container>
           <AppButton
             block
-            variant="secondary"
             :loading="switchAction.pending.value"
             loading-label="Switching…"
             @click="switchAction.run()"
             >Switch profile</AppButton
           >
           <AppButton
-            class="h-10"
             block
-            size="md"
-            variant="danger"
             :loading="logoutAction.pending.value"
             loading-label="Signing out…"
             data-desktop-sign-out
@@ -90,17 +86,13 @@ async function logout(): Promise<void> {
       <div class="col-span-full hidden gap-3 max-[760px]:grid" data-mobile-sign-out-container>
         <AppButton
           block
-          variant="secondary"
           :loading="switchAction.pending.value"
           loading-label="Switching…"
           @click="switchAction.run()"
           >Switch profile</AppButton
         >
         <AppButton
-          class="h-10"
           block
-          size="md"
-          variant="danger"
           :loading="logoutAction.pending.value"
           loading-label="Signing out…"
           data-mobile-sign-out

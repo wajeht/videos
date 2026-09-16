@@ -40,10 +40,10 @@ describe("LibraryFiltersToolbar", () => {
     expect(
       search.element.compareDocumentPosition(actions.element) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(viewButton.classes()).toEqual(expect.arrayContaining(["bg-pine", "text-white"]));
+    expect(viewButton.attributes("aria-pressed")).toBe("true");
 
     const authorButton = wrapper.get('[data-mobile-filter="author"]');
-    expect(authorButton.classes()).toEqual(expect.arrayContaining(["bg-surface", "text-ink"]));
+    expect(authorButton.attributes("aria-pressed")).toBe("false");
     await authorButton.trigger("click");
 
     const drawer = document.body.querySelector("dialog[open]");
@@ -59,7 +59,7 @@ describe("LibraryFiltersToolbar", () => {
 
     await wrapper.setProps({ author: ["Example Author"] });
     expect(authorButton.text()).toBe("Authors: Example Author");
-    expect(authorButton.classes()).toEqual(expect.arrayContaining(["bg-pine", "text-white"]));
+    expect(authorButton.attributes("aria-pressed")).toBe("true");
   });
 
   it("switches the mobile view through the drawer", async () => {
@@ -77,7 +77,7 @@ describe("LibraryFiltersToolbar", () => {
     await wrapper.setProps({ view: "playlists" });
     const viewButton = wrapper.get('[data-mobile-filter="view"]');
     expect(viewButton.text()).toBe("Playlists");
-    expect(viewButton.classes()).toEqual(expect.arrayContaining(["bg-pine", "text-white"]));
+    expect(viewButton.attributes("aria-pressed")).toBe("true");
   });
 
   it("emits a new videos-per-page value from the desktop radios", async () => {

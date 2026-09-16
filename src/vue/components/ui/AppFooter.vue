@@ -3,10 +3,10 @@ const appVersion = __APP_VERSION__;
 </script>
 
 <template>
-  <footer class="text-center text-xs font-medium tracking-[0.04em] text-muted">
+  <footer class="text-center">
     © 2026 · Made with ❤️ by
     <a
-      class="font-semibold text-ink underline-offset-4 hover:underline"
+      class="underline-offset-4 hover:underline"
       href="https://github.com/wajeht"
       target="_blank"
       rel="noreferrer"
@@ -15,7 +15,7 @@ const appVersion = __APP_VERSION__;
     >
     .
     <a
-      class="font-semibold text-ink underline-offset-4 hover:underline"
+      class="underline-offset-4 hover:underline"
       :href="`https://github.com/wajeht/videos/releases/tag/v${appVersion}`"
       target="_blank"
       rel="noreferrer"
