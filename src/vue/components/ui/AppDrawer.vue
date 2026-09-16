@@ -27,7 +27,7 @@ const { handleBackdrop, handleCancel } = useModalDialog(() => props.open, reques
   <Teleport to="body">
     <dialog
       ref="dialog"
-      class="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none overflow-hidden bg-transparent p-0 backdrop:bg-pine-deep/45"
+      class="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none overflow-hidden bg-transparent p-0 backdrop:bg-black/15 backdrop:backdrop-blur-[1.5px]"
       :aria-labelledby="titleId"
       @cancel="handleCancel"
       @click="handleBackdrop"

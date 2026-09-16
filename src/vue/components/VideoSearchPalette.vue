@@ -28,7 +28,7 @@ const { handleBackdrop, handleCancel } = useModalDialog(() => open.value, closeP
     <dialog
       ref="dialog"
       aria-label="Search videos"
-      class="mx-auto mt-[12vh] max-h-[min(640px,76vh)] w-[min(720px,calc(100%-40px))] overflow-hidden border border-line bg-surface p-0 backdrop:bg-pine-deep/45 max-[600px]:mt-[max(12px,env(safe-area-inset-top))]"
+      class="mx-auto mt-[12vh] max-h-[min(640px,76vh)] w-[min(720px,calc(100%-40px))] overflow-hidden border border-line bg-surface p-0 backdrop:bg-black/15 backdrop:backdrop-blur-[1.5px] max-[600px]:mt-[max(12px,env(safe-area-inset-top))]"
       @cancel="handleCancel"
       @click="handleBackdrop"
     >

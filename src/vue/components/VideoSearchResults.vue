@@ -93,9 +93,7 @@ function videoOptionLabel(video: VideoDto): string {
           :prefetch="() => prefetch.video(video.id)"
           class="grid min-h-[72px] grid-cols-[36px_96px_minmax(0,1fr)] items-center gap-x-3 border-l-4 px-3 py-2.5 focus-visible:outline-none max-[600px]:grid-cols-[28px_72px_minmax(0,1fr)] max-[600px]:gap-x-2 max-[600px]:px-2"
           :class="
-            index === activeIndex
-              ? 'border-link bg-mist text-ink'
-              : 'border-transparent hover:bg-mist'
+            index === activeIndex ? 'border-link bg-mist' : 'border-transparent hover:bg-mist'
           "
           role="option"
           :aria-label="videoOptionLabel(video)"
@@ -103,7 +101,7 @@ function videoOptionLabel(video: VideoDto): string {
           @click="emit('close')"
           @pointerenter="emit('activate', index)"
         >
-          <span :class="index === activeIndex ? 'text-muted' : 'text-muted'">
+          <span class="text-muted">
             {{ String(index + 1).padStart(2, "0") }}
           </span>
           <span class="relative aspect-video w-24 overflow-hidden bg-mist max-[600px]:w-[72px]">
@@ -126,14 +124,10 @@ function videoOptionLabel(video: VideoDto): string {
             />
           </span>
           <span class="min-w-0">
-            <span class="block truncate" :class="index === activeIndex ? 'text-ink' : 'text-ink'">
+            <span class="block truncate">
               <HighlightedText :text="video.title" :ranges="titleRanges" />
             </span>
-            <span
-              v-if="contextParts.length"
-              class="mt-0.5 block truncate"
-              :class="index === activeIndex ? 'text-muted' : 'text-muted'"
-            >
+            <span v-if="contextParts.length" class="mt-0.5 block truncate text-muted">
               <template
                 v-for="(part, partIndex) in contextParts"
                 :key="`${part.text}-${partIndex}`"

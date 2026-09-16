@@ -94,8 +94,8 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeOnOutside
       >
         <span>{{ autoplayLabel }}</span>
         <span
-          class="px-2 py-0.5"
-          :class="autoplayEnabled ? 'bg-link/18 text-link' : 'bg-mist text-muted'"
+          class="bg-mist px-2 py-0.5"
+          :class="autoplayEnabled ? 'font-semibold text-ink' : 'text-muted'"
           >{{ autoplayEnabled ? "On" : "Off" }}</span
         >
       </AppButton>

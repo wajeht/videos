@@ -28,7 +28,7 @@ const { handleBackdrop, handleCancel } = useModalDialog(() => props.open, reques
   <Teleport to="body">
     <dialog
       ref="dialog"
-      class="m-auto max-h-[calc(100vh-40px)] w-[calc(100%-40px)] overflow-hidden border border-line bg-surface p-0 backdrop:bg-pine-deep/45"
+      class="m-auto max-h-[calc(100vh-40px)] w-[calc(100%-40px)] overflow-hidden border border-line bg-surface p-0 backdrop:bg-black/15 backdrop:backdrop-blur-[1.5px]"
       :class="
         {
           sm: 'min-[601px]:max-w-[430px]',

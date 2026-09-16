@@ -17,7 +17,7 @@ const toast = useToast();
         class="pointer-events-auto flex items-start justify-between gap-4 border px-4 py-3"
         :class="
           {
-            error: 'border-clay/50 bg-clay-soft text-clay-ink',
+            error: 'border-line bg-surface text-clay-ink',
             info: 'border-line bg-surface text-ink',
             success: 'border-line bg-surface text-ink',
           }[item.kind]
