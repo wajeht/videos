@@ -62,7 +62,7 @@ function prefetchOption(name: string): void {
     </ul>
     <AppButton
       v-if="allOptions.length > collapsedLimit"
-      class="mt-3 underline"
+      class="mt-3 cursor-pointer border-0 bg-transparent p-0 text-link hover:bg-transparent hover:underline"
       @click="expanded = !expanded"
     >
       {{ expanded ? "Show fewer" : `Show all ${allOptions.length}` }}
