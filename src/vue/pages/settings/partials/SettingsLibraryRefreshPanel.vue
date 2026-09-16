@@ -87,7 +87,7 @@ async function rescanLibrary(): Promise<void> {
         >
           <span v-if="loadingScanStatus" class="sr-only">Loading library status</span>
           <div data-library-status>
-            <p class="text-xs font-bold tracking-[.08em] text-pine uppercase">Library status</p>
+            <p class="text-xs font-bold text-ink">Library status</p>
             <p
               v-if="loadingScanStatus"
               class="mt-2 h-5 w-44 max-w-full animate-pulse rounded bg-mist motion-reduce:animate-none"
@@ -98,7 +98,7 @@ async function rescanLibrary(): Promise<void> {
               v-else
               class="mt-2 text-sm"
               :class="{
-                'font-semibold text-clay': scanStatus?.status === 'failed',
+                'font-semibold text-clay-ink': scanStatus?.status === 'failed',
                 'font-semibold text-belt':
                   scanStatus?.status !== 'failed' && Boolean(scanStatus?.warnings.length),
                 'text-muted': scanStatus?.status !== 'failed' && !scanStatus?.warnings.length,
@@ -120,7 +120,7 @@ async function rescanLibrary(): Promise<void> {
           </div>
 
           <div v-if="loadingScanStatus || scanStatus?.completedAt" data-last-refresh>
-            <p class="text-xs font-bold tracking-[.08em] text-pine uppercase">
+            <p class="text-xs font-bold text-ink">
               <template v-if="scanStatus?.status === 'failed'">Last refresh attempt</template>
               <template v-else>Last refreshed</template>
             </p>
@@ -141,7 +141,7 @@ async function rescanLibrary(): Promise<void> {
         </div>
         <div
           v-if="scanStatus?.warnings.length"
-          class="mt-5 rounded-[7px] border border-belt/25 bg-[#fff6e9] p-4"
+          class="mt-5 rounded-[7px] border border-belt/25 bg-belt/10 p-4"
         >
           <p class="text-[.78rem] leading-5 text-muted">
             Review these files, correct each listed problem, then refresh the library.
@@ -152,7 +152,7 @@ async function rescanLibrary(): Promise<void> {
               :key="`${warning.path}:${warning.message}`"
               class="grid gap-1 text-[.78rem] leading-5"
             >
-              <code class="break-all font-semibold text-pine-deep">{{ warning.path }}</code>
+              <code class="break-all font-semibold text-ink">{{ warning.path }}</code>
               <span class="text-muted">{{ warning.message }}</span>
             </li>
           </ul>

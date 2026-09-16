@@ -27,15 +27,15 @@ const root = useTemplateRef<HTMLElement>("root");
 const trigger = useTemplateRef<HTMLButtonElement>("trigger");
 const triggerClasses = computed(() =>
   props.tone === "light"
-    ? "text-pine/58 hover:bg-pine/8 hover:text-pine focus-visible:outline-pine"
+    ? "text-ink/58 hover:bg-white/8 hover:text-ink focus-visible:outline-belt-light"
     : "text-white/58 hover:bg-white/8 hover:text-white focus-visible:outline-belt-light",
 );
 const panelClasses = computed(() =>
-  props.tone === "light" ? "border-line bg-white" : "border-white/12 bg-[#242a32]",
+  props.tone === "light" ? "border-line bg-surface" : "border-white/12 bg-pine",
 );
 const itemClasses = computed(() =>
   props.tone === "light"
-    ? "text-pine hover:bg-pine/8 focus-visible:bg-pine/8"
+    ? "text-ink hover:bg-white/8 focus-visible:bg-white/8"
     : "text-white/78 hover:bg-white/8 focus-visible:bg-white/8",
 );
 
@@ -112,7 +112,7 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeOnOutside
       >
         <span>{{ autoplayLabel }}</span>
         <span
-          class="rounded-full px-2 py-0.5 text-[.65rem] font-extrabold tracking-[.08em] uppercase"
+          class="rounded-full px-2 py-0.5 text-[.65rem] font-extrabold"
           :class="autoplayEnabled ? 'bg-belt/18 text-belt-ink' : 'bg-mist text-muted'"
           >{{ autoplayEnabled ? "On" : "Off" }}</span
         >

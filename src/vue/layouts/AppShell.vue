@@ -18,18 +18,16 @@ const isPlayer = computed(() => route.meta.shell === "player");
 <template>
   <div
     class="min-h-screen max-[600px]:pb-[calc(68px+env(safe-area-inset-bottom))]"
-    :class="isPlayer ? 'max-[600px]:bg-[#12161c]' : ''"
+    :class="isPlayer ? 'max-[600px]:bg-pine-deep' : ''"
   >
     <header
-      class="z-40 flex h-[calc(66px+env(safe-area-inset-top))] items-center justify-between border-b border-white/12 px-[4vw] pt-[env(safe-area-inset-top)] text-white max-[860px]:px-[22px]"
-      :class="
-        isPlayer ? 'relative bg-[#12161c]' : 'sticky top-0 bg-pine-deep/[.97] backdrop-blur-[14px]'
-      "
+      class="z-40 flex h-[calc(66px+env(safe-area-inset-top))] items-center justify-between border-b border-line px-[4vw] pt-[env(safe-area-inset-top)] text-ink max-[860px]:px-[22px]"
+      :class="isPlayer ? 'relative bg-surface' : 'sticky top-0 bg-surface'"
     >
       <IntentRouterLink
         to="/"
         :prefetch="prefetch.home"
-        class="flex items-center gap-3 font-display text-2xl font-extrabold tracking-[.04em] uppercase"
+        class="flex items-center gap-3 font-display text-2xl font-extrabold"
         aria-label="Videos home"
       >
         <AppLogo />
@@ -38,11 +36,11 @@ const isPlayer = computed(() => route.meta.shell === "player");
         <IntentRouterLink
           to="/"
           :prefetch="prefetch.home"
-          class="border-b-2 px-0 py-2 text-[.76rem] font-bold tracking-[.14em] uppercase"
+          class="border-b-2 px-0 py-2 text-sm font-semibold"
           :class="
             activeNavigation === 'home'
-              ? 'border-belt text-white/90'
-              : 'border-transparent text-white/55'
+              ? 'border-ink text-ink'
+              : 'border-transparent text-muted hover:text-ink'
           "
         >
           Home
@@ -50,11 +48,11 @@ const isPlayer = computed(() => route.meta.shell === "player");
         <IntentRouterLink
           to="/videos"
           :prefetch="prefetch.videos"
-          class="border-b-2 px-0 py-2 text-[.76rem] font-bold tracking-[.14em] uppercase"
+          class="border-b-2 px-0 py-2 text-sm font-semibold"
           :class="
             activeNavigation === 'videos'
-              ? 'border-belt text-white/90'
-              : 'border-transparent text-white/55'
+              ? 'border-ink text-ink'
+              : 'border-transparent text-muted hover:text-ink'
           "
         >
           Videos
@@ -62,11 +60,11 @@ const isPlayer = computed(() => route.meta.shell === "player");
         <IntentRouterLink
           to="/settings/library"
           :prefetch="prefetch.settingsLibrary"
-          class="border-b-2 px-0 py-2 text-[.76rem] font-bold tracking-[.14em] uppercase"
+          class="border-b-2 px-0 py-2 text-sm font-semibold"
           :class="
             activeNavigation === 'settings'
-              ? 'border-belt text-white/90'
-              : 'border-transparent text-white/55'
+              ? 'border-ink text-ink'
+              : 'border-transparent text-muted hover:text-ink'
           "
         >
           Settings
@@ -76,18 +74,18 @@ const isPlayer = computed(() => route.meta.shell === "player");
     <VideoSearchPalette v-if="desktopSearchEnabled" />
     <slot />
     <nav
-      class="fixed right-0 bottom-0 left-0 z-50 hidden border-t border-white/12 bg-pine-deep/[.98] px-3 pt-1.5 pb-[max(6px,env(safe-area-inset-bottom))] text-white shadow-[0_-12px_35px_rgb(18_22_28_/_24%)] backdrop-blur-[14px] max-[600px]:grid max-[600px]:grid-cols-3"
+      class="fixed right-0 bottom-0 left-0 z-50 hidden border-t border-line bg-surface px-3 pt-1.5 pb-[max(6px,env(safe-area-inset-bottom))] text-ink max-[600px]:grid max-[600px]:grid-cols-3"
       aria-label="Mobile navigation"
     >
       <IntentRouterLink
         to="/"
         :prefetch="prefetch.home"
-        class="relative flex min-h-[56px] items-center justify-center rounded-[8px] text-[.7rem] font-bold tracking-[.1em] uppercase"
-        :class="activeNavigation === 'home' ? 'text-belt-light' : 'text-white/55'"
+        class="relative flex min-h-[56px] items-center justify-center rounded-[8px] text-[.8rem] font-semibold"
+        :class="activeNavigation === 'home' ? 'text-ink' : 'text-muted'"
         :aria-current="activeNavigation === 'home' ? 'page' : undefined"
       >
         <span
-          class="absolute top-0 h-[3px] w-8 rounded-full bg-belt-light transition-opacity"
+          class="absolute top-0 h-[3px] w-8 rounded-full bg-ink transition-opacity"
           :class="activeNavigation === 'home' ? 'opacity-100' : 'opacity-0'"
           aria-hidden="true"
         />
@@ -96,12 +94,12 @@ const isPlayer = computed(() => route.meta.shell === "player");
       <IntentRouterLink
         to="/videos"
         :prefetch="prefetch.videos"
-        class="relative flex min-h-[56px] items-center justify-center rounded-[8px] text-[.7rem] font-bold tracking-[.1em] uppercase"
-        :class="activeNavigation === 'videos' ? 'text-belt-light' : 'text-white/55'"
+        class="relative flex min-h-[56px] items-center justify-center rounded-[8px] text-[.8rem] font-semibold"
+        :class="activeNavigation === 'videos' ? 'text-ink' : 'text-muted'"
         :aria-current="activeNavigation === 'videos' ? 'page' : undefined"
       >
         <span
-          class="absolute top-0 h-[3px] w-8 rounded-full bg-belt-light transition-opacity"
+          class="absolute top-0 h-[3px] w-8 rounded-full bg-ink transition-opacity"
           :class="activeNavigation === 'videos' ? 'opacity-100' : 'opacity-0'"
           aria-hidden="true"
         />
@@ -110,12 +108,12 @@ const isPlayer = computed(() => route.meta.shell === "player");
       <IntentRouterLink
         to="/settings/library"
         :prefetch="prefetch.settingsLibrary"
-        class="relative flex min-h-[56px] items-center justify-center rounded-[8px] text-[.7rem] font-bold tracking-[.1em] uppercase"
-        :class="activeNavigation === 'settings' ? 'text-belt-light' : 'text-white/55'"
+        class="relative flex min-h-[56px] items-center justify-center rounded-[8px] text-[.8rem] font-semibold"
+        :class="activeNavigation === 'settings' ? 'text-ink' : 'text-muted'"
         :aria-current="activeNavigation === 'settings' ? 'page' : undefined"
       >
         <span
-          class="absolute top-0 h-[3px] w-8 rounded-full bg-belt-light transition-opacity"
+          class="absolute top-0 h-[3px] w-8 rounded-full bg-ink transition-opacity"
           :class="activeNavigation === 'settings' ? 'opacity-100' : 'opacity-0'"
           aria-hidden="true"
         />

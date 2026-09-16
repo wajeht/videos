@@ -45,7 +45,7 @@ const sections = computed(() =>
       return {
         ...section,
         active,
-        stateClasses: "bg-transparent! text-pine! hover:bg-porcelain!",
+        stateClasses: "bg-transparent! text-ink! hover:bg-porcelain!",
       };
     }),
 );

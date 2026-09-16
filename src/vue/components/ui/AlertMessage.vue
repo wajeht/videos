@@ -13,9 +13,9 @@ withDefaults(
     :class="[
       'rounded-[7px] border',
       size === 'lg' ? 'px-[18px] py-[14px] text-[.88rem]' : 'px-3 py-2 text-sm',
-      variant === 'error' ? 'border-[#e3b7b5] bg-[#f8e9e8] text-[#732c2a]' : '',
-      variant === 'success' ? 'border-pine/20 bg-mist text-pine-deep' : '',
-      variant === 'info' ? 'border-line bg-white text-muted' : '',
+      variant === 'error' ? 'border-clay/50 bg-clay-soft text-clay-ink' : '',
+      variant === 'success' ? 'border-line bg-mist text-ink' : '',
+      variant === 'info' ? 'border-line bg-surface text-muted' : '',
     ]"
     :role="variant === 'error' ? 'alert' : 'status'"
   >

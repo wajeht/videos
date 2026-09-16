@@ -91,7 +91,7 @@ function togglePanel(panel: FilterType): void {
       <AppButton
         v-if="hasActiveFilters"
         variant="unstyled"
-        class="justify-self-start text-[.75rem] font-bold text-pine underline"
+        class="justify-self-start text-[.75rem] font-bold text-ink underline"
         @click="emit('clear')"
         >Clear filters</AppButton
       >
@@ -158,7 +158,7 @@ function togglePanel(panel: FilterType): void {
           v-if="props.hasActiveFilters"
           data-clear-filters="mobile"
           variant="unstyled"
-          class="inline-flex min-h-9 items-center text-[.75rem] font-bold text-pine underline"
+          class="inline-flex min-h-9 items-center text-[.75rem] font-bold text-ink underline"
           @click="emit('clear')"
         >
           Clear filters

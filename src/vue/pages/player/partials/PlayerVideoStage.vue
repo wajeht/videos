@@ -30,7 +30,7 @@ defineExpose({ video });
 
 <template>
   <div
-    class="media-frame relative mx-auto mb-[26px] grid aspect-video max-h-[calc(100vh-260px)] w-full place-items-center overflow-hidden rounded-[6px] border border-white/10 bg-[#080a0d] shadow-[0_28px_80px_rgb(0_0_0_/_38%)]"
+    class="relative mx-auto mb-[26px] grid aspect-video max-h-[calc(100vh-260px)] w-full place-items-center overflow-hidden rounded-[6px] border border-white/10 bg-black shadow-[0_28px_80px_rgb(0_0_0_/_38%)]"
   >
     <video
       ref="video"
@@ -45,7 +45,7 @@ defineExpose({ video });
     />
     <div
       v-if="loading"
-      class="absolute inset-0 grid place-items-center content-center bg-[#12161c] p-8 text-center"
+      class="absolute inset-0 grid place-items-center content-center bg-pine-deep p-8 text-center"
       role="status"
     >
       <div
@@ -55,7 +55,7 @@ defineExpose({ video });
     </div>
     <div
       v-else-if="playback?.kind === 'converting'"
-      class="absolute inset-0 grid place-items-center content-center bg-[#12161c] p-8 text-center"
+      class="absolute inset-0 grid place-items-center content-center bg-pine-deep p-8 text-center"
       role="status"
     >
       <h2 class="font-display text-3xl">Preparing this video</h2>
@@ -63,7 +63,7 @@ defineExpose({ video });
     </div>
     <div
       v-else-if="error"
-      class="absolute inset-0 grid place-items-center content-center bg-[#12161c] p-8 text-center"
+      class="absolute inset-0 grid place-items-center content-center bg-pine-deep p-8 text-center"
     >
       <h2 class="font-display text-3xl">Video unavailable</h2>
       <p class="mt-2 text-sm text-white/58">{{ error }}</p>
@@ -80,9 +80,7 @@ defineExpose({ video });
       v-if="ended"
       class="absolute inset-0 z-[3] grid place-items-center content-center bg-[rgb(18_22_28_/_92%)] p-8 text-center backdrop-blur-lg"
     >
-      <span class="text-xs font-extrabold tracking-[.16em] text-belt-light uppercase"
-        >Video complete</span
-      >
+      <span class="text-xs font-extrabold text-belt-light">Video complete</span>
       <h2 class="mt-4 font-display text-3xl">
         {{ nextVideo ? "Ready for the next video?" : "Finished." }}
       </h2>

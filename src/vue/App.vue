@@ -107,7 +107,7 @@ async function setup(
     v-else-if="auth.state.status === 'loading'"
     class="grid min-h-screen place-items-center bg-canvas px-5"
   >
-    <div v-if="showBootstrap" class="text-center text-pine-deep" role="status">
+    <div v-if="showBootstrap" class="text-center text-ink" role="status">
       <AppLogo />
       <p class="mt-3 text-sm text-muted">Opening Videos…</p>
     </div>

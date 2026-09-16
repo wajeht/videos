@@ -43,7 +43,7 @@ describe("LibraryFiltersToolbar", () => {
     expect(viewButton.classes()).toEqual(expect.arrayContaining(["bg-pine", "text-white"]));
 
     const authorButton = wrapper.get('[data-mobile-filter="author"]');
-    expect(authorButton.classes()).toEqual(expect.arrayContaining(["bg-white", "text-pine"]));
+    expect(authorButton.classes()).toEqual(expect.arrayContaining(["bg-surface", "text-ink"]));
     await authorButton.trigger("click");
 
     const drawer = document.body.querySelector("dialog[open]");

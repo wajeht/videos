@@ -42,16 +42,14 @@ const isButton = computed(() => props.as === "button");
 const variantClasses = computed(
   () =>
     ({
-      accent: "border-transparent bg-belt-light text-pine-deep hover:-translate-y-px",
-      danger: "border-clay bg-clay text-white hover:-translate-y-px hover:bg-clay-deep",
-      ghost: "border-line bg-white text-pine hover:-translate-y-px hover:border-pine",
-      inverse:
-        "border-transparent bg-white text-pine-deep hover:-translate-y-px hover:bg-porcelain",
-      "outline-inverse":
-        "border-white/24 bg-transparent text-white hover:-translate-y-px hover:border-white/55",
-      primary: "border-transparent bg-pine text-white hover:-translate-y-px hover:bg-pine-deep",
-      secondary: "border-line bg-white text-pine hover:-translate-y-px hover:border-pine",
-      text: "border-transparent bg-transparent px-0 text-pine hover:text-pine-deep",
+      accent: "border-transparent bg-belt-light text-pine-deep",
+      danger: "border-clay bg-clay text-white hover:bg-clay-deep",
+      ghost: "border-line bg-surface text-ink hover:border-muted",
+      inverse: "border-line bg-mist text-ink hover:border-muted",
+      "outline-inverse": "border-white/24 bg-transparent text-white hover:border-white/55",
+      primary: "border-transparent bg-pine text-white hover:bg-pine/80",
+      secondary: "border-line bg-surface text-ink hover:border-muted",
+      text: "border-transparent bg-transparent px-0 text-ink hover:text-belt-light",
       unstyled: "border-0 bg-transparent p-0 text-inherit",
     })[props.variant],
 );
@@ -87,7 +85,7 @@ function handleClick(event: MouseEvent): void {
     :class="[
       variant === 'unstyled'
         ? 'cursor-pointer disabled:cursor-not-allowed disabled:opacity-55'
-        : 'inline-flex cursor-pointer items-center justify-center gap-2 rounded-[5px] border font-[750] transition-[transform,background,border-color] duration-[160ms] disabled:cursor-not-allowed disabled:opacity-55',
+        : 'inline-flex cursor-pointer items-center justify-center gap-2 rounded-[5px] border font-semibold transition-colors duration-[160ms] disabled:cursor-not-allowed disabled:opacity-55',
       variant === 'unstyled' ? '' : sizeClasses,
       variantClasses,
       block ? 'w-full' : '',

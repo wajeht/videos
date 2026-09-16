@@ -13,7 +13,7 @@ const player = useVideoPlayer(media);
 
 <template>
   <main
-    class="grid min-h-[calc(100vh-66px)] bg-[#12161c]"
+    class="grid min-h-[calc(100vh-66px)] bg-pine-deep"
     :class="
       player.playlist.value
         ? 'grid-cols-[minmax(0,1fr)_390px] max-[1120px]:grid-cols-[minmax(0,1fr)_330px] max-[860px]:block'

@@ -22,8 +22,8 @@ const paddingClasses = computed(
     })[props.padding],
 );
 const surfaceClasses = computed(() => {
-  if (props.variant === "subtle") return "border-dashed border-[#b9bec3] bg-white/55";
-  return ["border-line bg-white", props.elevated ? "shadow-card" : ""];
+  if (props.variant === "subtle") return "border-dashed border-line bg-surface/55";
+  return ["border-line bg-surface", props.elevated ? "shadow-card" : ""];
 });
 </script>
 

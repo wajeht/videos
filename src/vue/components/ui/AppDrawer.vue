@@ -27,7 +27,7 @@ const { handleBackdrop, handleCancel } = useModalDialog(() => props.open, reques
   <Teleport to="body">
     <dialog
       ref="dialog"
-      class="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none overflow-hidden bg-transparent p-0 text-ink backdrop:bg-[#12161c]/45"
+      class="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none overflow-hidden bg-transparent p-0 text-ink backdrop:bg-pine-deep/45"
       :aria-labelledby="titleId"
       @cancel="handleCancel"
       @click="handleBackdrop"
@@ -35,7 +35,7 @@ const { handleBackdrop, handleCancel } = useModalDialog(() => props.open, reques
       <section
         v-if="open"
         data-testid="app-drawer-surface"
-        class="absolute inset-x-5 bottom-0 max-h-[72dvh] overflow-hidden rounded-t-[12px] border border-b-0 border-line bg-white shadow-[0_-18px_70px_rgb(18_22_28_/_28%)]"
+        class="absolute inset-x-5 bottom-0 max-h-[72dvh] overflow-hidden rounded-t-[12px] border border-b-0 border-line bg-surface shadow-[0_-18px_70px_rgb(18_22_28_/_28%)]"
         @click.stop
       >
         <header class="flex items-center justify-between gap-5 border-b border-line px-6 py-4">

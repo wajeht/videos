@@ -59,7 +59,7 @@ function submit(): void {
 <template>
   <form class="px-8 py-8 lg:p-0" @submit.prevent="submit">
     <h1
-      class="font-display text-3xl font-black tracking-[-.025em] uppercase lg:text-[2.4rem] lg:leading-none"
+      class="font-display text-3xl font-semibold tracking-[-.025em] lg:text-[2.4rem] lg:leading-none"
     >
       {{ isSetup ? "Set up your library" : "Welcome back" }}
     </h1>

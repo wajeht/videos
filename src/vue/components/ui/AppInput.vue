@@ -29,18 +29,18 @@ const canReveal = computed(
 const actualType = computed(() => (canReveal.value && revealed.value ? "text" : props.type));
 const inputClasses = computed(() => {
   if (props.variant === "bare") {
-    return "border-0 bg-transparent p-0 text-ink outline-0 placeholder:text-[#858c94]";
+    return "border-0 bg-transparent p-0 text-ink outline-0 placeholder:text-muted";
   }
 
   const defaultBorderClasses =
     props.variant === "dark"
       ? "border-white/16 focus:border-belt-light"
-      : "border-line focus:border-pine";
+      : "border-line focus:border-muted";
   const borderClasses = props.invalid ? "border-clay focus:border-clay" : defaultBorderClasses;
   const colorClasses =
     props.variant === "dark"
-      ? "bg-[#303741] text-white placeholder:text-white/40"
-      : "bg-white text-ink placeholder:text-[#858c94]";
+      ? "bg-pine text-white placeholder:text-white/40"
+      : "bg-surface text-ink placeholder:text-muted";
 
   return `${borderClasses} ${colorClasses}`;
 });
@@ -74,7 +74,7 @@ defineExpose({
     />
     <button
       v-if="canReveal"
-      class="absolute inset-y-0 right-0 grid w-11 cursor-pointer place-items-center border-0 bg-transparent text-pine"
+      class="absolute inset-y-0 right-0 grid w-11 cursor-pointer place-items-center border-0 bg-transparent text-ink"
       type="button"
       :aria-label="revealed ? 'Hide password' : 'Show password'"
       @click="revealed = !revealed"

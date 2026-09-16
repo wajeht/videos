@@ -72,7 +72,7 @@ async function select(profile: ProfileDto): Promise<void> {
             v-for="profile in profiles.data.value"
             :key="profile.id"
             variant="unstyled"
-            class="grid w-28 justify-items-center gap-3 rounded-[8px] p-2 text-pine-deep transition-colors duration-[160ms] hover:bg-porcelain"
+            class="grid w-28 justify-items-center gap-3 rounded-[8px] p-2 text-ink transition-colors duration-[160ms] hover:bg-porcelain"
             :disabled="unlock.pending.value"
             @click="select(profile)"
           >

@@ -36,24 +36,19 @@ function forwardSetup(password: string, confirmPassword: string, setupToken?: st
 <template>
   <main class="min-h-screen bg-canvas lg:grid lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,1.48fr)]">
     <aside
-      class="relative hidden min-h-screen items-center justify-center overflow-hidden bg-pine-deep bg-[radial-gradient(circle_at_78%_18%,rgb(213_139_59_/_9%),transparent_26%),repeating-linear-gradient(90deg,transparent_0_55px,rgb(255_255_255_/_2.5%)_55px_56px)] px-12 text-white lg:order-2 lg:flex"
+      class="relative hidden min-h-screen items-center justify-center overflow-hidden bg-pine-deep px-12 text-white lg:order-2 lg:flex"
       aria-label="A private video archive that stays on your server."
     >
-      <div
-        class="absolute inset-x-0 top-0 h-2 bg-[repeating-linear-gradient(90deg,rgb(8_13_22_/_72%)_0_9px,transparent_9px_16px)]"
-        aria-hidden="true"
-      />
       <div class="w-full max-w-[720px]">
         <div class="mb-14">
           <AppLogo class="text-white" />
         </div>
         <div aria-hidden="true">
           <p
-            class="font-display text-[clamp(4.4rem,7vw,8.5rem)] font-black leading-[0.8] tracking-[-0.035em] uppercase"
+            class="font-display text-[clamp(3.5rem,6vw,6rem)] font-semibold leading-[1.05] tracking-[-0.035em]"
           >
-            <span class="block text-white/42">The archive</span>
-            <span class="block text-white">stays</span>
-            <span class="block text-white">home.</span>
+            <span class="block text-white">The archive</span>
+            <span class="block text-white">stays home.</span>
           </p>
           <p class="mt-9 max-w-xl text-lg leading-7 font-medium text-white/62">
             A private, opinionated, self-hosted video library.
@@ -63,17 +58,13 @@ function forwardSetup(password: string, confirmPassword: string, setupToken?: st
     </aside>
 
     <section
-      class="grid min-h-screen grid-rows-[1fr_auto] px-5 py-8 lg:order-1 lg:border-r lg:border-pine/10 lg:px-8 lg:py-10 xl:px-[clamp(36px,3.5vw,60px)]"
+      class="grid min-h-screen grid-rows-[1fr_auto] px-5 py-8 lg:order-1 lg:border-r lg:border-line lg:px-8 lg:py-10 xl:px-[clamp(36px,3.5vw,60px)]"
     >
       <PanelCard
         class="w-full max-w-[430px] place-self-center lg:max-w-[400px] lg:overflow-visible lg:rounded-none lg:border-0 lg:bg-transparent lg:shadow-none"
         padding="none"
       >
         <header class="relative bg-pine-deep px-8 py-7 text-white lg:hidden">
-          <span
-            class="absolute inset-x-0 top-0 h-1.5 bg-[repeating-linear-gradient(90deg,rgb(8_13_22_/_72%)_0_7px,transparent_7px_13px)]"
-            aria-hidden="true"
-          />
           <AppLogo />
           <p class="mt-3 text-sm leading-6 text-white/68">
             {{

@@ -40,6 +40,6 @@ describe("AppInput", () => {
     expect(input.classes()).toContain("border-clay");
     expect(input.classes()).toContain("focus:border-clay");
     expect(input.classes()).not.toContain("border-line");
-    expect(input.classes()).not.toContain("focus:border-pine");
+    expect(input.classes()).not.toContain("focus:border-muted");
   });
 });

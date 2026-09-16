@@ -83,7 +83,7 @@ function videoOptionLabel(video: VideoDto): string {
       <p class="mt-1 text-xs text-muted">Find videos by title, author, playlist, or tag.</p>
     </div>
     <p v-else-if="loading" class="px-3 py-3 text-sm text-muted">Searching videos…</p>
-    <p v-else-if="error" class="px-3 py-3 text-sm text-clay">{{ error }}</p>
+    <p v-else-if="error" class="px-3 py-3 text-sm text-clay-ink">{{ error }}</p>
     <p v-else-if="!videos.length" class="px-3 py-3 text-sm text-muted">No matching videos</p>
     <ul v-else aria-label="Video search results" role="listbox">
       <li v-for="({ video, titleRanges, contextParts }, index) in results" :key="video.id">
@@ -110,7 +110,7 @@ function videoOptionLabel(video: VideoDto): string {
             {{ String(index + 1).padStart(2, "0") }}
           </span>
           <span
-            class="media-frame relative aspect-video w-24 overflow-hidden rounded-[5px] bg-mist max-[600px]:w-[72px]"
+            class="relative aspect-video w-24 overflow-hidden rounded-[5px] bg-mist max-[600px]:w-[72px]"
           >
             <img
               v-if="video.coverUrl"

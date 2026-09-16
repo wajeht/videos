@@ -1,34 +1,35 @@
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #e9ebea;
-  --color-porcelain: #f2f3f1;
-  --color-ink: #20252b;
-  --color-pine: #29313c;
-  --color-pine-deep: #12161c;
-  --color-mist: #e4e7e9;
+  --color-surface: #222222;
+  --color-clay-ink: #f0aaa5;
+  --color-canvas: #1c1c1c;
+  --color-porcelain: #181818;
+  --color-ink: #ececec;
+  --color-pine: #414141;
+  --color-pine-deep: #121212;
+  --color-mist: #2c2c2c;
   --color-belt: #d58b3b;
-  --color-belt-ink: #96591f;
+  --color-belt-ink: #e5aa64;
   --color-belt-light: #e5aa64;
   --color-clay: #b74845;
   --color-clay-deep: #943735;
-  --color-clay-soft: #faeceb;
-  --color-line: #d4d9de;
-  --color-muted: #69717a;
-  --font-body: "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-display: "Avenir Next Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
-  --shadow-card: 0 18px 50px rgb(32 37 43 / 10%);
+  --color-clay-soft: #382525;
+  --color-line: #3b3b3b;
+  --color-muted: #aaaaaa;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-body);
+  --shadow-card: 0 4px 16px rgb(0 0 0 / 18%);
 }
 
 @layer base {
   html {
+    color-scheme: dark;
     @apply min-w-80 bg-porcelain;
   }
 
   body {
     @apply m-0 min-h-screen min-w-80 bg-porcelain font-body text-ink;
-    background-image: linear-gradient(90deg, rgb(41 49 60 / 2.2%) 1px, transparent 1px);
-    background-size: 56px 56px;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
   }
@@ -41,7 +42,7 @@
 
   input[type="checkbox"],
   input[type="radio"] {
-    accent-color: var(--color-pine);
+    accent-color: var(--color-ink);
   }
 
   button,
@@ -59,29 +60,7 @@
   input:focus-visible,
   select:focus-visible,
   video:focus-visible {
-    @apply outline-3 outline-offset-3 outline-belt-light;
-  }
-}
-
-@layer components {
-  .media-frame::before,
-  .media-frame::after {
-    position: absolute;
-    right: 0;
-    left: 0;
-    z-index: 2;
-    height: 6px;
-    background: repeating-linear-gradient(90deg, rgb(18 22 28 / 74%) 0 7px, transparent 7px 13px);
-    content: "";
-    pointer-events: none;
-  }
-
-  .media-frame::before {
-    top: 0;
-  }
-
-  .media-frame::after {
-    bottom: 0;
+    @apply outline-3 outline-offset-3 outline-belt-ink;
   }
 }
 
