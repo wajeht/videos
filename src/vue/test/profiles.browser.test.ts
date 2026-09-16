@@ -65,19 +65,19 @@ test("selects locked profiles and limits profile management to admins", async ({
   await page.getByRole("button", { name: "Create profile" }).click();
   await expect(page.getByRole("heading", { name: "Browser Member", exact: true })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Profile created" })).toBeVisible();
-  const adminRow = page
-    .getByRole("row")
-    .filter({ has: page.getByRole("heading", { name: "Admin", exact: true }) });
-  await expect(adminRow.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
-  const memberRow = page
-    .getByRole("row")
-    .filter({ has: page.getByRole("heading", { name: "Browser Member", exact: true }) });
-  await expect(memberRow.getByRole("cell", { name: "Member", exact: true })).toBeVisible();
-  const editLinks = page.getByRole("link", { name: "Edit", exact: true });
-  const adminEditPath = (await editLinks.first().getAttribute("href"))!;
-  const memberEditPath = (await editLinks.nth(1).getAttribute("href"))!;
+  const adminLink = page.getByRole("link", { name: "Edit Admin", exact: true });
+  const memberLink = page.getByRole("link", { name: "Edit Browser Member", exact: true });
+  await expect(memberLink).toContainText("Member · No password");
+  await expect(adminLink).toContainText("Admin · Password protected");
+  await expect(page.getByRole("button", { name: "Delete profile", exact: true })).toHaveCount(0);
+  const adminEditPath = (await adminLink.getAttribute("href"))!;
+  const memberEditPath = (await memberLink.getAttribute("href"))!;
+  await adminLink.click();
+  await expect(page.getByRole("heading", { name: "Edit Admin", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete profile", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
   expect(memberEditPath).toMatch(/^\/settings\/profiles\/[^/]+\/edit$/);
-  await editLinks.nth(1).click();
+  await memberLink.click();
   await expect(page).toHaveURL(new RegExp(`${memberEditPath}$`));
   await expect(page.getByRole("heading", { name: "Edit Browser Member" })).toBeVisible();
   await expect(page.getByLabel("Permissions", { exact: true })).toHaveCount(0);
@@ -94,13 +94,31 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(page.getByLabel("Permissions", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page).toHaveURL(/\/settings\/profiles$/);
-  await page.getByRole("link", { name: "Edit", exact: true }).nth(1).click();
+  await memberLink.click();
   await page.getByLabel(/^Profile name/).fill("Browser Viewer");
   await page.getByRole("button", { name: "Save profile", exact: true }).click();
   await expect(page).toHaveURL(/\/settings\/profiles$/);
   await expect(page.getByRole("heading", { name: "Browser Viewer", exact: true })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Profile updated" })).toBeVisible();
+  await page.getByRole("button", { name: "Dismiss Profile updated", exact: true }).click();
+  const profileList = page.getByRole("list", { name: "Profiles", exact: true });
+  const profileRows = await profileList.getByRole("link").all();
   await page.screenshot({ path: testInfo.outputPath("manage-profiles.png"), fullPage: true });
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    const firstCard = (await profileRows[0]!.boundingBox())!;
+    const secondCard = (await profileRows[1]!.boundingBox())!;
+    expect(secondCard.y).toBeGreaterThanOrEqual(firstCard.y + firstCard.height);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    const addButton = (await page.getByRole("link", { name: "Add profile" }).boundingBox())!;
+    expect(addButton.width).toBe((await profileList.boundingBox())!.width);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: testInfo.outputPath("manage-profiles-mobile.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto("/settings/profiles/missing/edit");
   await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Save profile", exact: true })).toHaveCount(0);
@@ -108,16 +126,45 @@ test("selects locked profiles and limits profile management to admins", async ({
   await page.getByRole("link", { name: "Add profile" }).click();
   await page.getByLabel(/^Profile name/).fill("Temporary profile");
   await page.getByRole("button", { name: "Create profile" }).click();
-  const temporaryProfile = page.getByRole("row").filter({ hasText: "Temporary profile" });
-  await temporaryProfile.getByRole("button", { name: "Delete", exact: true }).click();
+  const temporaryProfile = page.getByRole("link", { name: "Edit Temporary profile", exact: true });
+  await temporaryProfile.click();
+  const deletePanel = page
+    .locator("section")
+    .filter({
+      has: page.getByRole("heading", { name: "Delete profile", exact: true }),
+    })
+    .last();
+  await expect(
+    deletePanel.getByRole("button", { name: "Delete profile", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Delete profile", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(temporaryProfile).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Edit Temporary profile", exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Profile deleted" })).toHaveCount(0);
-  await temporaryProfile.getByRole("button", { name: "Delete", exact: true }).click();
+  await page.route(
+    "**/api/profiles/*",
+    async (route) => {
+      await route.fulfill({ status: 500, json: { message: "Could not delete profile" } });
+    },
+    { times: 1 },
+  );
+  await page.getByRole("button", { name: "Delete profile", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Delete profile", exact: true })
     .click();
+  await expect(deletePanel.getByRole("alert")).toHaveText("Could not delete profile");
+  await expect(
+    page.getByRole("heading", { name: "Edit Temporary profile", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Delete profile", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Delete profile", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/settings\/profiles$/);
   await expect(temporaryProfile).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: "Profile deleted" })).toBeVisible();
   const secondTab = await context.newPage();
@@ -139,7 +186,7 @@ test("selects locked profiles and limits profile management to admins", async ({
   await expect(page.getByRole("button", { name: "Refresh library", exact: true })).toHaveCount(0);
   await page.getByRole("link", { name: "Profiles", exact: true }).click();
   await expect(page.getByRole("link", { name: "Add profile" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Delete profile", exact: true })).toHaveCount(0);
   await expect(secondTab.getByRole("heading", { name: "Profile details" })).toBeVisible();
   for (const path of [adminEditPath, "/settings/profiles/new"]) {
     await page.goto(path);
@@ -148,7 +195,7 @@ test("selects locked profiles and limits profile management to admins", async ({
     await expect(page.getByRole("button", { name: "Save profile", exact: true })).toHaveCount(0);
   }
   await page.goto("/settings/profiles");
-  await expect(page.getByRole("link", { name: "Edit", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /^Edit / })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
   await expect(page.locator("#settings-profiles-panel > section > header")).toHaveCount(2);
   await page.getByLabel(/^Profile name/).fill("Renamed Member");

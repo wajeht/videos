@@ -15,7 +15,7 @@ import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
 import PanelCard from "@/components/ui/PanelCard.vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
-import ProfileTable from "./partials/ProfileTable.vue";
+import ProfileList from "./partials/ProfileList.vue";
 import ProfileDetailsForm from "@/pages/profiles/partials/ProfileDetailsForm.vue";
 import ProfilePasswordForm from "@/pages/profiles/partials/ProfilePasswordForm.vue";
 import { profilesQueryOptions } from "@/queries.js";
@@ -77,6 +77,7 @@ const lock = useAsyncAction(async (password: string | null) => {
   toast.success(password === null ? "Profile lock removed" : "Profile password updated");
 });
 const remove = useAsyncAction(async (profile: ProfileDto) => {
+  const sourceRoute = router.currentRoute.value;
   if (
     !(await confirmation.confirm({
       title: `Delete ${profile.name}?`,
@@ -87,6 +88,9 @@ const remove = useAsyncAction(async (profile: ProfileDto) => {
   )
     return;
   await api.deleteProfile(profile.id);
+  if (router.currentRoute.value === sourceRoute) {
+    await router.replace({ name: "settings-profiles" });
+  }
   await profiles.refetch();
   toast.success("Profile deleted");
 });
@@ -112,7 +116,7 @@ watch(
           :key="editing?.id ?? 'new'"
           :profile="editing"
           :admin="admin"
-          :busy="save.pending.value"
+          :busy="save.pending.value || remove.pending.value"
           :error="save.errorMessage.value"
           @save="save.run($event)"
           @cancel="router.push({ name: 'settings-profiles' })"
@@ -121,10 +125,30 @@ watch(
           v-if="editing"
           :key="`${editing.id}:${passwordFormVersion}`"
           :profile="editing"
-          :busy="lock.pending.value"
+          :busy="lock.pending.value || remove.pending.value"
           :error="lock.errorMessage.value"
           @save="lock.run($event)"
         />
+        <PanelCard v-if="admin && editing?.role === 'member'" :elevated="false" padding="none">
+          <PanelCardHeader
+            title="Delete profile"
+            description="Permanently delete this profile, watch progress, and preferences."
+          />
+          <div class="grid gap-4 p-[clamp(22px,4vw,34px)]">
+            <AlertMessage v-if="remove.errorMessage.value">{{
+              remove.errorMessage.value
+            }}</AlertMessage>
+            <AppButton
+              class="justify-self-end max-[600px]:w-full"
+              variant="danger"
+              :disabled="save.pending.value || lock.pending.value"
+              :loading="remove.pending.value"
+              loading-label="Deleting…"
+              @click="remove.run(editing)"
+              >Delete profile</AppButton
+            >
+          </div>
+        </PanelCard>
       </template>
       <PanelCard v-else :elevated="false" padding="none">
         <PanelCardHeader
@@ -138,17 +162,9 @@ watch(
               >Try again</AppButton
             ></AlertMessage
           >
-          <AlertMessage v-if="remove.errorMessage.value" class="mt-4">{{
-            remove.errorMessage.value
-          }}</AlertMessage>
           <p v-if="profiles.isPending.value" class="mt-4" role="status">Loading profiles…</p>
-          <ProfileTable
-            v-if="!editRoute && profiles.data.value"
-            :profiles="profiles.data.value"
-            :busy="remove.pending.value"
-            @remove="remove.run($event)"
-          />
-          <div v-if="!editRoute" class="mt-8 flex justify-end">
+          <ProfileList v-if="!editRoute && profiles.data.value" :profiles="profiles.data.value" />
+          <div v-if="!editRoute" class="mt-4 flex justify-end border-t border-line pt-6">
             <AppButton
               class="max-[600px]:w-full"
               :as="IntentRouterLink"
