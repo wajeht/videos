@@ -9,14 +9,12 @@ const props = withDefaults(
     invalid?: boolean;
     revealable?: boolean;
     type?: string;
-    variant?: "bare" | "dark" | "default";
   }>(),
   {
     disabled: false,
     invalid: false,
     revealable: true,
     type: "text",
-    variant: "default",
   },
 );
 
@@ -27,24 +25,6 @@ const canReveal = computed(
   () => props.type === "password" && props.revealable && model.value.length > 0,
 );
 const actualType = computed(() => (canReveal.value && revealed.value ? "text" : props.type));
-const inputClasses = computed(() => {
-  if (props.variant === "bare") {
-    return "border-0 bg-transparent p-0 text-ink outline-0 placeholder:text-[#858c94]";
-  }
-
-  const defaultBorderClasses =
-    props.variant === "dark"
-      ? "border-white/16 focus:border-belt-light"
-      : "border-line focus:border-pine";
-  const borderClasses = props.invalid ? "border-clay focus:border-clay" : defaultBorderClasses;
-  const colorClasses =
-    props.variant === "dark"
-      ? "bg-[#303741] text-white placeholder:text-white/40"
-      : "bg-white text-ink placeholder:text-[#858c94]";
-
-  return `${borderClasses} ${colorClasses}`;
-});
-
 watch(model, (value) => {
   if (!value) revealed.value = false;
 });
@@ -65,16 +45,11 @@ defineExpose({
       :type="actualType"
       :disabled="disabled"
       :aria-invalid="invalid ? 'true' : undefined"
-      :class="[
-        'w-full min-w-0 outline-none disabled:cursor-not-allowed disabled:opacity-55',
-        variant === 'bare' ? '' : 'min-h-10 rounded-[7px] border px-3 text-sm',
-        canReveal ? 'pr-12' : '',
-        inputClasses,
-      ]"
+      :class="['w-full min-w-0', canReveal ? 'pr-12' : '', invalid ? 'border-clay' : '']"
     />
     <button
       v-if="canReveal"
-      class="absolute inset-y-0 right-0 grid w-11 cursor-pointer place-items-center border-0 bg-transparent text-pine"
+      class="absolute inset-y-0 right-0 grid w-11 cursor-pointer place-items-center border-0 bg-transparent"
       type="button"
       :aria-label="revealed ? 'Hide password' : 'Show password'"
       @click="revealed = !revealed"

@@ -56,25 +56,21 @@ async function logout(): Promise<void> {
     </AlertMessage>
 
     <div
-      class="mt-6 grid grid-cols-[240px_minmax(0,1fr)] items-start gap-8 max-[760px]:grid-cols-1"
+      class="sidebar-layout mt-6 grid items-start max-[760px]:grid-cols-1 max-[760px]:gap-8"
       data-settings-layout
     >
-      <div class="grid gap-[clamp(18px,2vw,30px)]">
+      <aside class="sidebar-column grid gap-[30px]">
         <SettingsNavigation />
         <div class="grid gap-3 max-[760px]:hidden" data-desktop-sign-out-container>
           <AppButton
             block
-            variant="secondary"
             :loading="switchAction.pending.value"
             loading-label="Switching…"
             @click="switchAction.run()"
             >Switch profile</AppButton
           >
           <AppButton
-            class="h-10"
             block
-            size="md"
-            variant="danger"
             :loading="logoutAction.pending.value"
             loading-label="Signing out…"
             data-desktop-sign-out
@@ -83,24 +79,22 @@ async function logout(): Promise<void> {
             Sign out
           </AppButton>
         </div>
-      </div>
+      </aside>
 
-      <slot />
+      <div class="min-w-0 self-stretch">
+        <slot />
+      </div>
 
       <div class="col-span-full hidden gap-3 max-[760px]:grid" data-mobile-sign-out-container>
         <AppButton
           block
-          variant="secondary"
           :loading="switchAction.pending.value"
           loading-label="Switching…"
           @click="switchAction.run()"
           >Switch profile</AppButton
         >
         <AppButton
-          class="h-10"
           block
-          size="md"
-          variant="danger"
           :loading="logoutAction.pending.value"
           loading-label="Signing out…"
           data-mobile-sign-out

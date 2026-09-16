@@ -14,20 +14,19 @@ const toast = useToast();
       <div
         v-for="item in toast.toasts.value"
         :key="item.id"
-        class="pointer-events-auto flex items-start justify-between gap-4 rounded-[9px] border px-4 py-3 text-sm shadow-card"
+        class="pointer-events-auto flex items-start justify-between gap-4 border px-4 py-3"
         :class="
           {
-            error: 'border-[#e3b7b5] bg-[#f8e9e8] text-[#732c2a]',
-            info: 'border-line bg-white text-ink',
-            success: 'border-pine/20 bg-pine-deep text-white',
+            error: 'border-line bg-surface text-clay-ink',
+            info: 'border-line bg-surface text-ink',
+            success: 'border-line bg-surface text-ink',
           }[item.kind]
         "
         :role="item.kind === 'error' ? 'alert' : 'status'"
       >
-        <span class="leading-5">{{ item.message }}</span>
+        <span>{{ item.message }}</span>
         <AppButton
-          variant="unstyled"
-          class="text-lg leading-none opacity-70 hover:opacity-100"
+          class="opacity-70 hover:opacity-100"
           :aria-label="`Dismiss ${item.message}`"
           @click="toast.dismiss(item.id)"
         >

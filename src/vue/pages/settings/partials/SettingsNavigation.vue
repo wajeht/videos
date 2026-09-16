@@ -3,7 +3,7 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 
 import IntentRouterLink from "@/components/IntentRouterLink.vue";
-import PanelCard from "@/components/ui/PanelCard.vue";
+import FormSection from "@/components/ui/FormSection.vue";
 import { useAuth } from "@/composables/useAuth.js";
 import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
 
@@ -39,43 +39,42 @@ const sections = computed(() =>
         return {
           ...section,
           active,
-          stateClasses: "bg-pine! text-white!",
+          stateClasses: "underline font-bold",
         };
       }
       return {
         ...section,
         active,
-        stateClasses: "bg-transparent! text-pine! hover:bg-porcelain!",
+        stateClasses: "",
       };
     }),
 );
 </script>
 
 <template>
-  <PanelCard
-    as="nav"
-    class="p-8 max-[760px]:p-0"
-    :elevated="false"
-    padding="none"
-    aria-label="Settings sections"
-  >
-    <div class="grid gap-1 max-[760px]:auto-cols-fr max-[760px]:grid-flow-col max-[760px]:gap-0">
-      <IntentRouterLink
-        v-for="section in sections"
-        :id="`settings-${section.value}-link`"
-        :key="section.value"
-        :to="{ name: section.routeName }"
-        :prefetch="section.prefetch"
-        :class="[
-          'flex h-10 w-full items-center rounded-[7px] px-3.5 text-left text-[.82rem] font-bold transition-[background,color] duration-[160ms] max-[760px]:justify-center max-[760px]:rounded-none max-[760px]:px-0',
-          section.value === 'access' ? 'max-[760px]:border-l max-[760px]:border-line' : '',
-          section.stateClasses,
-        ]"
-        :aria-current="section.active ? 'page' : undefined"
-        :aria-controls="`settings-${section.value}-panel`"
+  <nav aria-label="Settings sections">
+    <FormSection title="Settings">
+      <ul
+        class="m-0 list-none p-0 max-[760px]:grid max-[760px]:auto-cols-fr max-[760px]:grid-flow-col"
       >
-        <span>{{ section.label }}</span>
-      </IntentRouterLink>
-    </div>
-  </PanelCard>
+        <li v-for="(section, index) in sections" :key="section.value">
+          <IntentRouterLink
+            :id="`settings-${section.value}-link`"
+            :to="{ name: section.routeName }"
+            :prefetch="section.prefetch"
+            :class="['block max-[760px]:py-2 max-[760px]:text-center', section.stateClasses]"
+            :aria-current="section.active ? 'page' : undefined"
+            :aria-controls="`settings-${section.value}-panel`"
+          >
+            {{ section.label }}
+          </IntentRouterLink>
+          <hr
+            v-if="index < sections.length - 1"
+            aria-hidden="true"
+            class="my-[15px] border-0 border-t border-solid border-line max-[760px]:hidden"
+          />
+        </li>
+      </ul>
+    </FormSection>
+  </nav>
 </template>

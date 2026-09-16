@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { shallowRef } from "vue";
 import type { ProfileDto } from "@/api.js";
-import PanelCard from "@/components/ui/PanelCard.vue";
-import PanelCardHeader from "@/components/ui/PanelCardHeader.vue";
+import FormSection from "@/components/ui/FormSection.vue";
 import AppInput from "@/components/ui/AppInput.vue";
 import FormField from "@/components/ui/FormField.vue";
 import AppButton from "@/components/ui/AppButton.vue";
@@ -22,12 +21,11 @@ function submit(): void {
 }
 </script>
 <template>
-  <PanelCard :elevated="false" padding="none">
-    <PanelCardHeader
-      title="Profile lock"
-      description="Changing the lock requires this profile to be unlocked again on every device."
-    />
-    <form class="grid gap-4 p-[clamp(22px,4vw,34px)]" @submit.prevent="submit">
+  <FormSection
+    title="Profile lock"
+    description="Changing the lock requires this profile to be unlocked again on every device."
+  >
+    <form class="grid gap-4" @submit.prevent="submit">
       <AlertMessage v-if="error">{{ error }}</AlertMessage>
       <FormField
         v-slot="field"
@@ -63,11 +61,10 @@ function submit(): void {
         />
       </FormField>
       <div
-        class="mt-4 flex flex-wrap justify-end gap-3 max-[600px]:grid max-[600px]:auto-cols-fr max-[600px]:grid-flow-col"
+        class="flex flex-wrap justify-end gap-3 max-[600px]:grid max-[600px]:auto-cols-fr max-[600px]:grid-flow-col"
       >
         <AppButton
           v-if="props.profile.role === 'member' && props.profile.isLocked"
-          variant="secondary"
           :disabled="busy"
           @click="emit('save', null)"
           >Remove lock</AppButton
@@ -75,5 +72,5 @@ function submit(): void {
         <AppButton type="submit" :loading="busy">Set password</AppButton>
       </div>
     </form>
-  </PanelCard>
+  </FormSection>
 </template>

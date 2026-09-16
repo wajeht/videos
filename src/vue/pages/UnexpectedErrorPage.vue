@@ -22,16 +22,8 @@ onMounted(() => setPageTitle("Unexpected error"));
       :framed="false"
     >
       <template #actions>
-        <AppButton size="lg" @click="retryFrontend">Reload page</AppButton>
-        <AppButton
-          :as="IntentRouterLink"
-          to="/"
-          :prefetch="loadHomePage"
-          variant="secondary"
-          size="lg"
-        >
-          Go home
-        </AppButton>
+        <AppButton @click="retryFrontend">Reload page</AppButton>
+        <AppButton :as="IntentRouterLink" to="/" :prefetch="loadHomePage"> Go home </AppButton>
       </template>
     </EmptyState>
   </main>

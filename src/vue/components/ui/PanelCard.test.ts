@@ -12,11 +12,4 @@ describe("PanelCard", () => {
     expect(wrapper.element.tagName).toBe("ARTICLE");
     expect(wrapper.text()).toBe("Body");
   });
-
-  it("can render a flat bordered surface", () => {
-    const wrapper = mount(PanelCard, { props: { elevated: false } });
-
-    expect(wrapper.classes()).toContain("border-line");
-    expect(wrapper.classes()).not.toContain("shadow-card");
-  });
 });

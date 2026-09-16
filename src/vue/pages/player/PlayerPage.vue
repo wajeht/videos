@@ -13,14 +13,14 @@ const player = useVideoPlayer(media);
 
 <template>
   <main
-    class="grid min-h-[calc(100vh-66px)] bg-[#12161c]"
+    class="grid min-h-[calc(100vh-66px)] bg-canvas"
     :class="
       player.playlist.value
         ? 'grid-cols-[minmax(0,1fr)_390px] max-[1120px]:grid-cols-[minmax(0,1fr)_330px] max-[860px]:block'
         : 'grid-cols-1'
     "
   >
-    <section class="min-w-0 px-[clamp(20px,3vw,50px)] pt-6 pb-10 text-white max-[600px]:px-3">
+    <section class="min-w-0 px-[clamp(20px,3vw,50px)] pt-6 pb-10 max-[600px]:px-3">
       <div :class="player.playlist.value ? '' : 'mx-auto max-w-[1180px]'">
         <PlayerVideoStage
           ref="stage"

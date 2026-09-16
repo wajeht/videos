@@ -103,8 +103,8 @@ test("searches videos globally with Command K", async ({ page }) => {
 
   await input.press("ArrowDown");
   await expect(result).toHaveAttribute("aria-selected", "true");
-  await expect(result).toHaveCSS("background-color", "rgb(41, 49, 60)");
-  await expect(result).toHaveCSS("border-left-color", "rgb(213, 139, 59)");
+  await expect(result).toHaveCSS("background-color", "rgb(248, 249, 250)");
+  await expect(result).toHaveCSS("border-left-color", "rgb(0, 0, 238)");
 
   await page.keyboard.press("Meta+k");
   await page.keyboard.press("Meta+k");

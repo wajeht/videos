@@ -14,7 +14,7 @@ defineProps<{ videos: DeepReadonly<LibraryDto["videos"]>; loading?: boolean }>()
     aria-label="Loading videos"
     role="status"
   >
-    <div v-for="index in 4" :key="index" class="aspect-video animate-pulse rounded-[8px] bg-mist" />
+    <div v-for="index in 4" :key="index" class="aspect-video animate-pulse bg-mist" />
   </div>
   <div
     v-else

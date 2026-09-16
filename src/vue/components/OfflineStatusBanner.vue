@@ -1,8 +1,5 @@
 <template>
-  <aside
-    class="border-b border-belt/25 bg-[#fff6e9] px-5 py-2.5 text-center text-[.78rem] font-semibold text-pine-deep"
-    role="status"
-  >
+  <aside class="border-b border-line bg-mist px-5 py-2.5 text-center" role="status">
     You’re offline. Reconnect to keep using Videos.
   </aside>
 </template>

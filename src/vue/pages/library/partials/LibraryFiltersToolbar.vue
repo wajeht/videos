@@ -90,19 +90,18 @@ function togglePanel(panel: FilterType): void {
       />
       <AppButton
         v-if="hasActiveFilters"
-        variant="unstyled"
-        class="justify-self-start text-[.75rem] font-bold text-pine underline"
+        class="justify-self-start cursor-pointer border-0 bg-transparent p-0 text-link hover:bg-transparent hover:underline"
         @click="emit('clear')"
         >Clear filters</AppButton
       >
-      <PanelCard :elevated="false" padding="compact">
+      <PanelCard>
         <LibraryPlaylistFilter
           v-model="view"
           name="library-desktop-view"
           @prefetch="emit('prefetchView', $event)"
         />
       </PanelCard>
-      <PanelCard :elevated="false" padding="compact">
+      <PanelCard>
         <LibraryFilterGroup
           v-model="author"
           all-label="No authors"
@@ -112,7 +111,7 @@ function togglePanel(panel: FilterType): void {
           @prefetch="emit('prefetch', 'author', $event)"
         />
       </PanelCard>
-      <PanelCard :elevated="false" padding="compact">
+      <PanelCard>
         <LibraryFilterGroup
           v-model="tag"
           all-label="No tags"
@@ -122,7 +121,7 @@ function togglePanel(panel: FilterType): void {
           @prefetch="emit('prefetch', 'tag', $event)"
         />
       </PanelCard>
-      <PanelCard :elevated="false" padding="compact">
+      <PanelCard>
         <LibraryPageSizeFilter
           v-model="pageSize"
           :disabled="pageSizeDisabled"
@@ -146,9 +145,8 @@ function togglePanel(panel: FilterType): void {
         <AppButton
           v-for="button in mobileFilterButtons"
           :key="button.type"
-          size="sm"
-          :variant="button.active ? 'primary' : 'secondary'"
           :aria-expanded="activeMobilePanel === button.type"
+          :aria-pressed="button.active"
           :data-mobile-filter="button.type"
           @click="togglePanel(button.type)"
         >
@@ -157,8 +155,7 @@ function togglePanel(panel: FilterType): void {
         <AppButton
           v-if="props.hasActiveFilters"
           data-clear-filters="mobile"
-          variant="unstyled"
-          class="inline-flex min-h-9 items-center text-[.75rem] font-bold text-pine underline"
+          class="inline-flex min-h-9 cursor-pointer items-center border-0 bg-transparent p-0 text-link hover:bg-transparent hover:underline"
           @click="emit('clear')"
         >
           Clear filters
@@ -175,6 +172,7 @@ function togglePanel(panel: FilterType): void {
     >
       <LibraryPlaylistFilter
         v-if="activeMobilePanel === 'view'"
+        class="m-0 border-0 p-0"
         v-model="view"
         hide-label
         name="library-mobile-view"
@@ -182,6 +180,7 @@ function togglePanel(panel: FilterType): void {
       />
       <LibraryFilterGroup
         v-else-if="activeMobilePanel === 'author'"
+        class="m-0 border-0 p-0"
         v-model="mobilePanelValue"
         all-label="No authors"
         hide-label
@@ -192,6 +191,7 @@ function togglePanel(panel: FilterType): void {
       />
       <LibraryPageSizeFilter
         v-else-if="activeMobilePanel === 'pageSize'"
+        class="m-0 border-0 p-0"
         v-model="pageSize"
         hide-label
         :disabled="pageSizeDisabled"
@@ -201,6 +201,7 @@ function togglePanel(panel: FilterType): void {
       />
       <LibraryFilterGroup
         v-else
+        class="m-0 border-0 p-0"
         v-model="mobilePanelValue"
         all-label="No tags"
         hide-label

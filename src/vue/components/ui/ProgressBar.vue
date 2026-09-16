@@ -13,18 +13,12 @@ withDefaults(
 <template>
   <div>
     <div
-      class="relative overflow-hidden rounded-[2px]"
-      :class="[compact ? 'h-1.5' : 'h-[9px]', light ? 'bg-white/18' : 'bg-[#c8cdd1]']"
+      class="relative overflow-hidden"
+      :class="[compact ? 'h-1.5' : 'h-[9px]', light ? 'bg-mist' : 'bg-line']"
     >
       <span
-        class="absolute inset-y-0 left-0 bg-linear-to-r from-belt to-belt-light transition-[width] duration-[350ms]"
+        class="absolute inset-y-0 left-0 bg-link transition-[width] duration-[350ms]"
         :style="{ width: `${Math.min(100, Math.max(0, value))}%` }"
-      />
-      <span
-        v-for="stripe in 4"
-        :key="stripe"
-        class="absolute top-0 z-[2] h-full w-0.5 bg-white/55"
-        :style="{ left: `${stripe * 20}%` }"
       />
     </div>
     <span class="sr-only">{{ label }}: {{ value }}%</span>

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { shallowRef } from "vue";
 import type { CreateProfileInput, ProfileDto } from "@/api.js";
-import PanelCard from "@/components/ui/PanelCard.vue";
-import PanelCardHeader from "@/components/ui/PanelCardHeader.vue";
+import FormSection from "@/components/ui/FormSection.vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppInput from "@/components/ui/AppInput.vue";
 import FormField from "@/components/ui/FormField.vue";
@@ -18,14 +17,10 @@ const name = shallowRef(props.profile?.name ?? "");
 const password = shallowRef("");
 </script>
 <template>
-  <PanelCard :elevated="false" padding="none">
-    <PanelCardHeader
-      :title="profile ? (admin ? `Edit ${profile.name}` : 'Profile details') : 'Add profile'"
-    />
-    <form
-      class="grid gap-4 p-[clamp(22px,4vw,34px)]"
-      @submit.prevent="emit('save', { name, password: password || null })"
-    >
+  <FormSection
+    :title="profile ? (admin ? `Edit ${profile.name}` : 'Profile details') : 'Add profile'"
+  >
+    <form class="grid gap-4" @submit.prevent="emit('save', { name, password: password || null })">
       <AlertMessage v-if="error">{{ error }}</AlertMessage>
       <FormField v-slot="field" label="Profile name" required
         ><AppInput :id="field.inputId" v-model="name" maxlength="40" required
@@ -49,15 +44,13 @@ const password = shallowRef("");
         />
       </FormField>
       <div
-        class="mt-4 flex flex-wrap justify-end gap-3 max-[600px]:grid max-[600px]:auto-cols-fr max-[600px]:grid-flow-col"
+        class="flex flex-wrap justify-end gap-3 max-[600px]:grid max-[600px]:auto-cols-fr max-[600px]:grid-flow-col"
       >
-        <AppButton v-if="admin" variant="secondary" :disabled="busy" @click="emit('cancel')">
-          Cancel
-        </AppButton>
+        <AppButton v-if="admin" :disabled="busy" @click="emit('cancel')"> Cancel </AppButton>
         <AppButton type="submit" :loading="busy">{{
           profile ? "Save profile" : "Create profile"
         }}</AppButton>
       </div>
     </form>
-  </PanelCard>
+  </FormSection>
 </template>

@@ -79,23 +79,21 @@ function videoOptionLabel(video: VideoDto): string {
     aria-live="polite"
   >
     <div v-if="!started" class="grid min-h-28 place-content-center px-6 text-center">
-      <p class="text-sm font-bold text-ink">Search your library</p>
-      <p class="mt-1 text-xs text-muted">Find videos by title, author, playlist, or tag.</p>
+      <p>Search your library</p>
+      <p class="mt-1">Find videos by title, author, playlist, or tag.</p>
     </div>
-    <p v-else-if="loading" class="px-3 py-3 text-sm text-muted">Searching videos…</p>
-    <p v-else-if="error" class="px-3 py-3 text-sm text-clay">{{ error }}</p>
-    <p v-else-if="!videos.length" class="px-3 py-3 text-sm text-muted">No matching videos</p>
-    <ul v-else aria-label="Video search results" role="listbox">
+    <p v-else-if="loading" class="px-3 py-3">Searching videos…</p>
+    <p v-else-if="error" class="px-3 py-3 text-clay-ink">{{ error }}</p>
+    <p v-else-if="!videos.length" class="px-3 py-3">No matching videos</p>
+    <ul v-else class="list-none p-0" aria-label="Video search results" role="listbox">
       <li v-for="({ video, titleRanges, contextParts }, index) in results" :key="video.id">
         <IntentRouterLink
           :id="`video-search-result-${video.id}`"
           :to="playerLocation(video.id, video.playlistId)"
           :prefetch="() => prefetch.video(video.id)"
-          class="grid min-h-[72px] grid-cols-[36px_96px_minmax(0,1fr)] items-center gap-x-3 rounded-[7px] border-l-4 px-3 py-2.5 focus-visible:outline-none max-[600px]:grid-cols-[28px_72px_minmax(0,1fr)] max-[600px]:gap-x-2 max-[600px]:px-2"
+          class="grid min-h-[72px] grid-cols-[36px_96px_minmax(0,1fr)] items-center gap-x-3 border-l-4 px-3 py-2.5 focus-visible:outline-none max-[600px]:grid-cols-[28px_72px_minmax(0,1fr)] max-[600px]:gap-x-2 max-[600px]:px-2"
           :class="
-            index === activeIndex
-              ? 'border-belt bg-pine text-white'
-              : 'border-transparent hover:bg-mist'
+            index === activeIndex ? 'border-link bg-mist' : 'border-transparent hover:bg-mist'
           "
           role="option"
           :aria-label="videoOptionLabel(video)"
@@ -103,15 +101,10 @@ function videoOptionLabel(video: VideoDto): string {
           @click="emit('close')"
           @pointerenter="emit('activate', index)"
         >
-          <span
-            class="font-mono text-[.7rem]"
-            :class="index === activeIndex ? 'text-white/60' : 'text-muted'"
-          >
+          <span class="text-muted">
             {{ String(index + 1).padStart(2, "0") }}
           </span>
-          <span
-            class="media-frame relative aspect-video w-24 overflow-hidden rounded-[5px] bg-mist max-[600px]:w-[72px]"
-          >
+          <span class="relative aspect-video w-24 overflow-hidden bg-mist max-[600px]:w-[72px]">
             <img
               v-if="video.coverUrl"
               :src="video.coverUrl"
@@ -120,9 +113,7 @@ function videoOptionLabel(video: VideoDto): string {
               loading="lazy"
             />
             <VideoCoverPlaceholder v-else class="h-full w-full" compact :title="video.title" />
-            <span
-              class="absolute right-1 bottom-1 rounded bg-black/80 px-1 py-0.5 font-mono text-[.58rem] text-white"
-            >
+            <span class="absolute right-1 bottom-1 bg-black/80 px-1 py-0.5 text-white">
               {{ durationText(video.durationSeconds) }}
             </span>
             <ProgressBar
@@ -133,17 +124,10 @@ function videoOptionLabel(video: VideoDto): string {
             />
           </span>
           <span class="min-w-0">
-            <span
-              class="block truncate text-sm font-bold"
-              :class="index === activeIndex ? 'text-white' : 'text-ink'"
-            >
+            <span class="block truncate">
               <HighlightedText :text="video.title" :ranges="titleRanges" />
             </span>
-            <span
-              v-if="contextParts.length"
-              class="mt-0.5 block truncate text-xs"
-              :class="index === activeIndex ? 'text-white/65' : 'text-muted'"
-            >
+            <span v-if="contextParts.length" class="mt-0.5 block truncate text-muted">
               <template
                 v-for="(part, partIndex) in contextParts"
                 :key="`${part.text}-${partIndex}`"

@@ -27,7 +27,7 @@ const { handleBackdrop, handleCancel } = useModalDialog(() => props.open, reques
   <Teleport to="body">
     <dialog
       ref="dialog"
-      class="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none overflow-hidden bg-transparent p-0 text-ink backdrop:bg-[#12161c]/45"
+      class="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none overflow-hidden border-0 bg-transparent p-0 backdrop:bg-black/15 backdrop:backdrop-blur-[1.5px]"
       :aria-labelledby="titleId"
       @cancel="handleCancel"
       @click="handleBackdrop"
@@ -35,15 +35,14 @@ const { handleBackdrop, handleCancel } = useModalDialog(() => props.open, reques
       <section
         v-if="open"
         data-testid="app-drawer-surface"
-        class="absolute inset-x-5 bottom-0 max-h-[72dvh] overflow-hidden rounded-t-[12px] border border-b-0 border-line bg-white shadow-[0_-18px_70px_rgb(18_22_28_/_28%)]"
+        class="absolute inset-x-5 bottom-0 max-h-[72dvh] overflow-hidden border border-b-0 border-line bg-surface"
         @click.stop
       >
         <header class="flex items-center justify-between gap-5 border-b border-line px-6 py-4">
-          <h2 :id="titleId" class="font-display text-xl font-extrabold">{{ title }}</h2>
+          <h2 :id="titleId">{{ title }}</h2>
           <AppButton
             autofocus
-            variant="unstyled"
-            class="grid h-9 w-9 place-items-center rounded-full text-2xl text-muted hover:bg-mist hover:text-ink"
+            class="grid h-9 w-9 place-items-center hover:bg-mist"
             :aria-label="closeLabel"
             @click="requestClose"
           >

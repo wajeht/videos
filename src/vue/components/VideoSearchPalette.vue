@@ -28,7 +28,7 @@ const { handleBackdrop, handleCancel } = useModalDialog(() => open.value, closeP
     <dialog
       ref="dialog"
       aria-label="Search videos"
-      class="mx-auto mt-[12vh] max-h-[min(640px,76vh)] w-[min(720px,calc(100%-40px))] overflow-hidden rounded-[12px] border border-line bg-white p-0 text-ink shadow-[0_24px_80px_rgb(18_22_28_/_36%)] backdrop:bg-[#12161c]/45 max-[600px]:mt-[max(12px,env(safe-area-inset-top))]"
+      class="mx-auto mt-[12vh] max-h-[min(640px,76vh)] w-[min(720px,calc(100%-40px))] overflow-hidden border border-line bg-surface p-0 backdrop:bg-black/15 backdrop:backdrop-blur-[1.5px] max-[600px]:mt-[max(12px,env(safe-area-inset-top))]"
       @cancel="handleCancel"
       @click="handleBackdrop"
     >
@@ -37,8 +37,7 @@ const { handleBackdrop, handleCancel } = useModalDialog(() => open.value, closeP
           <div class="flex items-center gap-3 border-b border-line px-5 py-3 max-[600px]:px-4">
             <AppInput
               v-model="query"
-              variant="bare"
-              class="h-10 text-base"
+              class="h-10"
               aria-label="Search videos, authors, playlists, and tags"
               aria-controls="video-search-results"
               :aria-activedescendant="activeResultId"
@@ -51,13 +50,7 @@ const { handleBackdrop, handleCancel } = useModalDialog(() => open.value, closeP
               @keydown.down.prevent="moveSelection(1)"
               @keydown.up.prevent="moveSelection(-1)"
             />
-            <AppButton
-              variant="secondary"
-              size="sm"
-              class="shrink-0 text-[.68rem]"
-              aria-label="Close search"
-              @click="closePalette"
-            >
+            <AppButton class="shrink-0" aria-label="Close search" @click="closePalette">
               <span class="max-[600px]:hidden">Esc</span>
               <span class="hidden max-[600px]:inline">Close</span>
             </AppButton>

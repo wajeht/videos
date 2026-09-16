@@ -21,16 +21,12 @@ withDefaults(defineProps<{ standalone?: boolean }>(), {
       :framed="false"
     >
       <template #actions>
-        <AppButton :as="IntentRouterLink" to="/" :prefetch="loadHomePage" size="lg">
-          Go home
-        </AppButton>
+        <AppButton :as="IntentRouterLink" to="/" :prefetch="loadHomePage"> Go home </AppButton>
         <AppButton
           v-if="!standalone"
           :as="IntentRouterLink"
           to="/videos"
           :prefetch="loadVideosPage"
-          variant="secondary"
-          size="lg"
         >
           Browse videos
         </AppButton>

@@ -57,13 +57,11 @@ function submit(): void {
 </script>
 
 <template>
-  <form class="px-8 py-8 lg:p-0" @submit.prevent="submit">
-    <h1
-      class="font-display text-3xl font-black tracking-[-.025em] uppercase lg:text-[2.4rem] lg:leading-none"
-    >
+  <form class="py-0" @submit.prevent="submit">
+    <h1>
       {{ isSetup ? "Set up your library" : "Welcome back" }}
     </h1>
-    <p class="mt-3 hidden text-sm leading-6 text-muted lg:block">
+    <p class="mt-3">
       {{
         isSetup
           ? step === "library"
@@ -75,7 +73,7 @@ function submit(): void {
     <AlertMessage v-if="message" class="mt-4">
       {{ message }}
     </AlertMessage>
-    <p v-if="isSetup" class="mt-6 text-sm font-bold text-muted" aria-live="polite">
+    <p v-if="isSetup" class="mt-6" aria-live="polite">
       {{ step === "library" ? "Step 1 of 2 · Library password" : "Step 2 of 2 · Admin profile" }}
     </p>
     <input
@@ -152,7 +150,7 @@ function submit(): void {
 
     <fieldset v-if="isSetup && step === 'admin'" class="mt-6 grid gap-4">
       <legend class="sr-only">Your admin profile</legend>
-      <p class="text-sm text-muted">
+      <p>
         This profile manages the library. Keep its password separate from the shared app password.
       </p>
       <FormField v-slot="field" label="Profile name" required
@@ -193,7 +191,7 @@ function submit(): void {
       /></FormField>
     </fieldset>
     <div class="mt-6 grid auto-cols-fr grid-flow-col gap-3">
-      <AppButton size="lg" type="submit" :loading="busy" loading-label="Please wait…">
+      <AppButton type="submit" :loading="busy" loading-label="Please wait…">
         {{ isSetup ? (step === "library" ? "Continue" : "Finish setup") : "Sign in" }}
       </AppButton>
     </div>

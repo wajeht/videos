@@ -20,7 +20,7 @@ const to = computed(() => playerLocation(props.video.id, props.video.playlistId)
     <IntentRouterLink
       :to="to"
       :prefetch="() => prefetch.video(video.id)"
-      class="media-frame relative block aspect-video overflow-hidden rounded-[8px] bg-mist shadow-[0_10px_26px_rgb(32_37_43_/_10%)] transition-[transform,box-shadow] duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_18px_36px_rgb(32_37_43_/_16%)] motion-reduce:transition-none"
+      class="relative block aspect-video overflow-hidden bg-mist ring-1 ring-line"
       :aria-label="`Play ${video.title}`"
     >
       <img
@@ -31,9 +31,7 @@ const to = computed(() => playerLocation(props.video.id, props.video.playlistId)
         loading="lazy"
       />
       <VideoCoverPlaceholder v-else class="h-full w-full" :title="video.title" />
-      <span
-        class="absolute right-2 bottom-2 rounded bg-black/80 px-1.5 py-0.5 font-mono text-[.66rem] text-white"
-      >
+      <span class="absolute right-2 bottom-2 bg-black/80 px-1.5 py-0.5 text-white">
         {{ durationText(video.durationSeconds) }}
       </span>
       <ProgressBar
@@ -44,17 +42,13 @@ const to = computed(() => playerLocation(props.video.id, props.video.playlistId)
         compact
       />
     </IntentRouterLink>
-    <h3 class="mt-3 line-clamp-2 text-[.95rem] leading-[1.3] font-bold tracking-[-.01em]">
-      <IntentRouterLink :to="to" :prefetch="() => prefetch.video(video.id)" class="hover:text-pine">
+    <h3 class="mt-3 line-clamp-2">
+      <IntentRouterLink :to="to" :prefetch="() => prefetch.video(video.id)">
         {{ video.title }}
       </IntentRouterLink>
     </h3>
-    <AuthorLinks
-      v-if="video.authors.length"
-      class="mt-1 block truncate text-[.72rem] text-muted"
-      :authors="video.authors"
-    />
-    <p v-if="video.playlistId" class="mt-1 truncate text-[.7rem] text-pine">
+    <AuthorLinks v-if="video.authors.length" class="mt-1 block truncate" :authors="video.authors" />
+    <p v-if="video.playlistId" class="mt-1 truncate">
       {{ video.playlistTitle }}
     </p>
   </article>

@@ -141,13 +141,13 @@ test("uses responsive video details and places the playlist below them on mobile
     "visible",
   );
   expect(await playlistPanel.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(
-    "rgb(242, 243, 241)",
+    "rgb(255, 255, 255)",
   );
   expect(
     await page
       .getByRole("button", { name: "Introduction" })
       .evaluate((element) => getComputedStyle(element).backgroundColor),
-  ).not.toBe("rgb(242, 243, 241)");
+  ).not.toBe("rgb(255, 255, 255)");
   await expect(page.getByRole("button", { name: "Open playlist Saved Collection" })).toHaveCount(0);
 
   const titleBox = await title.boundingBox();
@@ -167,6 +167,16 @@ test("uses responsive video details and places the playlist below them on mobile
   const detailsBox = await page.getByRole("region", { name: videoTitle }).boundingBox();
   const playlistBox = await playlistPanel.boundingBox();
   expect(playlistBox?.y).toBeGreaterThan((detailsBox?.y ?? 0) + (detailsBox?.height ?? 0));
+
+  await page.route(`**/api/progress/videos/${videoId}/complete`, async (route) => {
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({}) });
+  });
+  await page.locator("video").dispatchEvent("ended");
+  const completion = page.getByText("Video complete", { exact: true });
+  await expect(completion).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Finished.", exact: true })).toBeVisible();
+  await expect(completion).toHaveCSS("color", "rgb(51, 51, 51)");
+  await expect(completion.locator("..")).toHaveCSS("background-color", "rgb(255, 255, 255)");
 });
 
 test("does not collapse a short wrapped video description", async ({ page }) => {

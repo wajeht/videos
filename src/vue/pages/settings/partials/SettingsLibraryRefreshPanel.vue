@@ -5,8 +5,7 @@ import { computed } from "vue";
 import { api, apiErrorMessage } from "@/api.js";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
 import AppButton from "@/components/ui/AppButton.vue";
-import PanelCard from "@/components/ui/PanelCard.vue";
-import PanelCardHeader from "@/components/ui/PanelCardHeader.vue";
+import FormSection from "@/components/ui/FormSection.vue";
 import { useAsyncAction } from "@/composables/useAsyncAction.js";
 import { useAuth } from "@/composables/useAuth.js";
 import { useToast } from "@/composables/useToast.js";
@@ -70,15 +69,12 @@ async function rescanLibrary(): Promise<void> {
     {{ scanError }}
   </AlertMessage>
 
-  <PanelCard class="min-h-[260px]" :elevated="false" padding="none">
-    <PanelCardHeader
-      title="Refresh library"
-      description="Check your videos folder now for new or changed videos and playlists."
-    />
-    <div
-      class="flex min-h-[180px] flex-col items-start justify-between gap-8 p-[clamp(22px,4vw,34px)]"
-      data-scan-controls
-    >
+  <FormSection
+    class="min-h-[260px]"
+    title="Refresh library"
+    description="Check your videos folder now for new or changed videos and playlists."
+  >
+    <div class="flex min-h-[180px] flex-col items-start justify-between gap-8" data-scan-controls>
       <div class="min-w-0">
         <div
           class="grid gap-6"
@@ -87,19 +83,19 @@ async function rescanLibrary(): Promise<void> {
         >
           <span v-if="loadingScanStatus" class="sr-only">Loading library status</span>
           <div data-library-status>
-            <p class="text-xs font-bold tracking-[.08em] text-pine uppercase">Library status</p>
+            <p>Library status</p>
             <p
               v-if="loadingScanStatus"
-              class="mt-2 h-5 w-44 max-w-full animate-pulse rounded bg-mist motion-reduce:animate-none"
+              class="mt-2 h-[1lh] w-44 max-w-full animate-pulse bg-mist motion-reduce:animate-none"
               aria-hidden="true"
               data-library-status-skeleton
             />
             <p
               v-else
-              class="mt-2 text-sm"
+              class="mt-2"
               :class="{
-                'font-semibold text-clay': scanStatus?.status === 'failed',
-                'font-semibold text-belt':
+                'font-semibold text-clay-ink': scanStatus?.status === 'failed',
+                'font-semibold text-ink':
                   scanStatus?.status !== 'failed' && Boolean(scanStatus?.warnings.length),
                 'text-muted': scanStatus?.status !== 'failed' && !scanStatus?.warnings.length,
               }"
@@ -112,7 +108,7 @@ async function rescanLibrary(): Promise<void> {
                 scanStatus?.completedAt &&
                 scanStatus.warnings.length
               "
-              class="mt-1.5 text-xs leading-5 text-muted"
+              class="mt-1.5"
             >
               {{ countText(scanStatus.playlistCount, "playlist") }} ·
               {{ countText(scanStatus.videoCount, "video") }}
@@ -120,40 +116,35 @@ async function rescanLibrary(): Promise<void> {
           </div>
 
           <div v-if="loadingScanStatus || scanStatus?.completedAt" data-last-refresh>
-            <p class="text-xs font-bold tracking-[.08em] text-pine uppercase">
+            <p>
               <template v-if="scanStatus?.status === 'failed'">Last refresh attempt</template>
               <template v-else>Last refreshed</template>
             </p>
             <div
               v-if="loadingScanStatus"
-              class="mt-2 h-5 w-36 max-w-full animate-pulse rounded bg-mist motion-reduce:animate-none"
+              class="mt-2 h-[1lh] w-36 max-w-full animate-pulse bg-mist motion-reduce:animate-none"
               aria-hidden="true"
               data-last-refresh-skeleton
             />
             <time
               v-else-if="scanStatus?.completedAt"
-              class="mt-2 block text-sm text-muted"
+              class="mt-2 block"
               :datetime="scanStatus.completedAt"
             >
               {{ lastRefreshText }}
             </time>
           </div>
         </div>
-        <div
-          v-if="scanStatus?.warnings.length"
-          class="mt-5 rounded-[7px] border border-belt/25 bg-[#fff6e9] p-4"
-        >
-          <p class="text-[.78rem] leading-5 text-muted">
-            Review these files, correct each listed problem, then refresh the library.
-          </p>
+        <div v-if="scanStatus?.warnings.length" class="mt-5 border border-line bg-mist p-4">
+          <p>Review these files, correct each listed problem, then refresh the library.</p>
           <ul class="mt-3 grid gap-3" aria-label="Library issues">
             <li
               v-for="warning in scanStatus.warnings"
               :key="`${warning.path}:${warning.message}`"
-              class="grid gap-1 text-[.78rem] leading-5"
+              class="grid gap-1"
             >
-              <code class="break-all font-semibold text-pine-deep">{{ warning.path }}</code>
-              <span class="text-muted">{{ warning.message }}</span>
+              <code class="break-all">{{ warning.path }}</code>
+              <span>{{ warning.message }}</span>
             </li>
           </ul>
         </div>
@@ -168,5 +159,5 @@ async function rescanLibrary(): Promise<void> {
         Refresh library
       </AppButton>
     </div>
-  </PanelCard>
+  </FormSection>
 </template>

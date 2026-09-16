@@ -19,7 +19,6 @@ function prefetchNext(): void {
 <template>
   <nav v-if="totalPages > 1" class="mt-9 flex items-center justify-center gap-4" aria-label="Pages">
     <AppButton
-      variant="secondary"
       :disabled="page <= 1 || disabled"
       @pointerenter="prefetchPrevious"
       @focus="prefetchPrevious"
@@ -28,9 +27,8 @@ function prefetchNext(): void {
     >
       Previous
     </AppButton>
-    <span class="text-[.8rem] font-semibold text-muted"> Page {{ page }} of {{ totalPages }} </span>
+    <span> Page {{ page }} of {{ totalPages }} </span>
     <AppButton
-      variant="secondary"
       :disabled="page >= totalPages || disabled"
       @pointerenter="prefetchNext"
       @focus="prefetchNext"

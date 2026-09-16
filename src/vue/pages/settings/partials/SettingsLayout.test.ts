@@ -60,15 +60,18 @@ describe("SettingsLayout", () => {
     expect(pageHeader.get("h1").text()).toBe("Settings");
     expect(pageHeader.text()).toContain("Videos settings");
     expect(wrapper.get("[data-settings-layout]").classes()).toEqual(
-      expect.arrayContaining(["grid-cols-[240px_minmax(0,1fr)]", "max-[760px]:grid-cols-1"]),
+      expect.arrayContaining(["sidebar-layout", "max-[760px]:grid-cols-1"]),
     );
-    expect(wrapper.get('[aria-label="Settings sections"]').text()).toContain(
-      "LibraryProfilesAccess",
-    );
+    expect(
+      wrapper
+        .get('[aria-label="Settings sections"]')
+        .findAll("a")
+        .map((link) => link.text()),
+    ).toEqual(["Library", "Profiles", "Access"]);
     expect(wrapper.get("[data-settings-page]").element.tagName).toBe("SECTION");
     expect(wrapper.get("[data-mobile-sign-out]").text()).toBe("Sign out");
     expect(wrapper.get("[data-desktop-sign-out]").text()).toBe("Sign out");
-    expect(wrapper.get("footer").text()).toContain("© 2026 · Made with ❤️ by @wajeht . v0.1.0");
+    expect(wrapper.get("footer").text()).toContain("© 2026 · Made by @wajeht . v0.1.0");
 
     await wrapper.get("[data-desktop-sign-out]").trigger("click");
     expect(request).toHaveBeenCalledOnce();
