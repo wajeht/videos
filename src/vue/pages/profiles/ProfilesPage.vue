@@ -76,29 +76,46 @@ async function select(profile: ProfileDto): Promise<void> {
           />
         </div>
 
-        <p v-if="profiles.isPending.value" class="mt-8" role="status">Loading profiles…</p>
+        <p v-if="profiles.isPending.value" class="sr-only" role="status">Loading profiles…</p>
         <AlertMessage v-if="profiles.isError.value" class="mt-8"
           >Could not load profiles.
           <AppButton @click="profiles.refetch()">Try again</AppButton></AlertMessage
         >
         <AlertMessage v-if="generalError" class="mt-8">{{ generalError }}</AlertMessage>
-        <div class="mt-8 flex flex-wrap items-start justify-center gap-6">
-          <AppButton
-            v-for="profile in profiles.data.value"
-            :key="profile.id"
-            class="grid w-40 cursor-pointer justify-items-center gap-2 border-0 bg-transparent p-2 hover:bg-transparent disabled:cursor-default"
-            :disabled="unlock.pending.value"
-            @click="select(profile)"
-          >
-            <ProfileAvatar :name="profile.name" />
-            <span class="w-full break-words font-semibold text-link hover:underline">{{
-              profile.name
-            }}</span>
-            <span class="text-sm text-muted"
-              >{{ profile.role === "admin" ? "Admin · " : ""
-              }}{{ profile.isLocked ? "Locked" : "Open" }}</span
+        <div
+          class="mt-8 flex flex-wrap items-start justify-center gap-6"
+          :aria-busy="profiles.isPending.value ? 'true' : undefined"
+        >
+          <template v-if="profiles.isPending.value">
+            <div
+              v-for="index in 3"
+              :key="index"
+              class="grid w-40 animate-pulse justify-items-center gap-2 p-2 motion-reduce:animate-none"
+              aria-hidden="true"
             >
-          </AppButton>
+              <div class="size-20 bg-pine" />
+              <div class="h-[1lh] w-24 bg-mist" />
+              <div class="h-[1lh] w-20 bg-mist text-sm" />
+            </div>
+          </template>
+          <template v-else>
+            <AppButton
+              v-for="profile in profiles.data.value"
+              :key="profile.id"
+              class="grid w-40 cursor-pointer justify-items-center gap-2 border-0 bg-transparent p-2 hover:bg-transparent disabled:cursor-default"
+              :disabled="unlock.pending.value"
+              @click="select(profile)"
+            >
+              <ProfileAvatar :name="profile.name" />
+              <span class="w-full break-words font-semibold text-link hover:underline">{{
+                profile.name
+              }}</span>
+              <span class="text-sm text-muted"
+                >{{ profile.role === "admin" ? "Admin · " : ""
+                }}{{ profile.isLocked ? "Locked" : "Open" }}</span
+              >
+            </AppButton>
+          </template>
         </div>
       </template>
     </section>
