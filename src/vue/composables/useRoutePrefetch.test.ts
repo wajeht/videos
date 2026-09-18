@@ -6,6 +6,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api, type VideoPlayerDetailDto } from "@/api.js";
 import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
+import {
+  createVideosQueryClient,
+  profilesQueryOptions,
+  scanStatusQueryOptions,
+} from "@/queries.js";
 
 const videoId = "1".repeat(24);
 
@@ -36,6 +41,54 @@ function videoDetail(): VideoPlayerDetailDto {
 afterEach(() => vi.restoreAllMocks());
 
 describe("useRoutePrefetch", () => {
+  it.each([true, false])("prefetches profile data only for admins: %s", async (isAdmin) => {
+    vi.spyOn(api, "getSettings").mockResolvedValue({ libraryPageSize: 24 });
+    const listProfiles = vi.spyOn(api, "listProfiles").mockResolvedValue([]);
+    const queryClient = createVideosQueryClient();
+    const app = createApp({});
+    app.use(VueQueryPlugin, { queryClient });
+    const scope = effectScope();
+    const prefetch = app.runWithContext(() => scope.run(() => useRoutePrefetch()));
+    if (!prefetch) throw new Error("Route prefetch did not initialize");
+
+    await prefetch.settingsProfiles(isAdmin);
+
+    expect(listProfiles).toHaveBeenCalledTimes(isAdmin ? 1 : 0);
+    if (isAdmin) await queryClient.fetchQuery(profilesQueryOptions());
+    expect(listProfiles).toHaveBeenCalledTimes(isAdmin ? 1 : 0);
+    scope.stop();
+    queryClient.clear();
+  });
+
+  it("prefetches reusable library status without starting a scan", async () => {
+    vi.spyOn(api, "getSettings").mockResolvedValue({ libraryPageSize: 24 });
+    const getScanStatus = vi.spyOn(api, "getScanStatus").mockResolvedValue({
+      status: "idle",
+      startedAt: null,
+      completedAt: null,
+      playlistCount: 0,
+      videoCount: 0,
+      warnings: [],
+      error: null,
+    });
+    const rescanLibrary = vi.spyOn(api, "rescanLibrary");
+    const queryClient = createVideosQueryClient();
+    const app = createApp({});
+    app.use(VueQueryPlugin, { queryClient });
+    const scope = effectScope();
+    const prefetch = app.runWithContext(() => scope.run(() => useRoutePrefetch()));
+    if (!prefetch) throw new Error("Route prefetch did not initialize");
+
+    await prefetch.settingsLibrary();
+
+    expect(getScanStatus).toHaveBeenCalledOnce();
+    await queryClient.fetchQuery(scanStatusQueryOptions());
+    expect(getScanStatus).toHaveBeenCalledOnce();
+    expect(rescanLibrary).not.toHaveBeenCalled();
+    scope.stop();
+    queryClient.clear();
+  });
+
   it("loads player images as soon as the prefetched detail is available", async () => {
     vi.spyOn(api, "getVideo").mockResolvedValue(videoDetail());
     const requestedImages: Array<{ image: HTMLImageElement; source: string }> = [];

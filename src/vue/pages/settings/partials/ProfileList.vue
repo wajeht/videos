@@ -21,7 +21,7 @@ const prefetch = useRoutePrefetch();
         <td>
           <IntentRouterLink
             :to="{ name: 'settings-profile-edit', params: { profileId: profile.id } }"
-            :prefetch="prefetch.settingsProfiles"
+            :prefetch="() => prefetch.settingsProfiles(true)"
             :aria-label="`Edit ${profile.name}`"
             >{{ profile.name }}</IntentRouterLink
           >

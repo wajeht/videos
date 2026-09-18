@@ -36,6 +36,52 @@ async function authenticate(page: Page): Promise<void> {
   await selectBrowserAdmin(page);
 }
 
+for (const mobile of [false, true]) {
+  test(`reuses settings data prefetched on ${mobile ? "mobile focus" : "desktop hover"}`, async ({
+    page,
+  }) => {
+    await authenticate(page);
+    await page.setViewportSize({ width: mobile ? 390 : 1280, height: 900 });
+    let scanRequests = 0;
+    let profileRequests = 0;
+    let scanMutations = 0;
+    page.on("request", (request) => {
+      const path = new URL(request.url()).pathname;
+      if (path === "/api/scan") {
+        if (request.method() === "GET") scanRequests++;
+        else scanMutations++;
+      }
+      if (path === "/api/profiles" && request.method() === "GET") profileRequests++;
+    });
+    await page.goto("/");
+    const settings = page
+      .getByRole("navigation", {
+        name: mobile ? "Mobile navigation" : "Main navigation",
+        exact: true,
+      })
+      .getByRole("link", { name: "Settings", exact: true });
+    if (mobile) await settings.focus();
+    else await settings.hover();
+    await expect.poll(() => scanRequests).toBe(1);
+    await expect(page).toHaveURL("/");
+    await settings.click();
+    await expect(page.locator("[data-library-status]")).toContainText("0 playlists · 0 videos");
+    expect(scanRequests).toBe(1);
+
+    const profiles = page
+      .getByRole("navigation", { name: "Settings sections" })
+      .getByRole("link", { name: "Profiles", exact: true });
+    if (mobile) await profiles.focus();
+    else await profiles.hover();
+    await expect.poll(() => profileRequests).toBe(1);
+    await expect(page).toHaveURL("/settings/library");
+    await profiles.click();
+    await expect(page.getByRole("table", { name: "Profiles", exact: true })).toBeVisible();
+    expect(profileRequests).toBe(1);
+    expect(scanMutations).toBe(0);
+  });
+}
+
 async function elementBox(locator: Locator): Promise<ElementBox> {
   const box = await locator.boundingBox();
   expect(box).not.toBeNull();

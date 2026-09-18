@@ -19,7 +19,7 @@ const settingsSections = [
   },
   {
     label: "Profiles",
-    prefetch: prefetch.settingsProfiles,
+    prefetch: () => prefetch.settingsProfiles(auth.state.profile?.role === "admin"),
     routeName: "settings-profiles",
     value: "profiles",
   },
