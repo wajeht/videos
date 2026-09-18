@@ -155,8 +155,14 @@ watch(
             >Could not load profiles.
             <AppButton @click="profiles.refetch()">Try again</AppButton></AlertMessage
           >
-          <p v-if="profiles.isPending.value" class="mt-4" role="status">Loading profiles…</p>
-          <ProfileList v-if="!editRoute && profiles.data.value" :profiles="profiles.data.value" />
+          <p v-if="profiles.isPending.value" :class="editRoute ? 'mt-4' : 'sr-only'" role="status">
+            Loading profiles…
+          </p>
+          <ProfileList
+            v-if="!editRoute && (profiles.isPending.value || profiles.data.value)"
+            :profiles="profiles.data.value ?? []"
+            :loading="profiles.isPending.value"
+          />
           <div v-if="!editRoute" class="mt-4 flex justify-end">
             <AppButton
               class="max-[600px]:w-full"

@@ -3,12 +3,12 @@ import type { ProfileDto } from "@/api.js";
 import IntentRouterLink from "@/components/IntentRouterLink.vue";
 import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
 
-defineProps<{ profiles: ProfileDto[] }>();
+defineProps<{ profiles: ProfileDto[]; loading?: boolean }>();
 const prefetch = useRoutePrefetch();
 </script>
 
 <template>
-  <table class="profiles-table" aria-label="Profiles">
+  <table class="profiles-table" aria-label="Profiles" :aria-busy="loading ? 'true' : undefined">
     <thead>
       <tr>
         <th scope="col">Name</th>
@@ -16,7 +16,14 @@ const prefetch = useRoutePrefetch();
         <th scope="col">Password</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody v-if="loading" aria-hidden="true">
+      <tr v-for="row in 3" :key="row">
+        <td v-for="column in 3" :key="column">
+          <div class="h-[1lh] w-3/4 animate-pulse bg-mist motion-reduce:animate-none" />
+        </td>
+      </tr>
+    </tbody>
+    <tbody v-else>
       <tr v-for="profile in profiles" :key="profile.id">
         <td>
           <IntentRouterLink
