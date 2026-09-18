@@ -149,15 +149,28 @@ watch(
         v-else
         :title="editRoute ? 'Edit profile' : 'Manage profiles'"
         :description="editRoute ? undefined : 'Add profiles and manage their access.'"
+        :aria-busy="profiles.isPending.value ? 'true' : undefined"
       >
         <div>
           <AlertMessage v-if="profiles.isError.value" class="mt-4"
             >Could not load profiles.
             <AppButton @click="profiles.refetch()">Try again</AppButton></AlertMessage
           >
-          <p v-if="profiles.isPending.value" :class="editRoute ? 'mt-4' : 'sr-only'" role="status">
-            Loading profiles…
-          </p>
+          <p v-if="profiles.isPending.value" class="sr-only" role="status">Loading profiles…</p>
+          <div
+            v-if="editRoute && profiles.isPending.value"
+            class="grid animate-pulse gap-4 motion-reduce:animate-none"
+            aria-hidden="true"
+          >
+            <div class="grid gap-2">
+              <div class="h-[1lh] w-28 bg-pine" />
+              <div class="h-10 bg-mist" />
+            </div>
+            <div class="flex justify-end gap-3">
+              <div class="h-10 w-20 bg-pine" />
+              <div class="h-10 w-28 bg-pine" />
+            </div>
+          </div>
           <ProfileList
             v-if="!editRoute && (profiles.isPending.value || profiles.data.value)"
             :profiles="profiles.data.value ?? []"
