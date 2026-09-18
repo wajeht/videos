@@ -18,6 +18,53 @@ async function createProfileRouter(url = "/settings/profiles") {
 }
 
 describe("profile picker", () => {
+  it.each(["success", "failure"])(
+    "keeps a newer unlock screen when an earlier request finishes with %s",
+    async (outcome) => {
+      vi.spyOn(api, "listProfiles").mockResolvedValue([
+        { id: "first", name: "First", role: "member", isLocked: true },
+        { id: "second", name: "Second", role: "member", isLocked: true },
+      ]);
+      let finish!: () => void;
+      const paused = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      const selectProfile = vi.fn(async () => {
+        await paused;
+        if (outcome === "failure") throw new ApiError("Incorrect profile password", 403);
+      });
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const router = await createProfileRouter("/settings/profiles?unlockProfile=first");
+      const wrapper = mount(ProfilesPage, {
+        global: {
+          plugins: [router, [VueQueryPlugin, { queryClient }]],
+          provide: { [authKey]: { selectProfile } },
+        },
+      });
+      try {
+        await flushPromises();
+        await wrapper.get('input[type="password"]').setValue("first-password");
+        await wrapper.get("form").trigger("submit");
+        expect(selectProfile).toHaveBeenCalledWith("first", "first-password");
+
+        await router.push("/settings/profiles?unlockProfile=second");
+        await flushPromises();
+        expect(wrapper.get("h1").text()).toBe("Unlock Second");
+        finish();
+        await flushPromises();
+
+        expect(router.currentRoute.value.query.unlockProfile).toBe("second");
+        expect(wrapper.get("h1").text()).toBe("Unlock Second");
+        expect(wrapper.text()).not.toContain("Incorrect profile password");
+        expect(wrapper.get<HTMLInputElement>('input[type="password"]').element.value).toBe("");
+      } finally {
+        finish();
+        wrapper.unmount();
+        queryClient.clear();
+      }
+    },
+  );
+
   it("opens an unlocked profile and asks for a password on a locked profile", async () => {
     vi.spyOn(api, "listProfiles").mockResolvedValue([
       { id: "open", name: "Open", role: "member", isLocked: false },
@@ -37,6 +84,7 @@ describe("profile picker", () => {
       .findAll("button")
       .find((button) => button.text().includes("Open"))!
       .trigger("click");
+    await flushPromises();
     expect(selectProfile).toHaveBeenCalledWith("open", "");
     await wrapper
       .findAll("button")

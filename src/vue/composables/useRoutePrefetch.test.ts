@@ -42,7 +42,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe("useRoutePrefetch", () => {
   it.each([true, false])("prefetches profile data only for admins: %s", async (isAdmin) => {
-    vi.spyOn(api, "getSettings").mockResolvedValue({ libraryPageSize: 24 });
+    const getSettings = vi.spyOn(api, "getSettings");
     const listProfiles = vi.spyOn(api, "listProfiles").mockResolvedValue([]);
     const queryClient = createVideosQueryClient();
     const app = createApp({});
@@ -53,6 +53,7 @@ describe("useRoutePrefetch", () => {
 
     await prefetch.settingsProfiles(isAdmin);
 
+    expect(getSettings).not.toHaveBeenCalled();
     expect(listProfiles).toHaveBeenCalledTimes(isAdmin ? 1 : 0);
     if (isAdmin) await queryClient.fetchQuery(profilesQueryOptions());
     expect(listProfiles).toHaveBeenCalledTimes(isAdmin ? 1 : 0);
@@ -61,7 +62,7 @@ describe("useRoutePrefetch", () => {
   });
 
   it("prefetches reusable library status without starting a scan", async () => {
-    vi.spyOn(api, "getSettings").mockResolvedValue({ libraryPageSize: 24 });
+    const getSettings = vi.spyOn(api, "getSettings");
     const getScanStatus = vi.spyOn(api, "getScanStatus").mockResolvedValue({
       status: "idle",
       startedAt: null,
@@ -81,6 +82,7 @@ describe("useRoutePrefetch", () => {
 
     await prefetch.settingsLibrary();
 
+    expect(getSettings).not.toHaveBeenCalled();
     expect(getScanStatus).toHaveBeenCalledOnce();
     await queryClient.fetchQuery(scanStatusQueryOptions());
     expect(getScanStatus).toHaveBeenCalledOnce();

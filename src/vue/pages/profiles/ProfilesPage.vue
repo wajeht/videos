@@ -8,7 +8,7 @@ import { useAsyncAction } from "@/composables/useAsyncAction.js";
 import AppButton from "@/components/ui/AppButton.vue";
 import AlertMessage from "@/components/ui/AlertMessage.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import ProfileAvatar from "./partials/ProfileAvatar.vue";
+import ProfilePickerGrid from "./partials/ProfilePickerGrid.vue";
 import ProfileUnlockForm from "./partials/ProfileUnlockForm.vue";
 import { profilesQueryOptions } from "@/queries.js";
 const auth = useAuth();
@@ -18,10 +18,16 @@ const profiles = useQuery(profilesQueryOptions());
 const selected = computed(() =>
   profiles.data.value?.find((profile) => profile.id === route.query.unlockProfile),
 );
-const unlock = useAsyncAction(
-  (profile: ProfileDto, password: string) => auth.selectProfile(profile.id, password),
-  { onSuccess: clearSelection },
-);
+const unlock = useAsyncAction(async (profile: ProfileDto, password: string) => {
+  const sourceRoute = router.currentRoute.value;
+  try {
+    await auth.selectProfile(profile.id, password);
+  } catch (caught) {
+    if (router.currentRoute.value === sourceRoute) throw caught;
+    return;
+  }
+  if (router.currentRoute.value === sourceRoute) await clearSelection();
+});
 watch(() => route.query.unlockProfile, unlock.clearError);
 const passwordError = computed(() =>
   unlock.error.value instanceof ApiError &&
@@ -82,41 +88,12 @@ async function select(profile: ProfileDto): Promise<void> {
           <AppButton @click="profiles.refetch()">Try again</AppButton></AlertMessage
         >
         <AlertMessage v-if="generalError" class="mt-8">{{ generalError }}</AlertMessage>
-        <div
-          class="mt-8 flex flex-wrap items-start justify-center gap-6"
-          :aria-busy="profiles.isPending.value ? 'true' : undefined"
-        >
-          <template v-if="profiles.isPending.value">
-            <div
-              v-for="index in 3"
-              :key="index"
-              class="grid w-40 animate-pulse justify-items-center gap-2 p-2 motion-reduce:animate-none"
-              aria-hidden="true"
-            >
-              <div class="size-20 bg-pine" />
-              <div class="h-[1lh] w-24 bg-mist" />
-              <div class="h-[1lh] w-20 bg-mist text-sm" />
-            </div>
-          </template>
-          <template v-else>
-            <AppButton
-              v-for="profile in profiles.data.value"
-              :key="profile.id"
-              class="grid w-40 cursor-pointer justify-items-center gap-2 border-0 bg-transparent p-2 hover:bg-transparent disabled:cursor-default"
-              :disabled="unlock.pending.value"
-              @click="select(profile)"
-            >
-              <ProfileAvatar :name="profile.name" />
-              <span class="w-full break-words font-semibold text-link hover:underline">{{
-                profile.name
-              }}</span>
-              <span class="text-sm text-muted"
-                >{{ profile.role === "admin" ? "Admin · " : ""
-                }}{{ profile.isLocked ? "Locked" : "Open" }}</span
-              >
-            </AppButton>
-          </template>
-        </div>
+        <ProfilePickerGrid
+          :profiles="profiles.data.value ?? []"
+          :loading="profiles.isPending.value"
+          :disabled="unlock.pending.value"
+          @select="select"
+        />
       </template>
     </section>
   </main>
