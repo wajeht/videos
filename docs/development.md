@@ -90,3 +90,9 @@ New primitives need component tests in Happy DOM. Browser-boundary coverage uses
 After verification, pushes to `main` create a versioned GitHub release, publish version, commit, and `latest` image tags to `ghcr.io/wajeht/videos`, and run the production deployment workflow. Pull requests can use the `temp-deploy` or `temp-deploy-with-auth` label for a temporary environment.
 
 Production deployment configuration lives in the Home Ops repository, including video and data mounts, `/dev/dri` access, `SESSION_SECRET`, `AUTH_SETUP_TOKEN`, and image updates. Videos handles browser authentication itself and exposes `/healthz` without authentication for its health check.
+
+Login and profile-unlock limits use the network peer address by default. Behind a reverse proxy, set `TRUSTED_PROXIES` to a comma-separated list of the proxy IP addresses or CIDRs. Videos follows `X-Forwarded-For` from right to left through those trusted proxies and stops at the first untrusted address. It ignores `CF-Connecting-IP` and forwarding headers from untrusted peers. Equivalent IPv6 and IPv4-mapped addresses use the same rate-limit identity.
+
+For multiple proxy hops (such as Cloudflare → Traefik → Videos), include every trusted proxy hop, or configure the immediate proxy to overwrite `X-Forwarded-For` with the verified client address. Trust only networks reserved for your proxies, never arbitrary client networks. With no proxy trust configured, users behind a proxy share that proxy's login limit. Direct Docker access needs no trust configuration. Configure the production proxy policy before deploying authentication changes; this repository does not configure the external Home Ops network.
+
+Converted video caches are tied to the source file's size and modification time. Older caches without a source generation are rebuilt on demand, and successful scans clean up obsolete generated files. This requires no database reset and preserves profiles and viewing progress.

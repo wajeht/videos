@@ -1,7 +1,7 @@
 import { profileDto } from "../profiles/profiles.repository.js";
 import { profilePasswordSchema, type ProfileDto } from "../profiles/profiles.schema.js";
 import type { SessionPayload } from "./auth.service.js";
-import crypto from "node:crypto";
+import { clientKey } from "./client-identity.js";
 
 import { zValidator } from "@hono/zod-validator";
 import type { Context, MiddlewareHandler } from "hono";
@@ -138,17 +138,6 @@ export const requireAdmin: MiddlewareHandler = async (c, next) => {
     return c.json({ message: "An admin profile is required" }, 403);
   await next();
 };
-
-export function clientKey(c: Context, configuration: Configuration): string {
-  const address =
-    c.req.header("cf-connecting-ip") ??
-    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown";
-  return crypto
-    .createHmac("sha256", configuration.auth.sessionSecret)
-    .update(address)
-    .digest("hex");
-}
 
 export function createAuthRouter(context: AppContext) {
   const configuration = context.configuration;

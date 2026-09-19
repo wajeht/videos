@@ -2,6 +2,12 @@ import path from "node:path";
 
 import { z } from "zod";
 
+const trustedProxiesSchema = z
+  .string()
+  .default("")
+  .transform((value) => (value.trim() ? value.split(",").map((entry) => entry.trim()) : []))
+  .pipe(z.array(z.union([z.ipv4(), z.ipv6(), z.cidrv4(), z.cidrv6()])));
+
 const environmentSchema = z.object({
   APP_ENV: z.enum(["development", "testing", "production"]).default("development"),
   APP_HOST: z.string().default("0.0.0.0"),
@@ -13,6 +19,7 @@ const environmentSchema = z.object({
   QSV_DEVICE: z.string().default("/dev/dri/renderD128"),
   SESSION_SECRET: z.string().min(32).optional(),
   AUTH_SETUP_TOKEN: z.string().min(16).optional(),
+  TRUSTED_PROXIES: trustedProxiesSchema,
   SESSION_IDLE_TIMEOUT_MS: z.coerce
     .number()
     .int()
@@ -52,6 +59,7 @@ export interface Configuration {
   auth: {
     sessionSecret: string;
     setupToken?: string;
+    trustedProxies: string[];
     idleTimeoutMs: number;
     absoluteTimeoutMs: number;
     loginWindowMs: number;
@@ -96,6 +104,7 @@ export function createConfiguration(environment: NodeJS.ProcessEnv = process.env
     auth: {
       sessionSecret: parsed.SESSION_SECRET ?? "videos-development-session-secret-change-me",
       setupToken: parsed.AUTH_SETUP_TOKEN,
+      trustedProxies: parsed.TRUSTED_PROXIES,
       idleTimeoutMs: parsed.SESSION_IDLE_TIMEOUT_MS,
       absoluteTimeoutMs: parsed.SESSION_ABSOLUTE_TIMEOUT_MS,
       loginWindowMs: parsed.LOGIN_WINDOW_MS,
