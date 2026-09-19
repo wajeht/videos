@@ -7,6 +7,12 @@
       "skillPath": "skills/create-adaptable-composable/SKILL.md",
       "computedHash": "2f215126499d29a733be980ef9ce8f4ffb5f25a8831aec965d86c0cd21b2c5d2"
     },
+    "hono": {
+      "source": "honojs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/hono/SKILL.md",
+      "computedHash": "16c6eb05d0a1a54c4fbc425e3fc1f32694ad9256d2a75257334d0c8d85bf23bd"
+    },
     "install-anti-slop": {
       "source": "dmmulroy/anti-slop",
       "sourceType": "github",

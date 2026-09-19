@@ -60,7 +60,7 @@ async function mountSidebar(resetting = false) {
   await router.isReady();
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return mount(PlayerPlaylistSidebar, {
-    props: { activeVideoId: videoId, autoplayNext: false, playlist, resetting },
+    props: { activeVideoId: videoId, autoplayNext: false, loading: false, playlist, resetting },
     global: { plugins: [[VueQueryPlugin, { queryClient }], router] },
   });
 }

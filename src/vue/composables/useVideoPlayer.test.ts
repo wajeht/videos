@@ -112,6 +112,7 @@ async function mountPlayer(options: MountPlayerOptions & { path?: string } = {})
     template: `
       <p data-video-title>{{ player.video.value?.title }}</p>
       <p data-playlist-id>{{ player.playlist.value?.id ?? "" }}</p>
+      <p data-playlist-loading>{{ player.playlistLoading.value }}</p>
       <p data-poster>{{ player.posterUrl.value ?? "" }}</p>
       <p data-autoplay>{{ player.autoplayNext.value }}</p>
       <button data-autoplay-toggle @click="player.setAutoplayNext(!player.autoplayNext.value)">
@@ -146,6 +147,33 @@ async function mountPlayer(options: MountPlayerOptions & { path?: string } = {})
 }
 
 describe("useVideoPlayer", () => {
+  it.each([
+    { query: "", pending: false, loadedId: "" },
+    { query: `?list=${playlistId}`, pending: true, loadedId: playlistId },
+    { query: "?list=other", pending: true, loadedId: "" },
+    { query: "?list=", pending: false, loadedId: "" },
+    { query: `?list=${playlistId}&list=other`, pending: false, loadedId: "" },
+  ])("reserves playlist loading space for $query", async ({ query, pending, loadedId }) => {
+    let resolveDetail!: (detail: VideoPlayerDetailDto) => void;
+    const detail = new Promise<VideoPlayerDetailDto>((resolve) => {
+      resolveDetail = resolve;
+    });
+    const { wrapper } = await mountPlayer({
+      path: `/videos/${videoId}${query}`,
+      getVideo: async () => detail,
+    });
+
+    expect(wrapper.get("[data-playlist-loading]").text()).toBe(String(pending));
+    expect(wrapper.get("[data-playlist-id]").text()).toBe("");
+
+    resolveDetail({ video: { ...video }, playlist });
+    await flushPromises();
+
+    expect(wrapper.get("[data-playlist-loading]").text()).toBe("false");
+    expect(wrapper.get("[data-playlist-id]").text()).toBe(loadedId);
+    wrapper.unmount();
+  });
+
   it("persists the autoplay preference", async () => {
     const { wrapper } = await mountPlayer();
 

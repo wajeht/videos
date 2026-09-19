@@ -122,6 +122,10 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
     if (Array.isArray(list) || !list || !loaded || list !== loaded.id) return null;
     return loaded;
   });
+  const playlistLoading = computed(() => {
+    const list = route.query.list;
+    return loading.value && !playlist.value && !Array.isArray(list) && Boolean(list);
+  });
   const playlistVideos = computed(
     () => playlist.value?.sections.flatMap((section) => section.videos) ?? [],
   );
@@ -257,12 +261,12 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
 
   async function loadPlayer() {
     const requestId = playback.startRequest();
+    loading.value = true;
     if (ended.value) progress.stopSession();
     else await progress.finishSession(element.value?.currentTime);
     if (!playback.isCurrentRequest(requestId)) return;
     progress.clearSession();
     playback.clearSource();
-    loading.value = true;
     playback.error.value = "";
     ended.value = false;
     currentTime.value = 0;
@@ -421,6 +425,7 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
     onTimeUpdate,
     playback: computed(() => playback.playback.value),
     playlist,
+    playlistLoading,
     posterUrl,
     regenerateThumbnail,
     regenerating: computed(() => regenerate.pending.value),

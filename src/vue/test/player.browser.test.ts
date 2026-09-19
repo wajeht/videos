@@ -20,6 +20,41 @@ async function authenticate(page: Page): Promise<void> {
   await selectBrowserAdmin(page);
 }
 
+async function expectPlaylistLoadingLayout(
+  page: Page,
+  releaseDetail: () => void,
+  releasePlayback: () => void,
+  videoTitle: string,
+): Promise<void> {
+  const loadingPlaylist = page.getByRole("complementary", { name: "Loading playlist…" });
+  const loadingFrames = new Map<number, { x: number; width: number }>();
+  for (const width of [1800, 1000, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(loadingPlaylist).toBeVisible();
+    await expect(page.getByText("Preparing video…", { exact: true })).toBeVisible();
+    await expect(loadingPlaylist.getByRole("button")).toHaveCount(0);
+    const frame = await page.locator("video").boundingBox();
+    const sidebar = await loadingPlaylist.boundingBox();
+    expect(frame).not.toBeNull();
+    expect(sidebar).not.toBeNull();
+    loadingFrames.set(width, { x: frame!.x, width: frame!.width });
+    if (width > 860) expect(sidebar!.x).toBeGreaterThan(frame!.x + frame!.width);
+    else expect(sidebar!.y).toBeGreaterThan(frame!.y + frame!.height);
+  }
+  releaseDetail();
+  await expect(loadingPlaylist).toBeVisible();
+  releasePlayback();
+  await expect(page.getByRole("heading", { name: videoTitle })).toBeVisible();
+  await expect(loadingPlaylist).toHaveCount(0);
+  for (const [width, loadingFrame] of loadingFrames) {
+    await page.setViewportSize({ width, height: 900 });
+    const frame = await page.locator("video").boundingBox();
+    expect(frame!.x).toBeCloseTo(loadingFrame.x, 0);
+    expect(frame!.width).toBeCloseTo(loadingFrame.width, 0);
+  }
+  await page.setViewportSize({ width: 1800, height: 900 });
+}
+
 test("uses responsive video details and places the playlist below them on mobile", async ({
   page,
 }) => {
@@ -51,7 +86,10 @@ test("uses responsive video details and places the playlist below them on mobile
     title: videoTitle,
   };
 
+  let detailReady = Promise.resolve();
+  let playbackReady = Promise.resolve();
   await page.route(`**/api/videos/${videoId}`, async (route) => {
+    await detailReady;
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
@@ -75,6 +113,7 @@ test("uses responsive video details and places the playlist below them on mobile
     });
   });
   await page.route(`**/api/playback/${videoId}`, async (route) => {
+    await playbackReady;
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({ kind: "direct", url: "/media/example.mp4" }),
@@ -97,8 +136,16 @@ test("uses responsive video details and places the playlist below them on mobile
   await expect(title).toBeVisible();
   await expect(playlistPanel).toHaveCount(0);
 
+  let releaseDetail!: () => void;
+  let releasePlayback!: () => void;
+  detailReady = new Promise<void>((resolve) => {
+    releaseDetail = resolve;
+  });
+  playbackReady = new Promise<void>((resolve) => {
+    releasePlayback = resolve;
+  });
   await page.goto(`/videos/${videoId}?list=${playlistId}`);
-  await expect(title).toBeVisible();
+  await expectPlaylistLoadingLayout(page, releaseDetail, releasePlayback, videoTitle);
   const clippedVideoPixels = await page.locator("video").evaluate((element) => {
     const videoBounds = element.getBoundingClientRect();
     const frameBounds = element.parentElement?.getBoundingClientRect();

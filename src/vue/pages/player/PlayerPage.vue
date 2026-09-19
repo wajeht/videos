@@ -9,19 +9,20 @@ import PlayerVideoStage from "@/pages/player/partials/PlayerVideoStage.vue";
 const stage = useTemplateRef<InstanceType<typeof PlayerVideoStage>>("stage");
 const media = computed(() => stage.value?.video ?? null);
 const player = useVideoPlayer(media);
+const hasPlaylist = computed(() => player.playlist.value !== null || player.playlistLoading.value);
 </script>
 
 <template>
   <main
     class="grid min-h-[calc(100vh-66px)] bg-canvas"
     :class="
-      player.playlist.value
+      hasPlaylist
         ? 'grid-cols-[minmax(0,1fr)_390px] max-[1120px]:grid-cols-[minmax(0,1fr)_330px] max-[860px]:block'
         : 'grid-cols-1'
     "
   >
     <section class="min-w-0 px-[clamp(20px,3vw,50px)] pt-6 pb-10 max-[600px]:px-3">
-      <div :class="player.playlist.value ? '' : 'mx-auto max-w-[1180px]'">
+      <div :class="hasPlaylist ? '' : 'mx-auto max-w-[1180px]'">
         <PlayerVideoStage
           ref="stage"
           :ended="player.ended.value"
@@ -52,6 +53,7 @@ const player = useVideoPlayer(media);
       :active-video-id="player.video.value?.id"
       :autoplay-next="player.autoplayNext.value"
       :playlist="player.playlist.value"
+      :loading="player.playlistLoading.value"
       :resetting="player.resettingPlaylist.value"
       @autoplay-change="player.setAutoplayNext"
       @reset="player.resetPlaylistProgress"
