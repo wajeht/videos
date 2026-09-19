@@ -89,6 +89,54 @@ describe("useVideoPlayback", () => {
     expect(playback.error.value).toBe("We couldn't check the video status. Try again.");
   });
 
+  it("rechecks a failed status request without restarting conversion", async () => {
+    vi.useFakeTimers();
+    const element = videoElement();
+    const client = playbackClient();
+    client.getConversionStatus.mockRejectedValueOnce(new Error("Offline"));
+    const playback = useVideoPlayback(ref(element), client, 100);
+    await playback.applyPlayback(
+      { kind: "converting", status: "queued", progress: 0 },
+      "video",
+      playback.startRequest(),
+    );
+    await vi.advanceTimersByTimeAsync(100);
+    await playback.retryPlayback("video");
+    expect(client.getConversionStatus).toHaveBeenCalledTimes(2);
+    expect(client.retryConversion).not.toHaveBeenCalled();
+    expect(playback.error.value).toBe("");
+    expect(element.getAttribute("src")).toBe("/media/video");
+  });
+
+  it("keeps a failed status retry visible and retryable", async () => {
+    const client = playbackClient();
+    client.getConversionStatus.mockRejectedValue(new Error("Offline"));
+    const playback = useVideoPlayback(ref(videoElement()), client);
+    await playback.applyPlayback(
+      { kind: "converting", status: "queued", progress: 0 },
+      "video",
+      playback.startRequest(),
+    );
+    await playback.retryPlayback("video");
+    expect(playback.error.value).toBe("We couldn't check the video status. Try again.");
+    expect(client.retryConversion).not.toHaveBeenCalled();
+    playback.disposePlayback();
+  });
+
+  it("restarts conversion when the job itself failed", async () => {
+    const client = playbackClient();
+    const playback = useVideoPlayback(ref(videoElement()), client);
+    await playback.applyPlayback(
+      { kind: "error", message: "Conversion failed" },
+      "video",
+      playback.startRequest(),
+    );
+    await playback.retryPlayback("video");
+    expect(client.retryConversion).toHaveBeenCalledWith("video");
+    expect(client.getConversionStatus).not.toHaveBeenCalled();
+    expect(playback.error.value).toBe("");
+  });
+
   it("applies resume metadata once for each source", async () => {
     const element = videoElement();
     const playback = useVideoPlayback(ref(element), playbackClient());

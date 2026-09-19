@@ -6,6 +6,7 @@ import path from "node:path";
 
 import type { Configuration } from "../config.js";
 import { logCause, type Logger } from "../logger.js";
+import type { ConversionManager } from "./conversion.js";
 import type { LibraryRepository, RootEntryOrder } from "./library.repository.js";
 import { normalizeMetadataName } from "./metadata.js";
 import { displayName, naturalOrder } from "./names.js";
@@ -56,6 +57,7 @@ export interface ScannerDependencies {
   watchDirectory?: WatchDirectory;
   playlistCovers?: PlaylistCoverCache;
   thumbnails?: ThumbnailCache;
+  conversions?: ConversionManager;
 }
 
 interface DirectoryWatcher {
@@ -94,6 +96,7 @@ export function createScanner({
   watchDirectory = watch,
   playlistCovers,
   thumbnails,
+  conversions,
 }: ScannerDependencies): Scanner {
   let activeSynchronization: Promise<void> | null = null;
   let fullScanInProgress = false;
@@ -220,6 +223,14 @@ export function createScanner({
       await Promise.all([synchronizePlaylistCovers(), synchronizeThumbnails()]);
 
       const counts = await repository.getLibraryCounts();
+      if (conversions) {
+        try {
+          await conversions.synchronize();
+        } catch (error) {
+          logger.warn("Conversion cache synchronization failed", { error: logCause(error) });
+        }
+      }
+
       const complete: ScanStatus = {
         ...scanning,
         ...counts,
@@ -303,29 +314,37 @@ export function createScanner({
     startMonitoring() {
       let debounce: NodeJS.Timeout | null = null;
       const changedEntries = new Set<string>();
-      const watcher = watchDirectory(
-        configuration.media.videosDirectory,
-        { recursive: true },
-        (_event, filename) => {
-          const changedEntry = filename ? watchedEntryPath(posixPath(String(filename))) : null;
-          if (changedEntry) changedEntries.add(changedEntry);
-          else fullScanRequested = true;
-
-          if (debounce) clearTimeout(debounce);
-          debounce = setTimeout(() => {
-            debounce = null;
-            if (fullScanRequested) void ensureSynchronization();
-            else requestEntrySynchronization(changedEntries);
-            changedEntries.clear();
-          }, 750);
-          debounce.unref();
-        },
-      );
       const schedule = setInterval(
         () => void scanner.scanLibrary(),
         configuration.media.scanIntervalMs,
       );
       schedule.unref();
+      let watcher: DirectoryWatcher;
+      try {
+        watcher = watchDirectory(
+          configuration.media.videosDirectory,
+          { recursive: true },
+          (_event, filename) => {
+            const changedEntry = filename ? watchedEntryPath(posixPath(String(filename))) : null;
+            if (changedEntry) changedEntries.add(changedEntry);
+            else fullScanRequested = true;
+
+            if (debounce) clearTimeout(debounce);
+            debounce = setTimeout(() => {
+              debounce = null;
+              if (fullScanRequested) void ensureSynchronization();
+              else requestEntrySynchronization(changedEntries);
+              changedEntries.clear();
+            }, 750);
+            debounce.unref();
+          },
+        );
+      } catch (error) {
+        logger.warn("Library watcher unavailable; scheduled scans will continue", {
+          error: logCause(error),
+        });
+        return () => clearInterval(schedule);
+      }
       let watcherActive = true;
       watcher.on("error", (error) => {
         if (!watcherActive) return;

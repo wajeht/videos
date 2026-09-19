@@ -3,11 +3,11 @@ import { zValidator } from "@hono/zod-validator";
 import type { AppContext } from "../context.js";
 import {
   authBodyLimit,
-  clientKey,
   createRequireProfile,
   requireAdmin,
   validationHook,
 } from "../auth/auth.routes.js";
+import { clientKey } from "../auth/client-identity.js";
 import {
   createProfileSchema,
   profileParametersSchema,

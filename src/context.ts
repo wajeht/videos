@@ -75,18 +75,19 @@ export async function createContext(
     );
     return { libraryRepository, library, progress, settings };
   }
+  const conversions = createConversionManager({
+    repository: createConversionRepository(database.connection),
+    library: scannerLibraryRepository,
+    configuration,
+    logger,
+  });
   const scanner = createScanner({
     configuration,
     repository: scannerLibraryRepository,
     logger,
     playlistCovers,
     thumbnails,
-  });
-  const conversions = createConversionManager({
-    repository: createConversionRepository(database.connection),
-    library: scannerLibraryRepository,
-    configuration,
-    logger,
+    conversions,
   });
   const playback = createPlaybackService(scannerLibraryRepository, conversions);
 

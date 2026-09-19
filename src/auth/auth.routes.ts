@@ -1,7 +1,7 @@
 import { profileDto } from "../profiles/profiles.repository.js";
 import { profilePasswordSchema, type ProfileDto } from "../profiles/profiles.schema.js";
 import type { SessionPayload } from "./auth.service.js";
-import crypto from "node:crypto";
+import { clientKey } from "./client-identity.js";
 
 import { zValidator } from "@hono/zod-validator";
 import type { Context, MiddlewareHandler } from "hono";
@@ -139,17 +139,6 @@ export const requireAdmin: MiddlewareHandler = async (c, next) => {
   await next();
 };
 
-export function clientKey(c: Context, configuration: Configuration): string {
-  const address =
-    c.req.header("cf-connecting-ip") ??
-    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown";
-  return crypto
-    .createHmac("sha256", configuration.auth.sessionSecret)
-    .update(address)
-    .digest("hex");
-}
-
 export function createAuthRouter(context: AppContext) {
   const configuration = context.configuration;
 
@@ -176,22 +165,22 @@ export function createAuthRouter(context: AppContext) {
     })
     .post("/", authBodyLimit, zValidator("json", loginSchema, validationHook), async (c) => {
       const key = clientKey(c, configuration);
-      const attempt = await context.auth.getLoginAttempt(key);
-      if (attempt && attempt.failures >= configuration.auth.loginMaxAttempts) {
+      if (!(await context.auth.isPasswordConfigured())) {
+        return c.json({ message: "Library password is not configured" }, 409);
+      }
+      const attempt = await context.auth.reserveLoginAttempt(key);
+      if (!attempt.allowed) {
         const retryAfter = Math.max(1, Math.ceil((attempt.resetAt - Date.now()) / 1000));
         c.header("Retry-After", String(retryAfter));
         return c.json({ message: "Too many login attempts. Try again later." }, 429);
       }
-      if (!(await context.auth.isPasswordConfigured())) {
-        return c.json({ message: "Library password is not configured" }, 409);
-      }
-      if (!(await context.auth.isPasswordValid(c.req.valid("json").password))) {
-        await context.auth.recordLoginFailure(key);
+      const session = await context.auth.signIn(c.req.valid("json").password);
+      if (!session) {
         context.logger.warn("Failed login attempt", { client: key });
         return c.json({ message: "Invalid password" }, 401);
       }
       await context.auth.clearLoginFailures(key);
-      await writeSession(c, context, await context.auth.createSession());
+      await writeSession(c, context, session);
       context.logger.info("Login successful", { client: key });
       return c.json({ authenticated: true });
     })
@@ -250,7 +239,7 @@ export function createAuthRouter(context: AppContext) {
         const { currentPassword, newPassword } = c.req.valid("json");
         const result = await context.auth.changePassword(currentPassword, newPassword);
         if (!result.ok) return c.json({ message: "Current password is incorrect" }, 400);
-        await writeSession(c, context, await context.auth.createSession());
+        await writeSession(c, context, result.session);
         context.logger.info("Application password changed");
         return c.json({ passwordChanged: true });
       },

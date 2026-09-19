@@ -12,6 +12,7 @@ describe("createConfiguration", () => {
     expect(configuration.media.videosDirectory).toBe("/Volumes/plex/videos");
     expect(configuration.app.port).toBe(80);
     expect(configuration.app.vuePort).toBe(3000);
+    expect(configuration.auth.trustedProxies).toEqual([]);
   });
 
   it("uses the same defaults for a direct production start", () => {
@@ -45,6 +46,25 @@ describe("createConfiguration", () => {
       "SESSION_SECRET must be set in production",
     );
   });
+
+  it("accepts explicit proxy addresses and networks", () => {
+    const configuration = createConfiguration({
+      TRUSTED_PROXIES: "192.0.2.1, 198.51.100.0/24, 2001:db8::1, 2001:db8:1::/48",
+    });
+    expect(configuration.auth.trustedProxies).toEqual([
+      "192.0.2.1",
+      "198.51.100.0/24",
+      "2001:db8::1",
+      "2001:db8:1::/48",
+    ]);
+  });
+
+  it.each(["true", "*", "example.com", "192.0.2.1/33", "2001:db8::/129", "192.0.2.1,"])(
+    "rejects invalid trusted proxy configuration: %s",
+    (trustedProxies) => {
+      expect(() => createConfiguration({ TRUSTED_PROXIES: trustedProxies })).toThrow();
+    },
+  );
 
   it.each(["/videos", "/videos/data"])(
     "rejects a data directory inside the video library: %s",

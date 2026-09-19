@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import type { Knex } from "knex";
 import type { ProfileDto, UpdateProfileInput } from "./profiles.schema.js";
+import type { AttemptReservation } from "../auth/auth.repository.js";
 
 export interface ProfileRow {
   id: string;
@@ -147,33 +148,30 @@ export function createProfilesRepository(database: Knex) {
         .where({ session_key: sessionKey })
         .update({ profile_id: null, profile_selection_key: null });
     },
-    async getUnlockAttempt(
-      profileId: string,
-      clientKey: string,
-      now: number,
-    ): Promise<{ failures: number; reset_at: number } | undefined> {
-      return database("profile_unlock_attempts")
-        .where({ profile_id: profileId, client_key: clientKey })
-        .where("reset_at", ">", now)
-        .first();
-    },
-    async recordUnlockFailure(
+    async reserveUnlockAttempt(
       profileId: string,
       clientKey: string,
       now: number,
       windowMs: number,
-    ): Promise<void> {
-      await database.transaction(async (transaction) => {
+      maxAttempts: number,
+    ): Promise<AttemptReservation> {
+      return database.transaction(async (transaction) => {
         await transaction("profile_unlock_attempts").where("reset_at", "<=", now).delete();
+        const current = await transaction("profile_unlock_attempts")
+          .where({ profile_id: profileId, client_key: clientKey })
+          .first<{ failures: number; reset_at: number }>();
+        const resetAt = current ? Number(current.reset_at) : now + windowMs;
+        if (current && current.failures >= maxAttempts) return { allowed: false, resetAt };
         await transaction("profile_unlock_attempts")
           .insert({
             profile_id: profileId,
             client_key: clientKey,
-            failures: 1,
-            reset_at: now + windowMs,
+            failures: (current?.failures ?? 0) + 1,
+            reset_at: resetAt,
           })
           .onConflict(["profile_id", "client_key"])
-          .merge({ failures: transaction.raw("failures + 1") });
+          .merge();
+        return { allowed: true };
       });
     },
     async clearUnlockFailures(profileId: string, clientKey: string): Promise<void> {

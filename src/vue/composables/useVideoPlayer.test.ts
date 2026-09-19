@@ -75,7 +75,18 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
+function deferredCompletion() {
+  let resolve!: () => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<void>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
 interface MountPlayerOptions {
+  completeVideo?: () => Promise<void>;
   getVideo?: (id: string, signal?: AbortSignal) => Promise<VideoPlayerDetailDto>;
   preparePlayback?: (id: string) => Promise<PlaybackResult>;
   regenerateVideoThumbnail?: (id: string, signal?: AbortSignal) => Promise<void>;
@@ -92,7 +103,9 @@ async function mountPlayer(options: MountPlayerOptions & { path?: string } = {})
     options.regenerateVideoThumbnail ?? (async () => undefined),
   );
   vi.spyOn(api, "openVideo").mockResolvedValue();
-  vi.spyOn(api, "completeVideo").mockResolvedValue();
+  vi.spyOn(api, "completeVideo").mockImplementation(
+    options.completeVideo ?? (async () => undefined),
+  );
 
   const media = document.createElement("video");
   Object.defineProperties(media, {
@@ -110,6 +123,9 @@ async function mountPlayer(options: MountPlayerOptions & { path?: string } = {})
       return { player: useVideoPlayer(shallowRef(media)) };
     },
     template: `
+      <p data-ended>{{ player.ended.value }}</p>
+      <p data-error>{{ player.error.value }}</p>
+      <p data-completed>{{ player.video.value?.completed }}</p>
       <p data-video-title>{{ player.video.value?.title }}</p>
       <p data-playlist-id>{{ player.playlist.value?.id ?? "" }}</p>
       <p data-playlist-loading>{{ player.playlistLoading.value }}</p>
@@ -118,6 +134,8 @@ async function mountPlayer(options: MountPlayerOptions & { path?: string } = {})
       <button data-autoplay-toggle @click="player.setAutoplayNext(!player.autoplayNext.value)">
         Toggle autoplay
       </button>
+      <button data-resume @click="player.applyResume">Load metadata</button>
+      <button data-time-update @click="player.onTimeUpdate">Update playback time</button>
       <button data-complete @click="player.markComplete">Complete video</button>
       <button data-regenerate @click="player.regenerateThumbnail">Regenerate thumbnail</button>
       <button data-reset-video @click="player.resetProgress">Reset video</button>
@@ -217,6 +235,108 @@ describe("useVideoPlayer", () => {
     expect(media.autoplay).toBe(true);
     expect(media.play).toHaveBeenCalledOnce();
     wrapper.unmount();
+  });
+
+  it.each([false, true])(
+    "ignores completion after navigation (return to same video: %s)",
+    async (returnToSameVideo) => {
+      const completion = deferredCompletion();
+      const nextVideoId = "3".repeat(24);
+      vi.spyOn(api, "saveProgress").mockResolvedValue();
+      const { media, router, wrapper } = await mountPlayer({
+        completeVideo: () => completion.promise,
+        getVideo: async (id) => ({ video: { ...video, id }, playlist: null }),
+      });
+      await wrapper.get("[data-complete]").trigger("click");
+      await router.push(`/videos/${nextVideoId}`);
+      await flushPromises();
+      if (returnToSameVideo) {
+        await router.push(`/videos/${videoId}`);
+        await flushPromises();
+      }
+      await wrapper.get("[data-resume]").trigger("click");
+      completion.resolve();
+      await flushPromises();
+      expect(wrapper.get("[data-ended]").text()).toBe("false");
+      expect(wrapper.get("[data-completed]").text()).toBe("false");
+      media.currentTime = 45;
+      await wrapper.get("[data-time-update]").trigger("click");
+      await flushPromises();
+      expect(api.saveProgress).toHaveBeenCalledWith(
+        returnToSameVideo ? videoId : nextVideoId,
+        45,
+        "test-selection",
+      );
+      wrapper.unmount();
+    },
+  );
+
+  it.each([false, true])(
+    "ignores completion after playlist context changes (return to same query: %s)",
+    async (returnToSameQuery) => {
+      const completion = deferredCompletion();
+      const nextVideo = { ...video, id: "3".repeat(24) };
+      const { router, wrapper } = await mountPlayer({
+        path: `/videos/${videoId}?list=${playlistId}`,
+        completeVideo: () => completion.promise,
+        getVideo: async () => ({
+          video: { ...video },
+          playlist: {
+            ...playlist,
+            sections: [{ id: null, title: "Videos", videos: [video, nextVideo] }],
+          },
+        }),
+      });
+      await wrapper.get("[data-autoplay-toggle]").trigger("click");
+      await wrapper.get("[data-complete]").trigger("click");
+      await router.replace({ query: {} });
+      if (returnToSameQuery) await router.replace({ query: { list: playlistId } });
+      const destination = router.currentRoute.value;
+      completion.resolve();
+      await flushPromises();
+      expect(router.currentRoute.value).toBe(destination);
+      expect(wrapper.get("[data-ended]").text()).toBe("false");
+      expect(api.getVideo).toHaveBeenCalledTimes(1);
+      wrapper.unmount();
+    },
+  );
+
+  it("ignores a completion error after navigation", async () => {
+    const completion = deferredCompletion();
+    const { router, wrapper } = await mountPlayer({
+      completeVideo: () => completion.promise,
+      getVideo: async (id) => ({ video: { ...video, id }, playlist: null }),
+    });
+    await wrapper.get("[data-complete]").trigger("click");
+    await router.push(`/videos/${"3".repeat(24)}`);
+    await flushPromises();
+    completion.reject(new Error("Completion failed"));
+    await flushPromises();
+    expect(wrapper.get("[data-error]").text()).toBe("");
+    wrapper.unmount();
+  });
+
+  it("does not autoplay from an unmounted player after completion", async () => {
+    const completion = deferredCompletion();
+    const nextVideo = { ...video, id: "3".repeat(24) };
+    const { router, wrapper } = await mountPlayer({
+      path: `/videos/${videoId}?list=${playlistId}`,
+      completeVideo: () => completion.promise,
+      getVideo: async () => ({
+        video: { ...video },
+        playlist: {
+          ...playlist,
+          sections: [{ id: null, title: "Videos", videos: [video, nextVideo] }],
+        },
+      }),
+    });
+    await wrapper.get("[data-autoplay-toggle]").trigger("click");
+    await wrapper.get("[data-complete]").trigger("click");
+    wrapper.unmount();
+    await router.push("/library");
+    completion.resolve();
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe("/library");
   });
 
   it("uses the thumbnail for the chapter containing the resume position", async () => {

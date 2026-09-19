@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { createApp, type AppType } from "../app.js";
 import { createConfiguration } from "../config.js";
@@ -400,6 +401,61 @@ describe("profiles", () => {
         .status,
     ).toBe(200);
     expect((await client.select(locked.id)).status).toBe(200);
+  });
+
+  it("reserves concurrent profile unlock attempts before verifying passwords", async () => {
+    const { app, addProfile } = await fixture();
+    const profile = await addProfile("Locked", "member-password");
+    const other = await createClient(app);
+    let releaseVerification!: (matches: boolean) => void;
+    const verification = new Promise<boolean>((resolve) => {
+      releaseVerification = resolve;
+    });
+    const compare = vi.spyOn(bcrypt, "compare").mockImplementation(() => verification);
+    let blocked = 0;
+    const requests = Array.from({ length: 7 }, async () => {
+      const response = await other.select(profile.id, "wrong-password");
+      if (response.status === 429) blocked++;
+      return response;
+    });
+    try {
+      await expect.poll(() => blocked).toBe(2);
+      expect(compare).toHaveBeenCalledTimes(5);
+    } finally {
+      releaseVerification(false);
+      await Promise.all(requests);
+      compare.mockRestore();
+    }
+    expect((await Promise.all(requests)).map((response) => response.status).sort()).toEqual([
+      403, 403, 403, 403, 403, 429, 429,
+    ]);
+  });
+
+  it("expires profile unlock reservations and clears them after successful selection", async () => {
+    const { app, context, addProfile } = await fixture();
+    const profile = await addProfile("Locked", "member-password");
+    const other = await createClient(app);
+    for (let index = 0; index < 5; index++) {
+      expect((await other.select(profile.id, "wrong-password")).status).toBe(403);
+    }
+    expect((await other.select(profile.id, "member-password")).status).toBe(429);
+    await context.database
+      .connection("profile_unlock_attempts")
+      .where({ profile_id: profile.id })
+      .update({ reset_at: Date.now() - 1 });
+    expect((await other.select(profile.id, "member-password")).status).toBe(200);
+    expect(
+      await context.database
+        .connection("profile_unlock_attempts")
+        .where({ profile_id: profile.id }),
+    ).toHaveLength(0);
+    expect((await other.select(profile.id, "wrong-password")).status).toBe(403);
+    expect((await other.select(profile.id, "member-password")).status).toBe(200);
+    expect(
+      await context.database
+        .connection("profile_unlock_attempts")
+        .where({ profile_id: profile.id }),
+    ).toHaveLength(0);
   });
 
   it("rate limits incorrect password guesses across sessions", async () => {

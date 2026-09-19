@@ -46,21 +46,21 @@ export function createProfilesService(
       const profile = await repository.findProfile(profileId);
       if (!profile) return { ok: false, reason: "not_found" };
       const now = Date.now();
-      const attempt = await repository.getUnlockAttempt(profileId, clientKey, now);
-      if (attempt && attempt.failures >= configuration.auth.loginMaxAttempts) {
+      const attempt = await repository.reserveUnlockAttempt(
+        profileId,
+        clientKey,
+        now,
+        configuration.auth.loginWindowMs,
+        configuration.auth.loginMaxAttempts,
+      );
+      if (!attempt.allowed) {
         return {
           ok: false,
           reason: "rate_limited",
-          retryAfter: Math.max(1, Math.ceil((attempt.reset_at - now) / 1000)),
+          retryAfter: Math.max(1, Math.ceil((attempt.resetAt - now) / 1000)),
         };
       }
       if (profile.password_hash && !(await bcrypt.compare(password, profile.password_hash))) {
-        await repository.recordUnlockFailure(
-          profileId,
-          clientKey,
-          now,
-          configuration.auth.loginWindowMs,
-        );
         return { ok: false, reason: "incorrect_password" };
       }
       if (!(await repository.selectProfile(sessionKey, profile)))

@@ -22,6 +22,7 @@ import {
 } from "./thumbnails.js";
 
 const hlsParametersSchema = videoParametersSchema.extend({
+  generation: z.string().regex(/^[a-f0-9]{24}$/),
   filename: z.union([
     z.literal(conversionPlaylistFilename),
     z.string().regex(/^segment-\d{5}\.ts$/),
@@ -188,14 +189,20 @@ export function createMediaRouter(context: AppContext) {
   );
 
   app.get(
-    "/hls/:videoId/:filename",
+    "/hls/:videoId/:generation/:filename",
     requireAuth,
     zValidator("param", hlsParametersSchema),
     async (c) => {
-      const { videoId, filename } = c.req.valid("param");
+      const { videoId, generation, filename } = c.req.valid("param");
+      const conversion = await context.conversions.getConversion(videoId);
+      if (
+        conversion?.generation !== generation ||
+        !["converting", "ready"].includes(conversion.status)
+      )
+        return c.body(null, 404);
       try {
         const file = await resolveContainedPath(
-          path.join(hlsDirectory(context.configuration.media.dataDirectory), videoId),
+          path.join(hlsDirectory(context.configuration.media.dataDirectory), videoId, generation),
           filename,
         );
         const statistics = await fs.stat(file);

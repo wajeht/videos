@@ -101,6 +101,14 @@ test("searches videos globally with Command K", async ({ page }) => {
   await expect(result).toHaveAttribute("aria-selected", "false");
   await expect(result).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
 
+  await input.press("Tab");
+  await expect(palette.getByRole("button", { name: "Close search" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(result).toBeFocused();
+  await expect(result).toHaveCSS("outline-style", "solid");
+  await expect(result).toHaveCSS("outline-width", "2px");
+  await expect(result).toHaveAttribute("aria-selected", "true");
+  await input.focus();
   await input.press("ArrowDown");
   await expect(result).toHaveAttribute("aria-selected", "true");
   await expect(result).toHaveCSS("background-color", "rgb(248, 249, 250)");

@@ -91,7 +91,7 @@ function videoOptionLabel(video: VideoDto): string {
           :id="`video-search-result-${video.id}`"
           :to="playerLocation(video.id, video.playlistId)"
           :prefetch="() => prefetch.video(video.id)"
-          class="grid min-h-[72px] grid-cols-[36px_96px_minmax(0,1fr)] items-center gap-x-3 border-l-4 px-3 py-2.5 focus-visible:outline-none max-[600px]:grid-cols-[28px_72px_minmax(0,1fr)] max-[600px]:gap-x-2 max-[600px]:px-2"
+          class="grid min-h-[72px] grid-cols-[36px_96px_minmax(0,1fr)] items-center gap-x-3 border-l-4 px-3 py-2.5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-link max-[600px]:grid-cols-[28px_72px_minmax(0,1fr)] max-[600px]:gap-x-2 max-[600px]:px-2"
           :class="
             index === activeIndex ? 'border-link bg-mist' : 'border-transparent hover:bg-mist'
           "
@@ -100,6 +100,7 @@ function videoOptionLabel(video: VideoDto): string {
           :aria-selected="index === activeIndex"
           @click="emit('close')"
           @pointerenter="emit('activate', index)"
+          @focus="emit('activate', index)"
         >
           <span class="text-muted">
             {{ String(index + 1).padStart(2, "0") }}
