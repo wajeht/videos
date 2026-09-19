@@ -42,6 +42,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@hono/cli": "0.2.0-next.9",
     "@oxlint/plugins": "1.82.0",
     "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "4.3.3",

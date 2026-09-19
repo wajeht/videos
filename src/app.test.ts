@@ -17,6 +17,53 @@ import {
 } from "./media/thumbnails.js";
 
 describe("application", () => {
+  it("reports invalid stored settings as a server error while rejecting invalid input", async () => {
+    const directory = await createTemporaryDirectory("videos-errors-");
+    const configuration = createConfiguration({
+      APP_ENV: "testing",
+      VIDEOS_DIR: path.join(directory, "videos"),
+      DATA_DIR: path.join(directory, "data"),
+    });
+    const context = await createTestContext(configuration);
+    await context.auth.setupPassword("test-library-password");
+    await context.auth.setupAdminProfile("Admin", testAdminPassword);
+    configuration.app.env = "production";
+    const logError = vi.spyOn(context.logger, "error").mockImplementation(() => {});
+    const app = createApp(context);
+    const login = await app.request("/api/auth", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ password: "test-library-password" }),
+    });
+    expect(login.status).toBe(200);
+    const cookie = login.headers.get("set-cookie")!.split(";")[0]!;
+    const selection = await selectTestAdmin(app, cookie);
+    const headers = {
+      cookie,
+      "content-type": "application/json",
+      "x-profile-selection": selection,
+    };
+    const invalidInput = await app.request("/api/settings", {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ libraryPageSize: 13 }),
+    });
+    expect(invalidInput.status).toBe(400);
+    expect(logError).not.toHaveBeenCalled();
+
+    await context.database.connection("profile_settings").update({ value: "invalid" });
+    const response = await app.request("/api/settings", { headers });
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({
+      message: "The server could not complete the request",
+    });
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(logError).toHaveBeenCalledWith("request failed", {
+      error: expect.any(Error),
+      path: "/api/settings",
+    });
+  });
+
   it("serves health, byte ranges, and production routes", async () => {
     const directory = await createTemporaryDirectory("videos-app-");
     const videos = path.join(directory, "videos");
