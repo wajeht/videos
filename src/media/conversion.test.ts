@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createConfiguration } from "../config.js";
 import type { Database } from "../db/db.js";
@@ -16,6 +16,9 @@ import {
   type ConversionExecutor,
 } from "./conversion.js";
 import { createConversionRepository } from "./conversion.repository.js";
+import { createPlaybackService } from "../playback/playback.service.js";
+import { conversionGeneration } from "./conversion-source.js";
+import type { VideoRecord } from "./types.js";
 
 async function createFixture(executor: ConversionExecutor) {
   const directory = await createTemporaryDirectory("video-conversion-");
@@ -56,14 +59,76 @@ async function createFixture(executor: ConversionExecutor) {
     });
   }
   const library = createLibraryRepository(database.connection);
+  const repository = createConversionRepository(database.connection);
   const manager = createConversionManager({
-    repository: createConversionRepository(database.connection),
+    repository,
     library,
     configuration,
     logger: createLogger(),
     executor,
   });
-  return { configuration, database, library, manager };
+  return {
+    configuration,
+    database,
+    library,
+    manager,
+    repository,
+    playback: createPlaybackService(library, manager),
+  };
+}
+
+type Fixture = Awaited<ReturnType<typeof createFixture>>;
+
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+async function writePlaylist(
+  fixture: Fixture,
+  videoId: string,
+  generation: string,
+): Promise<string> {
+  const filename = path.join(
+    hlsDirectory(fixture.configuration.media.dataDirectory),
+    videoId,
+    generation,
+    conversionPlaylistFilename,
+  );
+  await fs.mkdir(path.dirname(filename), { recursive: true });
+  await fs.writeFile(filename, "#EXTM3U");
+  return filename;
+}
+
+async function synchronizeVideos(fixture: Fixture, videos: VideoRecord[]): Promise<void> {
+  await fixture.library.synchronizeLibrary({
+    playlists: await fixture.library.getPlaylists(),
+    playlistSections: [],
+    videos,
+    authors: [],
+    playlistAuthors: [],
+    videoAuthors: [],
+    chapters: [],
+    skippedVideoIds: [],
+  });
+}
+
+async function replaceVideo(fixture: Fixture, video: VideoRecord): Promise<VideoRecord> {
+  const replacement = {
+    ...video,
+    sizeBytes: video.sizeBytes + 1,
+    modifiedAt: new Date(Date.parse(video.modifiedAt) + 1000).toISOString(),
+  };
+  await synchronizeVideos(
+    fixture,
+    (await fixture.library.getVideos()).map((entry) =>
+      entry.id === video.id ? replacement : entry,
+    ),
+  );
+  return replacement;
 }
 
 async function waitForStatus(database: Database, videoId: string, status: string): Promise<void> {
@@ -169,5 +234,128 @@ describe("conversion manager", () => {
 
     expect(calls).toBe(2);
     expect(conversionPlaylistFilename).toBe("index-v2.m3u8");
+  });
+
+  it("does not serve a stale playlist while a replacement waits in the queue", async () => {
+    const started = deferred();
+    const finish = deferred();
+    const calls: VideoRecord[] = [];
+    const fixture = await createFixture(async (video) => {
+      calls.push(video);
+      if (video.id === "c".repeat(24)) {
+        started.resolve();
+        await finish.promise;
+      }
+    });
+    const first = (await fixture.library.getVideo("b".repeat(24)))!;
+    const second = (await fixture.library.getVideo("c".repeat(24)))!;
+    const old = (await fixture.repository.queueConversion(first, conversionGeneration(first)))!;
+    await fixture.repository.markReady(old);
+    const oldPlaylist = await writePlaylist(fixture, first.id, old.generation);
+    await fixture.manager.requestConversion(second);
+    await started.promise;
+    try {
+      const replacement = await replaceVideo(fixture, first);
+      expect(await fixture.playback.preparePlayback(first.id)).toEqual({
+        kind: "converting",
+        status: "queued",
+        progress: 0,
+      });
+      expect((await fixture.manager.getConversion(first.id))?.generation).toBe(
+        conversionGeneration(replacement),
+      );
+      expect(conversionGeneration(replacement)).not.toBe(old.generation);
+      await expect(fs.access(oldPlaylist)).resolves.toBeUndefined();
+    } finally {
+      finish.resolve();
+    }
+    await waitForStatus(fixture.database, first.id, "ready");
+    expect(calls.map((video) => [video.id, video.sizeBytes])).toEqual([
+      [second.id, 100],
+      [first.id, 101],
+    ]);
+  });
+
+  it("skips a source that was replaced before its queued job started", async () => {
+    const started = deferred();
+    const finish = deferred();
+    const calls: VideoRecord[] = [];
+    const fixture = await createFixture(async (video) => {
+      calls.push(video);
+      if (video.id === "c".repeat(24)) {
+        started.resolve();
+        await finish.promise;
+      }
+    });
+    const first = (await fixture.library.getVideo("b".repeat(24)))!;
+    const second = (await fixture.library.getVideo("c".repeat(24)))!;
+    await fixture.manager.requestConversion(second);
+    await started.promise;
+    try {
+      await fixture.manager.requestConversion(first);
+      await replaceVideo(fixture, first);
+      await fixture.playback.preparePlayback(first.id);
+    } finally {
+      finish.resolve();
+    }
+    await waitForStatus(fixture.database, first.id, "ready");
+    expect(calls.map((video) => [video.id, video.sizeBytes])).toEqual([
+      [second.id, 100],
+      [first.id, 101],
+    ]);
+  });
+
+  it("ignores progress and completion from a replaced running source", async () => {
+    const started = deferred();
+    const finish = deferred();
+    const calls: VideoRecord[] = [];
+    let oldProgress!: (progress: number) => Promise<void>;
+    const fixture = await createFixture(async (video, onProgress) => {
+      calls.push(video);
+      if (video.sizeBytes === 100) {
+        oldProgress = onProgress;
+        started.resolve();
+        await finish.promise;
+      }
+    });
+    const video = (await fixture.library.getVideo("b".repeat(24)))!;
+    const old = (await fixture.manager.requestConversion(video))!;
+    await started.promise;
+    try {
+      const replacement = await replaceVideo(fixture, video);
+      const next = (await fixture.manager.requestConversion(replacement))!;
+      await oldProgress(80);
+      await fixture.repository.markReady(old);
+      await fixture.repository.markFailed(old, "old failure");
+      expect(await fixture.manager.getConversion(video.id)).toMatchObject({
+        generation: next.generation,
+        status: "queued",
+        progress: 0,
+        error: null,
+      });
+    } finally {
+      finish.resolve();
+    }
+    await waitForStatus(fixture.database, video.id, "ready");
+    expect(calls.map((entry) => entry.sizeBytes)).toEqual([100, 101]);
+  });
+
+  it("recovers interrupted conversions using the same source generation", async () => {
+    const fixture = await createFixture(async () => {});
+    const video = (await fixture.library.getVideo("b".repeat(24)))!;
+    const record = (await fixture.repository.queueConversion(video, conversionGeneration(video)))!;
+    await fixture.repository.markConverting(record);
+    const executor = vi.fn(async () => {});
+    const recovered = createConversionManager({
+      repository: fixture.repository,
+      library: fixture.library,
+      configuration: fixture.configuration,
+      logger: createLogger(),
+      executor,
+    });
+    await recovered.recoverConversions();
+    await waitForStatus(fixture.database, video.id, "ready");
+    expect(executor).toHaveBeenCalledWith(video, expect.any(Function), record.generation);
+    expect((await recovered.getConversion(video.id))?.generation).toBe(record.generation);
   });
 });

@@ -1,3 +1,4 @@
+import { conversionGeneration } from "./media/conversion-source.js";
 import { selectTestAdmin, testAdminPassword } from "./test/auth.js";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -88,6 +89,7 @@ describe("application", () => {
     await fs.writeFile(path.join(clientDirectory, "favicon.svg"), "<svg></svg>");
     await fs.writeFile(path.join(clientDirectory, "manifest.webmanifest"), "{}");
     const now = new Date().toISOString();
+    const generation = conversionGeneration({ id: "b".repeat(24), modifiedAt: now, sizeBytes: 10 });
     await context.database.connection("playlists").insert({
       id: "a".repeat(24),
       path: "playlist",
@@ -123,9 +125,10 @@ describe("application", () => {
     expect((await app.request("/api/library")).status).toBe(401);
     expect((await app.request(`/media/${"b".repeat(24)}`)).status).toBe(401);
     expect((await app.request(`/covers/playlists/${"a".repeat(24)}`)).status).toBe(401);
-    expect((await app.request(`/hls/${"b".repeat(24)}/${conversionPlaylistFilename}`)).status).toBe(
-      401,
-    );
+    expect(
+      (await app.request(`/hls/${"b".repeat(24)}/${generation}/${conversionPlaylistFilename}`))
+        .status,
+    ).toBe(401);
     expect(
       (
         await app.request(`/api/videos/${"b".repeat(24)}/thumbnail`, {
@@ -210,15 +213,46 @@ describe("application", () => {
     const videoHlsDirectory = path.join(
       hlsDirectory(configuration.media.dataDirectory),
       "b".repeat(24),
+      generation,
     );
+    await context.database.connection("conversions").insert({
+      video_id: "b".repeat(24),
+      status: "converting",
+      progress: 50,
+    });
     await fs.mkdir(videoHlsDirectory, { recursive: true });
     await fs.writeFile(path.join(videoHlsDirectory, conversionPlaylistFilename), "#EXTM3U");
-    const hls = await app.request(`/hls/${"b".repeat(24)}/${conversionPlaylistFilename}`, {
-      headers: { cookie: cookie!, "x-profile-selection": selectionKey },
-    });
+    const hls = await app.request(
+      `/hls/${"b".repeat(24)}/${generation}/${conversionPlaylistFilename}`,
+      {
+        headers: { cookie: cookie!, "x-profile-selection": selectionKey },
+      },
+    );
     expect(hls.status).toBe(200);
     expect(await hls.text()).toBe("#EXTM3U");
     expect(logInfo).not.toHaveBeenCalled();
+    const obsoleteHls = await app.request(
+      `/hls/${"b".repeat(24)}/${"d".repeat(24)}/${conversionPlaylistFilename}`,
+      {
+        headers: { cookie: cookie! },
+      },
+    );
+    expect(obsoleteHls.status).toBe(404);
+    await context.database
+      .connection("videos")
+      .where({ id: "b".repeat(24) })
+      .update({ size_bytes: 11 });
+    const replacedHls = await app.request(
+      `/hls/${"b".repeat(24)}/${generation}/${conversionPlaylistFilename}`,
+      {
+        headers: { cookie: cookie! },
+      },
+    );
+    expect(replacedHls.status).toBe(404);
+    await context.database
+      .connection("videos")
+      .where({ id: "b".repeat(24) })
+      .update({ size_bytes: 10 });
 
     await app.request("/healthz");
     expect(logInfo).toHaveBeenCalledWith(

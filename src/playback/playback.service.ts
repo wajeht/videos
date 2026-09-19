@@ -19,14 +19,19 @@ export type PlaybackResult =
   | { kind: "converting"; status: "queued" | "converting"; progress: number }
   | { kind: "error"; message: string };
 
-async function resolveConversionPlayback(record: ConversionRecord): Promise<PlaybackResult> {
+async function resolveConversionPlayback(
+  record: ConversionRecord | null,
+): Promise<PlaybackResult | null> {
+  if (!record) return null;
+  if (record.status === "queued")
+    return { kind: "converting", status: "queued", progress: record.progress };
   if (record.status === "failed")
     return { kind: "error", message: "We couldn't prepare this video. Try again." };
   try {
     await fs.access(record.playlistPath);
     return {
       kind: "hls",
-      url: `/hls/${record.videoId}/${conversionPlaylistFilename}`,
+      url: `/hls/${record.videoId}/${record.generation}/${conversionPlaylistFilename}`,
       status: record.status === "ready" ? "ready" : "converting",
       progress: record.progress,
     };

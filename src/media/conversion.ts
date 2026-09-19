@@ -10,10 +10,12 @@ import { logCause, type Logger } from "../logger.js";
 import type { ConversionRepository, StoredConversion } from "./conversion.repository.js";
 import { ffmpegExecutable } from "./executables.js";
 import { resolveContainedPath } from "./path.js";
+import { conversionGeneration } from "./conversion-source.js";
 
 export type ConversionExecutor = (
   video: VideoRecord,
   onProgress: (progress: number) => Promise<void>,
+  generation: string,
 ) => Promise<void>;
 
 export interface ConversionRecord extends StoredConversion {
@@ -21,8 +23,8 @@ export interface ConversionRecord extends StoredConversion {
 }
 
 export interface ConversionManager {
-  requestConversion(video: VideoRecord): Promise<ConversionRecord>;
-  retryConversion(video: VideoRecord): Promise<ConversionRecord>;
+  requestConversion(video: VideoRecord): Promise<ConversionRecord | null>;
+  retryConversion(video: VideoRecord): Promise<ConversionRecord | null>;
   getConversion(videoId: string): Promise<ConversionRecord | null>;
   recoverConversions(): Promise<void>;
 }
@@ -58,9 +60,13 @@ async function writeProgressAfter(
 }
 
 export function createFfmpegConversionExecutor(configuration: Configuration): ConversionExecutor {
-  return async (video, onProgress) => {
+  return async (video, onProgress, generation) => {
     const source = await resolveContainedPath(configuration.media.videosDirectory, video.path);
-    const outputDirectory = path.join(hlsDirectory(configuration.media.dataDirectory), video.id);
+    const outputDirectory = path.join(
+      hlsDirectory(configuration.media.dataDirectory),
+      video.id,
+      generation,
+    );
     const playlist = path.join(outputDirectory, conversionPlaylistFilename);
     await fs.rm(outputDirectory, { recursive: true, force: true });
     await fs.mkdir(outputDirectory, { recursive: true });
@@ -171,26 +177,58 @@ export function createConversionManager(options: {
   executor?: ConversionExecutor;
 }): ConversionManager {
   const executor = options.executor ?? createFfmpegConversionExecutor(options.configuration);
-  const queue: string[] = [];
-  const scheduled = new Set<string>();
+  const queue: Array<{ video: VideoRecord; record: StoredConversion }> = [];
+  const scheduled = new Map<string, StoredConversion>();
+  const locks = new Map<string, Promise<unknown>>();
+  const directory = hlsDirectory(options.configuration.media.dataDirectory);
   let processing = false;
+
+  function withVideoLock<T>(videoId: string, operation: () => Promise<T>): Promise<T> {
+    const previous = locks.get(videoId) ?? Promise.resolve();
+    const current = previous.catch(() => undefined).then(operation);
+    locks.set(videoId, current);
+    const release = () => {
+      if (locks.get(videoId) === current) locks.delete(videoId);
+    };
+    void current.then(release, release);
+    return current;
+  }
 
   function conversionRecord(stored: StoredConversion): ConversionRecord {
     return {
       ...stored,
       playlistPath: path.join(
-        hlsDirectory(options.configuration.media.dataDirectory),
+        directory,
         stored.videoId,
+        stored.generation,
         conversionPlaylistFilename,
       ),
     };
   }
 
-  function enqueueVideo(videoId: string): void {
-    if (scheduled.has(videoId)) return;
-    scheduled.add(videoId);
-    queue.push(videoId);
-    void processQueue();
+  async function processJob(video: VideoRecord, record: StoredConversion): Promise<void> {
+    try {
+      const current = await options.repository.getConversion(video.id);
+      if (current?.generation !== record.generation) return;
+      await options.repository.markConverting(record);
+      try {
+        await executor(
+          video,
+          (progress) => options.repository.updateProgress(record, progress),
+          record.generation,
+        );
+        await options.repository.markReady(record);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Conversion failed";
+        await options.repository.markFailed(record, message);
+        options.logger.error("Video conversion failed", {
+          videoId: video.id,
+          error: logCause(error),
+        });
+      }
+    } finally {
+      scheduled.delete(record.generation);
+    }
   }
 
   async function processQueue(): Promise<void> {
@@ -198,53 +236,49 @@ export function createConversionManager(options: {
     processing = true;
     try {
       while (queue.length > 0) {
-        const videoId = queue.shift();
-        if (!videoId) continue;
-        const video = await options.library.getVideo(videoId);
-        if (!video) {
-          scheduled.delete(videoId);
-          continue;
-        }
-        await options.repository.markConverting(videoId);
-        try {
-          await executor(video, (progress) => options.repository.updateProgress(videoId, progress));
-          await options.repository.markReady(videoId);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "Conversion failed";
-          await options.repository.markFailed(videoId, message);
-          options.logger.error("Video conversion failed", { videoId, error: logCause(error) });
-        } finally {
-          scheduled.delete(videoId);
-        }
+        const job = queue.shift();
+        if (job) await processJob(job.video, job.record);
       }
     } finally {
       processing = false;
     }
   }
 
-  async function queueVideo(video: VideoRecord, force: boolean): Promise<ConversionRecord> {
-    const stored = await options.repository.getConversion(video.id);
-    if (!force && stored) {
-      const existing = conversionRecord(stored);
-      if (existing.status !== "ready" || (await hasConversionPlaylist(existing))) return existing;
-      options.logger.warn("Rebuilding missing conversion cache", { videoId: video.id });
-    }
-    await options.repository.queueConversion(video.id);
-    enqueueVideo(video.id);
-    return conversionRecord((await options.repository.getConversion(video.id))!);
+  async function queueVideo(videoId: string, force: boolean): Promise<ConversionRecord | null> {
+    return withVideoLock(videoId, async () => {
+      // A scan can replace the source between the read and the transactional enqueue.
+      while (true) {
+        const video = await options.library.getVideo(videoId);
+        if (!video) return null;
+        const stored = await options.repository.getConversion(videoId);
+        if (stored) {
+          const existing = conversionRecord(stored);
+          if (scheduled.has(stored.generation)) return existing;
+          if (!force && (existing.status !== "ready" || (await hasConversionPlaylist(existing))))
+            return existing;
+        }
+        const record = await options.repository.queueConversion(video, conversionGeneration(video));
+        if (!record) continue;
+        scheduled.set(record.generation, record);
+        queue.push({ video, record });
+        void processQueue().catch((error) => {
+          options.logger.error("Conversion queue failed", { error: logCause(error) });
+        });
+        return conversionRecord(record);
+      }
+    });
   }
 
   return {
-    requestConversion: (video) => queueVideo(video, false),
-    retryConversion: (video) => queueVideo(video, true),
+    requestConversion: (video) => queueVideo(video.id, false),
+    retryConversion: (video) => queueVideo(video.id, true),
     async getConversion(videoId) {
       const stored = await options.repository.getConversion(videoId);
       return stored ? conversionRecord(stored) : null;
     },
     async recoverConversions() {
       for (const videoId of await options.repository.listPendingVideoIds()) {
-        await options.repository.queueConversion(videoId);
-        enqueueVideo(videoId);
+        await queueVideo(videoId, true);
       }
     },
   };
