@@ -354,6 +354,63 @@ describe("password authentication", () => {
     expect((await request()).status).toBe(429);
   });
 
+  it("rejects a login verified against the password replaced while it was pending", async () => {
+    const { app, context } = await testApp();
+    await context.auth.setupPassword("test-videos-password");
+    await context.auth.setupAdminProfile("Admin", testAdminPassword);
+    const login = await app.request(
+      "/api/auth",
+      jsonRequest("POST", { password: "test-videos-password" }),
+    );
+    const cookie = login.headers.get("set-cookie")!.split(";")[0]!;
+    const selectionKey = await selectTestAdmin(app, cookie);
+    let markVerified!: () => void;
+    const verified = new Promise<void>((resolve) => {
+      markVerified = resolve;
+    });
+    let resumeVerification!: () => void;
+    const resume = new Promise<void>((resolve) => {
+      resumeVerification = resolve;
+    });
+    const originalCompare = bcrypt.compare;
+    const compare = vi.spyOn(bcrypt, "compare").mockImplementationOnce(async (password, hash) => {
+      const matches = await originalCompare(password, hash);
+      markVerified();
+      await resume;
+      return matches;
+    });
+    const pendingLogin = app.request(
+      "/api/auth",
+      jsonRequest("POST", { password: "test-videos-password" }),
+    );
+    try {
+      await verified;
+      const change = await app.request(
+        "/api/auth/password",
+        jsonRequest(
+          "PUT",
+          {
+            currentPassword: "test-videos-password",
+            newPassword: "replacement-password",
+            confirmPassword: "replacement-password",
+          },
+          cookie,
+          selectionKey,
+        ),
+      );
+      expect(change.status).toBe(200);
+      expect(change.headers.get("set-cookie")).toBeTruthy();
+    } finally {
+      resumeVerification();
+      await pendingLogin;
+      compare.mockRestore();
+    }
+    const staleLogin = await pendingLogin;
+    expect(staleLogin.status).toBe(401);
+    expect(staleLogin.headers.get("set-cookie")).toBeNull();
+    expect(await context.database.connection("auth_sessions")).toHaveLength(1);
+  });
+
   it("clears persisted failures after a successful login", async () => {
     const { app, context } = await testApp({ maxAttempts: 2 });
     await context.auth.setupPassword("test-videos-password");
@@ -436,7 +493,9 @@ describe("password authentication", () => {
     expect(
       (
         await app.request("/api/library", {
-          headers: { cookie: `videos_session=${await context.auth.createSession()}` },
+          headers: {
+            cookie: `videos_session=${await context.auth.signIn("test-videos-password")}`,
+          },
         })
       ).status,
     ).toBe(401);

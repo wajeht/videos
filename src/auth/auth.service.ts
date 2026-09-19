@@ -20,17 +20,20 @@ export interface SessionPayload {
 export type PasswordResult =
   | { ok: true }
   | { ok: false; reason: "invalid" | "not_configured" | "already_configured" | "setup_disabled" };
+export type PasswordChangeResult =
+  | { ok: true; session: string }
+  | { ok: false; reason: "invalid" | "not_configured" };
 
 export interface AuthService {
   isPasswordConfigured(): Promise<boolean>;
   isPasswordValid(password: string): Promise<boolean>;
+  signIn(password: string): Promise<string | null>;
   setupPassword(password: string, setupToken?: string): Promise<PasswordResult>;
   isAdminConfigured(): Promise<boolean>;
   setupAdminProfile(name: string, password: string): Promise<PasswordResult>;
-  changePassword(currentPassword: string, newPassword: string): Promise<PasswordResult>;
+  changePassword(currentPassword: string, newPassword: string): Promise<PasswordChangeResult>;
   reserveLoginAttempt(clientKey: string, now?: number): Promise<AttemptReservation>;
   clearLoginFailures(clientKey: string): Promise<void>;
-  createSession(now?: number): Promise<string>;
   touchSession(payload: SessionPayload, now?: number): Promise<void>;
   parseSession(value: string, now?: number): Promise<SessionPayload | null>;
   revokeSession(value: string): Promise<void>;
@@ -50,6 +53,20 @@ function sessionKey(value: string): string {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
+function newSession(now: number) {
+  const token = crypto.randomBytes(32).toString("hex");
+  return {
+    token,
+    session: {
+      activeAt: now,
+      createdAt: now,
+      sessionKey: sessionKey(token),
+      profileId: null,
+      profileSelectionKey: null,
+    },
+  };
+}
+
 export function createAuthService(
   repository: AuthRepository,
   configuration: Configuration,
@@ -62,6 +79,20 @@ export function createAuthService(
     async isPasswordValid(password: string): Promise<boolean> {
       const hash = await repository.getPasswordHash();
       return Boolean(hash) && hasValidPasswordLength(password) && bcrypt.compare(password, hash!);
+    },
+
+    async signIn(password) {
+      const hash = await repository.getPasswordHash();
+      if (!hash || !hasValidPasswordLength(password) || !(await bcrypt.compare(password, hash))) {
+        return null;
+      }
+      const now = Date.now();
+      await repository.deleteExpiredSessions(
+        now - configuration.auth.idleTimeoutMs,
+        now - configuration.auth.absoluteTimeoutMs,
+      );
+      const { token, session } = newSession(now);
+      return (await repository.createSession(session, hash)) ? token : null;
     },
 
     async setupPassword(password: string, setupToken?: string): Promise<PasswordResult> {
@@ -96,15 +127,23 @@ export function createAuthService(
       return created ? { ok: true } : { ok: false, reason: "already_configured" };
     },
 
-    async changePassword(currentPassword: string, newPassword: string): Promise<PasswordResult> {
-      if (!(await repository.getPasswordHash())) return { ok: false, reason: "not_configured" };
-      if (!(await this.isPasswordValid(currentPassword)) || !hasValidPasswordLength(newPassword)) {
+    async changePassword(currentPassword, newPassword) {
+      const hash = await repository.getPasswordHash();
+      if (!hash) return { ok: false, reason: "not_configured" };
+      if (
+        !hasValidPasswordLength(currentPassword) ||
+        !hasValidPasswordLength(newPassword) ||
+        !(await bcrypt.compare(currentPassword, hash))
+      ) {
         return { ok: false, reason: "invalid" };
       }
-      await repository.changePasswordHash(
-        await bcrypt.hash(newPassword, configuration.app.env === "testing" ? 4 : 12),
+      const passwordHash = await bcrypt.hash(
+        newPassword,
+        configuration.app.env === "testing" ? 4 : 12,
       );
-      return { ok: true };
+      const { token, session } = newSession(Date.now());
+      const changed = await repository.changePasswordHash(hash, passwordHash, session);
+      return changed ? { ok: true, session: token } : { ok: false, reason: "invalid" };
     },
 
     reserveLoginAttempt(clientKey, now = Date.now()) {
@@ -118,22 +157,6 @@ export function createAuthService(
 
     clearLoginFailures(clientKey: string): Promise<void> {
       return repository.clearLoginFailures(clientKey);
-    },
-
-    async createSession(now = Date.now()): Promise<string> {
-      await repository.deleteExpiredSessions(
-        now - configuration.auth.idleTimeoutMs,
-        now - configuration.auth.absoluteTimeoutMs,
-      );
-      const token = crypto.randomBytes(32).toString("hex");
-      await repository.createSession({
-        activeAt: now,
-        createdAt: now,
-        sessionKey: sessionKey(token),
-        profileId: null,
-        profileSelectionKey: null,
-      });
-      return token;
     },
 
     async touchSession(payload: SessionPayload, now = Date.now()): Promise<void> {

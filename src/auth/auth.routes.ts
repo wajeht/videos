@@ -174,12 +174,13 @@ export function createAuthRouter(context: AppContext) {
         c.header("Retry-After", String(retryAfter));
         return c.json({ message: "Too many login attempts. Try again later." }, 429);
       }
-      if (!(await context.auth.isPasswordValid(c.req.valid("json").password))) {
+      const session = await context.auth.signIn(c.req.valid("json").password);
+      if (!session) {
         context.logger.warn("Failed login attempt", { client: key });
         return c.json({ message: "Invalid password" }, 401);
       }
       await context.auth.clearLoginFailures(key);
-      await writeSession(c, context, await context.auth.createSession());
+      await writeSession(c, context, session);
       context.logger.info("Login successful", { client: key });
       return c.json({ authenticated: true });
     })
@@ -238,7 +239,7 @@ export function createAuthRouter(context: AppContext) {
         const { currentPassword, newPassword } = c.req.valid("json");
         const result = await context.auth.changePassword(currentPassword, newPassword);
         if (!result.ok) return c.json({ message: "Current password is incorrect" }, 400);
-        await writeSession(c, context, await context.auth.createSession());
+        await writeSession(c, context, result.session);
         context.logger.info("Application password changed");
         return c.json({ passwordChanged: true });
       },
