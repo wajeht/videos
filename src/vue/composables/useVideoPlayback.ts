@@ -23,6 +23,10 @@ export function useVideoPlayback(
     return ++requestSequence;
   }
 
+  function currentRequestId(): number {
+    return requestSequence;
+  }
+
   function isCurrentRequest(requestId: number): boolean {
     return requestId === requestSequence;
   }
@@ -121,6 +125,7 @@ export function useVideoPlayback(
     applyPlayback,
     applyMetadata,
     clearSource,
+    currentRequestId,
     disposePlayback,
     error,
     isCurrentRequest,

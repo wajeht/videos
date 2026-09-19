@@ -334,20 +334,35 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
     });
   }
   async function markComplete() {
-    if (!video.value) return;
+    const completedVideo = video.value;
+    if (!completedVideo || loading.value) return;
+    const requestId = playback.currentRequestId();
+    const completionRoute = router.currentRoute.value;
     const autoplayTarget = autoplayNext.value ? nextVideo.value : undefined;
     try {
-      await api.completeVideo(video.value.id, selectionKey);
+      await api.completeVideo(completedVideo.id, selectionKey);
       await invalidateProgress();
+      if (
+        !playback.isCurrentRequest(requestId) ||
+        router.currentRoute.value !== completionRoute ||
+        !isCurrentVideo(completedVideo.id)
+      )
+        return;
       ended.value = true;
       progress.stopSession();
-      video.value.completed = true;
-      video.value.progressPercent = 100;
+      completedVideo.completed = true;
+      completedVideo.progressPercent = 100;
       if (autoplayTarget) {
         autoplayVideoId = autoplayTarget.id;
         await router.push(playerLocation(autoplayTarget.id, autoplayTarget.playlistId));
       }
     } catch (caught) {
+      if (
+        !playback.isCurrentRequest(requestId) ||
+        router.currentRoute.value !== completionRoute ||
+        !isCurrentVideo(completedVideo.id)
+      )
+        return;
       playback.error.value = apiErrorMessage(caught, "Could not complete this video");
     }
   }
