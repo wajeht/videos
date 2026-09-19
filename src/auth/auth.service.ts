@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 
 import type { Configuration } from "../config.js";
-import type { AuthRepository, LoginAttempt } from "./auth.repository.js";
+import type { AttemptReservation, AuthRepository } from "./auth.repository.js";
 
 export const MIN_PASSWORD_LENGTH = 15;
 
@@ -28,8 +28,7 @@ export interface AuthService {
   isAdminConfigured(): Promise<boolean>;
   setupAdminProfile(name: string, password: string): Promise<PasswordResult>;
   changePassword(currentPassword: string, newPassword: string): Promise<PasswordResult>;
-  getLoginAttempt(clientKey: string, now?: number): Promise<LoginAttempt | null>;
-  recordLoginFailure(clientKey: string, now?: number): Promise<void>;
+  reserveLoginAttempt(clientKey: string, now?: number): Promise<AttemptReservation>;
   clearLoginFailures(clientKey: string): Promise<void>;
   createSession(now?: number): Promise<string>;
   touchSession(payload: SessionPayload, now?: number): Promise<void>;
@@ -108,12 +107,13 @@ export function createAuthService(
       return { ok: true };
     },
 
-    getLoginAttempt(clientKey: string, now = Date.now()): Promise<LoginAttempt | null> {
-      return repository.getLoginAttempt(clientKey, now);
-    },
-
-    recordLoginFailure(clientKey: string, now = Date.now()): Promise<void> {
-      return repository.recordLoginFailure(clientKey, now, configuration.auth.loginWindowMs);
+    reserveLoginAttempt(clientKey, now = Date.now()) {
+      return repository.reserveLoginAttempt(
+        clientKey,
+        now,
+        configuration.auth.loginWindowMs,
+        configuration.auth.loginMaxAttempts,
+      );
     },
 
     clearLoginFailures(clientKey: string): Promise<void> {

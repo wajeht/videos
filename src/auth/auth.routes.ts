@@ -165,17 +165,16 @@ export function createAuthRouter(context: AppContext) {
     })
     .post("/", authBodyLimit, zValidator("json", loginSchema, validationHook), async (c) => {
       const key = clientKey(c, configuration);
-      const attempt = await context.auth.getLoginAttempt(key);
-      if (attempt && attempt.failures >= configuration.auth.loginMaxAttempts) {
+      if (!(await context.auth.isPasswordConfigured())) {
+        return c.json({ message: "Library password is not configured" }, 409);
+      }
+      const attempt = await context.auth.reserveLoginAttempt(key);
+      if (!attempt.allowed) {
         const retryAfter = Math.max(1, Math.ceil((attempt.resetAt - Date.now()) / 1000));
         c.header("Retry-After", String(retryAfter));
         return c.json({ message: "Too many login attempts. Try again later." }, 429);
       }
-      if (!(await context.auth.isPasswordConfigured())) {
-        return c.json({ message: "Library password is not configured" }, 409);
-      }
       if (!(await context.auth.isPasswordValid(c.req.valid("json").password))) {
-        await context.auth.recordLoginFailure(key);
         context.logger.warn("Failed login attempt", { client: key });
         return c.json({ message: "Invalid password" }, 401);
       }

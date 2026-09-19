@@ -2,7 +2,7 @@ import { selectTestAdmin, testAdminPassword } from "../test/auth.js";
 import path from "node:path";
 
 import bcrypt from "bcryptjs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createApp } from "../app.js";
 import { createConfiguration } from "../config.js";
@@ -310,6 +310,48 @@ describe("password authentication", () => {
     );
     expect(blocked.status).toBe(429);
     expect(blocked.headers.get("retry-after")).toBeTruthy();
+  });
+
+  it("reserves concurrent login attempts before verifying passwords", async () => {
+    const { app, context } = await testApp({ maxAttempts: 2 });
+    await context.auth.setupPassword("test-videos-password");
+    let releaseVerification!: (matches: boolean) => void;
+    const verification = new Promise<boolean>((resolve) => {
+      releaseVerification = resolve;
+    });
+    const compare = vi.spyOn(bcrypt, "compare").mockImplementation(() => verification);
+    let blocked = 0;
+    const requests = Array.from({ length: 4 }, async () => {
+      const response = await app.request(
+        "/api/auth",
+        jsonRequest("POST", { password: "wrong-videos-password" }),
+      );
+      if (response.status === 429) blocked++;
+      return response;
+    });
+    try {
+      await expect.poll(() => blocked).toBe(2);
+      expect(compare).toHaveBeenCalledTimes(2);
+    } finally {
+      releaseVerification(false);
+      await Promise.all(requests);
+      compare.mockRestore();
+    }
+    expect((await Promise.all(requests)).map((response) => response.status).sort()).toEqual([
+      401, 401, 429, 429,
+    ]);
+  });
+
+  it("allows login attempts again after the reserved attempt window expires", async () => {
+    const { app, context } = await testApp({ maxAttempts: 1 });
+    await context.auth.setupPassword("test-videos-password");
+    const request = () =>
+      app.request("/api/auth", jsonRequest("POST", { password: "wrong-videos-password" }));
+    expect((await request()).status).toBe(401);
+    expect((await request()).status).toBe(429);
+    await context.database.connection("auth_login_attempts").update({ reset_at: Date.now() - 1 });
+    expect((await request()).status).toBe(401);
+    expect((await request()).status).toBe(429);
   });
 
   it("clears persisted failures after a successful login", async () => {
