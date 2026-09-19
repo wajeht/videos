@@ -111,7 +111,20 @@ export function useVideoPlayback(
   async function retryPlayback(videoId: string): Promise<void> {
     error.value = "";
     const requestId = requestSequence;
-    await applyPlayback(await client.retryConversion(videoId), videoId, requestId);
+    const checkingStatus = playback.value?.kind === "converting";
+    clearTimeout(pollTimer);
+    pollTimer = undefined;
+    try {
+      const result = checkingStatus
+        ? await client.getConversionStatus(videoId)
+        : await client.retryConversion(videoId);
+      await applyPlayback(result, videoId, requestId);
+    } catch {
+      if (!isCurrentRequest(requestId)) return;
+      error.value = checkingStatus
+        ? "We couldn't check the video status. Try again."
+        : "We couldn't retry this video. Try again.";
+    }
   }
 
   function applyMetadata(callback: (element: HTMLVideoElement) => void): void {

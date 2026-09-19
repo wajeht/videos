@@ -54,26 +54,26 @@ defineExpose({ video });
       <p class="mt-4 text-white/58">Preparing video…</p>
     </div>
     <div
-      v-else-if="playback?.kind === 'converting'"
-      class="absolute inset-0 grid place-items-center content-center bg-pine-deep p-8 text-center text-white"
-      role="status"
-    >
-      <h2>Preparing this video</h2>
-      <p class="mt-2 text-white/58">{{ playback.progress }}% complete.</p>
-    </div>
-    <div
       v-else-if="error"
       class="absolute inset-0 grid place-items-center content-center bg-pine-deep p-8 text-center text-white"
     >
       <h2>Video unavailable</h2>
       <p class="mt-2 text-white/58">{{ error }}</p>
       <AppButton
-        v-if="playback?.kind === 'error'"
+        v-if="playback?.kind === 'error' || playback?.kind === 'converting'"
         class="mt-5"
         :loading="retrying"
         @click="emit('retry')"
         >Try again</AppButton
       >
+    </div>
+    <div
+      v-else-if="playback?.kind === 'converting'"
+      class="absolute inset-0 grid place-items-center content-center bg-pine-deep p-8 text-center text-white"
+      role="status"
+    >
+      <h2>Preparing this video</h2>
+      <p class="mt-2 text-white/58">{{ playback.progress }}% complete.</p>
     </div>
     <div
       v-if="ended"
