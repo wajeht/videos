@@ -20,12 +20,12 @@ const emit = defineEmits<{ select: [profile: ProfileDto] }>();
       <div
         v-for="index in 3"
         :key="index"
-        class="grid w-40 animate-pulse justify-items-center gap-2 p-2 motion-reduce:animate-none"
+        class="grid w-40 justify-items-center gap-2 p-2"
         aria-hidden="true"
       >
-        <div class="size-20 bg-pine" />
-        <div class="h-[1lh] w-24 bg-mist" />
-        <div class="h-[1lh] w-20 bg-mist text-sm" />
+        <div class="size-20 animate-pulse bg-mist motion-reduce:animate-none" />
+        <div class="h-[1lh] w-24 animate-pulse bg-mist motion-reduce:animate-none" />
+        <div class="h-[1lh] w-20 animate-pulse bg-mist text-sm motion-reduce:animate-none" />
       </div>
     </template>
     <template v-else>
