@@ -7,6 +7,7 @@ import type { Configuration } from "../config.js";
 import type { LibraryRepository } from "./library.repository.js";
 import type { VideoRecord } from "./types.js";
 import { logCause, type Logger } from "../logger.js";
+import { hasErrorCode } from "../errors.js";
 import type { ConversionRepository, StoredConversion } from "./conversion.repository.js";
 import { ffmpegExecutable } from "./executables.js";
 import { resolveContainedPath } from "./path.js";
@@ -27,6 +28,7 @@ export interface ConversionManager {
   retryConversion(video: VideoRecord): Promise<ConversionRecord | null>;
   getConversion(videoId: string): Promise<ConversionRecord | null>;
   recoverConversions(): Promise<void>;
+  synchronize(): Promise<void>;
 }
 
 export interface ConversionPlan {
@@ -180,6 +182,7 @@ export function createConversionManager(options: {
   const queue: Array<{ video: VideoRecord; record: StoredConversion }> = [];
   const scheduled = new Map<string, StoredConversion>();
   const locks = new Map<string, Promise<unknown>>();
+  const pendingCleanup = new Set<string>();
   const directory = hlsDirectory(options.configuration.media.dataDirectory);
   let processing = false;
 
@@ -206,6 +209,32 @@ export function createConversionManager(options: {
     };
   }
 
+  async function pruneVideo(videoId: string): Promise<void> {
+    const retained = new Set(
+      [...scheduled.values()]
+        .filter((record) => record.videoId === videoId)
+        .map((record) => record.generation),
+    );
+    const current = await options.repository.getConversion(videoId);
+    if (current) retained.add(current.generation);
+    const videoDirectory = path.join(directory, videoId);
+    if (retained.size === 0) {
+      await fs.rm(videoDirectory, { recursive: true, force: true });
+      pendingCleanup.delete(videoId);
+      return;
+    }
+    try {
+      for (const entry of await fs.readdir(videoDirectory)) {
+        if (!retained.has(entry))
+          await fs.rm(path.join(videoDirectory, entry), { recursive: true, force: true });
+      }
+    } catch (error) {
+      if (!hasErrorCode(error, "ENOENT")) throw error;
+    }
+    if (![...scheduled.values()].some((record) => record.videoId === videoId))
+      pendingCleanup.delete(videoId);
+  }
+
   async function processJob(video: VideoRecord, record: StoredConversion): Promise<void> {
     try {
       const current = await options.repository.getConversion(video.id);
@@ -228,6 +257,7 @@ export function createConversionManager(options: {
       }
     } finally {
       scheduled.delete(record.generation);
+      if (pendingCleanup.has(video.id)) await withVideoLock(video.id, () => pruneVideo(video.id));
     }
   }
 
@@ -279,6 +309,20 @@ export function createConversionManager(options: {
     async recoverConversions() {
       for (const videoId of await options.repository.listPendingVideoIds()) {
         await queueVideo(videoId, true);
+      }
+    },
+    async synchronize() {
+      const videoIds = new Set([...scheduled.values()].map((record) => record.videoId));
+      try {
+        for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+          if (entry.isDirectory() && /^[a-f0-9]{24}$/.test(entry.name)) videoIds.add(entry.name);
+        }
+      } catch (error) {
+        if (!hasErrorCode(error, "ENOENT")) throw error;
+      }
+      for (const videoId of videoIds) {
+        pendingCleanup.add(videoId);
+        await withVideoLock(videoId, () => pruneVideo(videoId));
       }
     },
   };

@@ -18,6 +18,7 @@ import {
 import { createConversionRepository } from "./conversion.repository.js";
 import { createPlaybackService } from "../playback/playback.service.js";
 import { conversionGeneration } from "./conversion-source.js";
+import { createScanner } from "./scanner.js";
 import type { VideoRecord } from "./types.js";
 
 async function createFixture(executor: ConversionExecutor) {
@@ -338,6 +339,89 @@ describe("conversion manager", () => {
     }
     await waitForStatus(fixture.database, video.id, "ready");
     expect(calls.map((entry) => entry.sizeBytes)).toEqual([100, 101]);
+  });
+
+  it.each(["removed", "renamed"])(
+    "prunes %s video caches while retaining a current generation",
+    async (change) => {
+      const fixture = await createFixture(async () => {});
+      const first = (await fixture.library.getVideo("b".repeat(24)))!;
+      const second = (await fixture.library.getVideo("c".repeat(24)))!;
+      const firstRecord = (await fixture.repository.queueConversion(
+        first,
+        conversionGeneration(first),
+      ))!;
+      const secondRecord = (await fixture.repository.queueConversion(
+        second,
+        conversionGeneration(second),
+      ))!;
+      await fixture.repository.markReady(firstRecord);
+      await fixture.repository.markReady(secondRecord);
+      const oldPlaylist = await writePlaylist(fixture, first.id, firstRecord.generation);
+      const retainedPlaylist = await writePlaylist(fixture, second.id, secondRecord.generation);
+      const videos = [second];
+      if (change === "renamed")
+        videos.push({ ...first, id: "d".repeat(24), path: "playlist/renamed.mkv" });
+      await synchronizeVideos(fixture, videos);
+      await fixture.manager.synchronize();
+      await expect(fs.access(oldPlaylist)).rejects.toMatchObject({ code: "ENOENT" });
+      await expect(fs.readFile(retainedPlaylist, "utf8")).resolves.toBe("#EXTM3U");
+    },
+  );
+
+  it.each([true, false])(
+    "retains active output and prunes after completion (output exists: %s)",
+    async (writeBeforeScan) => {
+      const started = deferred();
+      const finish = deferred();
+      let filename = "";
+      const fixture = await createFixture(async (video, _onProgress, generation) => {
+        if (writeBeforeScan) filename = await writePlaylist(fixture, video.id, generation);
+        started.resolve();
+        await finish.promise;
+        if (!writeBeforeScan) filename = await writePlaylist(fixture, video.id, generation);
+      });
+      const video = (await fixture.library.getVideo("b".repeat(24)))!;
+      const record = (await fixture.manager.requestConversion(video))!;
+      await started.promise;
+      try {
+        await synchronizeVideos(
+          fixture,
+          (await fixture.library.getVideos()).filter((entry) => entry.id !== video.id),
+        );
+        await fixture.manager.synchronize();
+        await expect(
+          fs.access(record.playlistPath).then(
+            () => true,
+            () => false,
+          ),
+        ).resolves.toBe(writeBeforeScan);
+      } finally {
+        finish.resolve();
+      }
+      await vi.waitFor(async () => {
+        expect(filename).not.toBe("");
+        await expect(fs.access(filename)).rejects.toMatchObject({ code: "ENOENT" });
+      });
+    },
+  );
+
+  it("only prunes caches after a successful scan", async () => {
+    const fixture = await createFixture(async () => {});
+    const filename = await writePlaylist(fixture, "d".repeat(24), "e".repeat(24));
+    const scanner = createScanner({
+      configuration: fixture.configuration,
+      repository: fixture.library,
+      logger: createLogger(),
+      conversions: fixture.manager,
+    });
+    const source = fixture.configuration.media.videosDirectory;
+    await fs.rename(source, `${source}-offline`);
+    expect((await scanner.scanLibrary()).status).toBe("failed");
+    await expect(fs.access(filename)).resolves.toBeUndefined();
+    await fs.rename(`${source}-offline`, source);
+    expect((await scanner.scanLibrary()).status).toBe("complete");
+    await expect(fs.access(filename)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("recovers interrupted conversions using the same source generation", async () => {

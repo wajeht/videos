@@ -6,6 +6,7 @@ import path from "node:path";
 
 import type { Configuration } from "../config.js";
 import { logCause, type Logger } from "../logger.js";
+import type { ConversionManager } from "./conversion.js";
 import type { LibraryRepository, RootEntryOrder } from "./library.repository.js";
 import { normalizeMetadataName } from "./metadata.js";
 import { displayName, naturalOrder } from "./names.js";
@@ -56,6 +57,7 @@ export interface ScannerDependencies {
   watchDirectory?: WatchDirectory;
   playlistCovers?: PlaylistCoverCache;
   thumbnails?: ThumbnailCache;
+  conversions?: ConversionManager;
 }
 
 interface DirectoryWatcher {
@@ -94,6 +96,7 @@ export function createScanner({
   watchDirectory = watch,
   playlistCovers,
   thumbnails,
+  conversions,
 }: ScannerDependencies): Scanner {
   let activeSynchronization: Promise<void> | null = null;
   let fullScanInProgress = false;
@@ -220,6 +223,14 @@ export function createScanner({
       await Promise.all([synchronizePlaylistCovers(), synchronizeThumbnails()]);
 
       const counts = await repository.getLibraryCounts();
+      if (conversions) {
+        try {
+          await conversions.synchronize();
+        } catch (error) {
+          logger.warn("Conversion cache synchronization failed", { error: logCause(error) });
+        }
+      }
+
       const complete: ScanStatus = {
         ...scanning,
         ...counts,
