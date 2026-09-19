@@ -303,29 +303,37 @@ export function createScanner({
     startMonitoring() {
       let debounce: NodeJS.Timeout | null = null;
       const changedEntries = new Set<string>();
-      const watcher = watchDirectory(
-        configuration.media.videosDirectory,
-        { recursive: true },
-        (_event, filename) => {
-          const changedEntry = filename ? watchedEntryPath(posixPath(String(filename))) : null;
-          if (changedEntry) changedEntries.add(changedEntry);
-          else fullScanRequested = true;
-
-          if (debounce) clearTimeout(debounce);
-          debounce = setTimeout(() => {
-            debounce = null;
-            if (fullScanRequested) void ensureSynchronization();
-            else requestEntrySynchronization(changedEntries);
-            changedEntries.clear();
-          }, 750);
-          debounce.unref();
-        },
-      );
       const schedule = setInterval(
         () => void scanner.scanLibrary(),
         configuration.media.scanIntervalMs,
       );
       schedule.unref();
+      let watcher: DirectoryWatcher;
+      try {
+        watcher = watchDirectory(
+          configuration.media.videosDirectory,
+          { recursive: true },
+          (_event, filename) => {
+            const changedEntry = filename ? watchedEntryPath(posixPath(String(filename))) : null;
+            if (changedEntry) changedEntries.add(changedEntry);
+            else fullScanRequested = true;
+
+            if (debounce) clearTimeout(debounce);
+            debounce = setTimeout(() => {
+              debounce = null;
+              if (fullScanRequested) void ensureSynchronization();
+              else requestEntrySynchronization(changedEntries);
+              changedEntries.clear();
+            }, 750);
+            debounce.unref();
+          },
+        );
+      } catch (error) {
+        logger.warn("Library watcher unavailable; scheduled scans will continue", {
+          error: logCause(error),
+        });
+        return () => clearInterval(schedule);
+      }
       let watcherActive = true;
       watcher.on("error", (error) => {
         if (!watcherActive) return;

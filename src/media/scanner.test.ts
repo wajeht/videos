@@ -519,7 +519,7 @@ describe("media scanner", () => {
     ]);
   });
 
-  it("fails when library monitoring cannot start", async () => {
+  it("keeps scheduled scans running when library monitoring cannot start", async () => {
     const { root, dataDirectory } = await createScannerDirectories();
     const configuration = createConfiguration({
       APP_ENV: "testing",
@@ -537,7 +537,19 @@ describe("media scanner", () => {
       },
     });
 
-    expect(() => scanner.startMonitoring()).toThrow("Library watcher unavailable");
+    const scan = vi.spyOn(scanner, "scanLibrary").mockResolvedValue(scanner.scanStatus());
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    const stopMonitoring = scanner.startMonitoring();
+    try {
+      await vi.advanceTimersByTimeAsync(configuration.media.scanIntervalMs);
+      expect(scan).toHaveBeenCalledOnce();
+      stopMonitoring();
+      await vi.advanceTimersByTimeAsync(configuration.media.scanIntervalMs);
+      expect(scan).toHaveBeenCalledOnce();
+    } finally {
+      stopMonitoring();
+      vi.useRealTimers();
+    }
   });
 
   it("falls back to scheduled scans when an active watcher fails", async () => {
