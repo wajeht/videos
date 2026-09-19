@@ -72,6 +72,7 @@ const displayedVideos = computed(() =>
           data-testid="library-filter-column"
           :authors="library.authors"
           :has-active-filters="hasActiveFilters"
+          :loading="loading"
           :page-size="libraryPageSize"
           :page-size-disabled="pageSizeDisabled"
           :page-size-error="pageSizeError"

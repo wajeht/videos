@@ -9,10 +9,11 @@ const props = withDefaults(
     collapsedLimit?: number;
     hideLabel?: boolean;
     label: string;
+    loading?: boolean;
     name: string;
     options: LibraryDto["authors"];
   }>(),
-  { collapsedLimit: 10, hideLabel: false },
+  { collapsedLimit: 10, hideLabel: false, loading: false },
 );
 const emit = defineEmits<{ prefetch: [selection: string[]] }>();
 const selected = defineModel<string[]>({ required: true });
@@ -36,11 +37,24 @@ function prefetchOption(name: string): void {
 </script>
 
 <template>
-  <fieldset>
+  <fieldset :aria-busy="loading ? 'true' : undefined">
     <legend :class="hideLabel ? 'sr-only' : 'mb-3'">
       {{ label }}
     </legend>
-    <p v-if="!visible.length">{{ allLabel }}</p>
+    <template v-if="loading">
+      <p class="sr-only" role="status">Loading {{ label.toLowerCase() }}…</p>
+      <ul class="list-none p-0 space-y-2" aria-hidden="true">
+        <li
+          v-for="index in collapsedLimit"
+          :key="index"
+          class="flex items-center gap-2.5 max-[760px]:min-h-11"
+        >
+          <div class="size-4 shrink-0 animate-pulse bg-mist motion-reduce:animate-none" />
+          <div class="h-[1lh] w-3/4 animate-pulse bg-mist motion-reduce:animate-none" />
+        </li>
+      </ul>
+    </template>
+    <p v-else-if="!visible.length">{{ allLabel }}</p>
     <ul v-else class="list-none p-0 space-y-2">
       <li v-for="option in visible" :key="option.name">
         <label
@@ -61,7 +75,7 @@ function prefetchOption(name: string): void {
       </li>
     </ul>
     <AppButton
-      v-if="allOptions.length > collapsedLimit"
+      v-if="!loading && allOptions.length > collapsedLimit"
       class="mt-3 cursor-pointer border-0 bg-transparent p-0 text-link hover:bg-transparent hover:underline"
       @click="expanded = !expanded"
     >

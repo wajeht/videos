@@ -15,6 +15,7 @@ type FilterType = "author" | "pageSize" | "tag" | "view";
 const props = defineProps<{
   authors: LibraryDto["authors"];
   hasActiveFilters: boolean;
+  loading?: boolean;
   pageSizeDisabled?: boolean;
   pageSizeError?: string;
   tags: LibraryDto["tags"];
@@ -107,6 +108,7 @@ function togglePanel(panel: FilterType): void {
           all-label="No authors"
           label="Authors"
           name="library-desktop-author"
+          :loading="loading"
           :options="authors"
           @prefetch="emit('prefetch', 'author', $event)"
         />
@@ -117,6 +119,7 @@ function togglePanel(panel: FilterType): void {
           all-label="No tags"
           label="Tags"
           name="library-desktop-tag"
+          :loading="loading"
           :options="tags"
           @prefetch="emit('prefetch', 'tag', $event)"
         />
@@ -186,6 +189,7 @@ function togglePanel(panel: FilterType): void {
         hide-label
         label="Authors"
         name="library-mobile-author"
+        :loading="loading"
         :options="props.authors"
         @prefetch="emit('prefetch', 'author', $event)"
       />
@@ -207,6 +211,7 @@ function togglePanel(panel: FilterType): void {
         hide-label
         label="Tags"
         name="library-mobile-tag"
+        :loading="loading"
         :options="props.tags"
         @prefetch="emit('prefetch', 'tag', $event)"
       />
