@@ -52,7 +52,7 @@
     "@vitest/coverage-v8": "4.1.11",
     "@vue/test-utils": "2.5.1",
     "concurrently": "10.0.5",
-    "eslint-plugin-regexp": "3.3.0",
+    "eslint-plugin-regexp": "3.3.1",
     "eslint-plugin-sonarjs": "4.2.1",
     "happy-dom": "20.14.5",
     "oxfmt": "0.67.0",
