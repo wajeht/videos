@@ -38,7 +38,7 @@
     "hono": "4.13.13",
     "knex": "3.3.0",
     "vue": "3.5.43",
-    "vue-router": "5.3.1",
+    "vue-router": "5.4.0",
     "zod": "4.6.5"
   },
   "devDependencies": {
