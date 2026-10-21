@@ -96,3 +96,5 @@ Login and profile-unlock limits use the network peer address by default. Behind 
 For multiple proxy hops (such as Cloudflare → Traefik → Videos), include every trusted proxy hop, or configure the immediate proxy to overwrite `X-Forwarded-For` with the verified client address. Trust only networks reserved for your proxies, never arbitrary client networks. With no proxy trust configured, users behind a proxy share that proxy's login limit. Direct Docker access needs no trust configuration. Configure the production proxy policy before deploying authentication changes; this repository does not configure the external Home Ops network.
 
 Converted video caches are tied to the source file's size and modification time. Older caches without a source generation are rebuilt on demand, and successful scans clean up obsolete generated files. This requires no database reset and preserves profiles and viewing progress.
+
+Videos are prepared one at a time. The player shows "Waiting in queue" until preparation starts, then displays conversion progress. Playback becomes available as soon as the first segment is ready.

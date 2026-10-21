@@ -72,8 +72,16 @@ defineExpose({ video });
       class="absolute inset-0 grid place-items-center content-center bg-pine-deep p-8 text-center text-white"
       role="status"
     >
-      <h2>Preparing this video</h2>
-      <p class="mt-2 text-white/58">{{ playback.progress }}% complete.</p>
+      <template v-if="playback.status === 'queued'">
+        <h2>Waiting in queue</h2>
+        <p class="mt-2 text-white/58">
+          Another video is being prepared. Yours will start automatically.
+        </p>
+      </template>
+      <template v-else>
+        <h2>Preparing this video</h2>
+        <p class="mt-2 text-white/58">{{ playback.progress }}% complete.</p>
+      </template>
     </div>
     <div
       v-if="ended"
