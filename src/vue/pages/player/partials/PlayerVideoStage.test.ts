@@ -7,6 +7,37 @@ import { describe, expect, it } from "vitest";
 import PlayerVideoStage from "./PlayerVideoStage.vue";
 
 describe("PlayerVideoStage", () => {
+  it("shows waiting in queue until conversion starts, then shows progress", async () => {
+    const queryClient = new QueryClient();
+    const wrapper = mount(PlayerVideoStage, {
+      props: {
+        ended: false,
+        error: "",
+        loading: false,
+        playback: { kind: "converting", status: "queued", progress: 0 },
+        retrying: false,
+      },
+      global: { plugins: [[VueQueryPlugin, { queryClient }]] },
+    });
+
+    expect(wrapper.get('[role="status"]').text()).toContain("Waiting in queue");
+    expect(wrapper.text()).toContain("Yours will start automatically.");
+    expect(wrapper.text()).not.toContain("0% complete.");
+
+    await wrapper.setProps({
+      playback: { kind: "converting", status: "converting", progress: 0 },
+    });
+    expect(wrapper.get('[role="status"]').text()).toContain("Preparing this video");
+    expect(wrapper.text()).toContain("0% complete.");
+    expect(wrapper.text()).not.toContain("Waiting in queue");
+
+    await wrapper.setProps({
+      playback: { kind: "converting", status: "converting", progress: 24 },
+    });
+    expect(wrapper.text()).toContain("24% complete.");
+    wrapper.unmount();
+  });
+
   it("shows polling errors above conversion progress and offers retry", async () => {
     const queryClient = new QueryClient();
     const wrapper = mount(PlayerVideoStage, {
@@ -21,6 +52,7 @@ describe("PlayerVideoStage", () => {
     });
     expect(wrapper.text()).toContain("We couldn't check the video status");
     expect(wrapper.text()).not.toContain("Preparing this video");
+    expect(wrapper.text()).not.toContain("Waiting in queue");
     await wrapper.get("button").trigger("click");
     expect(wrapper.emitted("retry")).toHaveLength(1);
     wrapper.unmount();
