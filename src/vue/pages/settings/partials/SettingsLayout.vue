@@ -74,6 +74,7 @@ async function logout(): Promise<void> {
             :loading="logoutAction.pending.value"
             loading-label="Signing out…"
             data-desktop-sign-out
+            type="submit"
             @click="logout"
           >
             Sign out
