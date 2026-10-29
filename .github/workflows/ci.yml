@@ -202,7 +202,7 @@ jobs:
     name: Deploy
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: release
-    uses: wajeht/docker-cd-deploy-workflow/.github/workflows/deploy.yaml@970a4d7bd568e096d091fbec3371019c763def1f # v0.0.26
+    uses: wajeht/docker-cd-deploy-workflow/.github/workflows/deploy.yaml@22eff51583297b7492bc6ae4a06be80c301f2180 # v0.0.28
     with:
       app-path: apps/videos
       service-name: videos
@@ -275,7 +275,7 @@ jobs:
     needs: temp-build
     permissions:
       deployments: write
-    uses: wajeht/docker-cd-deploy-workflow/.github/workflows/temp-deploy.yaml@970a4d7bd568e096d091fbec3371019c763def1f # v0.0.26
+    uses: wajeht/docker-cd-deploy-workflow/.github/workflows/temp-deploy.yaml@22eff51583297b7492bc6ae4a06be80c301f2180 # v0.0.28
     with:
       app-path: apps/videos
       service-name: videos
@@ -295,7 +295,7 @@ jobs:
       !contains(github.event.pull_request.labels.*.name, 'temp-deploy-with-auth'))
     permissions:
       deployments: write
-    uses: wajeht/docker-cd-deploy-workflow/.github/workflows/temp-cleanup.yaml@970a4d7bd568e096d091fbec3371019c763def1f # v0.0.26
+    uses: wajeht/docker-cd-deploy-workflow/.github/workflows/temp-cleanup.yaml@22eff51583297b7492bc6ae4a06be80c301f2180 # v0.0.28
     with:
       app-path: apps/videos
     secrets:
