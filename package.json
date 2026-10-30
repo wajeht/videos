@@ -55,7 +55,7 @@
     "eslint-plugin-regexp": "3.3.2",
     "eslint-plugin-sonarjs": "4.2.2",
     "happy-dom": "20.14.6",
-    "oxfmt": "0.67.0",
+    "oxfmt": "0.75.0",
     "oxlint": "1.90.0",
     "tailwindcss": "4.3.3",
     "tsx": "4.23.15",
