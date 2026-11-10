@@ -18,7 +18,7 @@ import PlayerProgressMenu from "@/pages/player/partials/PlayerProgressMenu.vue";
 
 const props = defineProps<{
   currentTime: number;
-  loading?: boolean;
+  loading: boolean;
   video: VideoDetailDto | null;
   resetting: boolean;
   regenerating?: boolean;

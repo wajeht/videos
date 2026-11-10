@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from "vue";
-import { useRoute } from "vue-router";
 
 import { useVideoPlayer } from "@/composables/useVideoPlayer.js";
 import PlayerPlaylistSidebar from "@/pages/player/partials/PlayerPlaylistSidebar.vue";
@@ -10,11 +9,6 @@ import PlayerVideoStage from "@/pages/player/partials/PlayerVideoStage.vue";
 const stage = useTemplateRef<InstanceType<typeof PlayerVideoStage>>("stage");
 const media = computed(() => stage.value?.video ?? null);
 const player = useVideoPlayer(media);
-const route = useRoute();
-const detailsVideo = computed(() => {
-  const video = player.video.value;
-  return video?.id === route.params.videoId ? video : null;
-});
 const hasPlaylist = computed(() => player.playlist.value !== null || player.playlistLoading.value);
 </script>
 
@@ -47,7 +41,7 @@ const hasPlaylist = computed(() => player.playlist.value !== null || player.play
         <PlayerVideoDetails
           :current-time="player.currentTime.value"
           :loading="player.loading.value"
-          :video="detailsVideo"
+          :video="player.video.value"
           :resetting="player.resetting.value"
           :regenerating="player.regenerating.value"
           @reset="player.resetProgress"
@@ -57,7 +51,7 @@ const hasPlaylist = computed(() => player.playlist.value !== null || player.play
       </div>
     </section>
     <PlayerPlaylistSidebar
-      :active-video-id="player.video.value?.id"
+      :active-video-id="player.activeVideoId.value"
       :autoplay-next="player.autoplayNext.value"
       :playlist="player.playlist.value"
       :loading="player.playlistLoading.value"

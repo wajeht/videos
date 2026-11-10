@@ -31,6 +31,7 @@ describe("PlayerVideoDetails", () => {
     const wrapper = mount(PlayerVideoDetails, {
       props: {
         currentTime: 0,
+        loading: false,
         resetting: false,
         video: {
           ...video,
@@ -62,6 +63,7 @@ describe("PlayerVideoDetails", () => {
     const wrapper = mount(PlayerVideoDetails, {
       props: {
         currentTime: 0,
+        loading: false,
         resetting: false,
         video: {
           ...video,
@@ -82,6 +84,7 @@ describe("PlayerVideoDetails", () => {
     const wrapper = mount(PlayerVideoDetails, {
       props: {
         currentTime: 0,
+        loading: false,
         resetting: false,
         video: { ...video, authors: ["Example Author"], playlistSectionTitle: "Volume 1" },
       },
@@ -103,7 +106,7 @@ describe("PlayerVideoDetails", () => {
 
   it("emits reset from the video actions menu", async () => {
     const wrapper = mount(PlayerVideoDetails, {
-      props: { currentTime: 0, resetting: false, video },
+      props: { currentTime: 0, loading: false, resetting: false, video },
     });
 
     await wrapper.get('[aria-label="Video actions"]').trigger("click");
