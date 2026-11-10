@@ -116,6 +116,10 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
     },
   );
 
+  const currentVideo = computed(() => {
+    const loaded = video.value;
+    return loaded?.id === route.params.videoId ? loaded : null;
+  });
   const playlist = computed(() => {
     const list = route.query.list;
     const loaded = loadedPlaylist.value;
@@ -428,6 +432,7 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
   });
 
   return {
+    activeVideoId: computed(() => video.value?.id),
     applyResume,
     autoplayNext: computed(() => autoplayNext.value),
     currentTime: computed(() => currentTime.value),
@@ -457,6 +462,6 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
       void router.replace({ query: { ...route.query, t: String(seconds) } });
     },
     setAutoplayNext,
-    video: computed(() => video.value),
+    video: currentVideo,
   };
 }

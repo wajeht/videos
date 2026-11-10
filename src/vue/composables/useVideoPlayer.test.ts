@@ -192,6 +192,34 @@ describe("useVideoPlayer", () => {
     wrapper.unmount();
   });
 
+  it("hides the previous video details while the next playlist video loads", async () => {
+    const nextVideo = { ...video, id: "3".repeat(24), title: "Next video" };
+    const playlistWithNext = {
+      ...playlist,
+      sections: [{ id: null, title: "Videos", videos: [video, nextVideo] }],
+      videoCount: 2,
+    };
+    const nextDetail = deferredCompletion();
+    const { router, wrapper } = await mountPlayer({
+      path: `/videos/${videoId}?list=${playlistId}`,
+      getVideo: async (id) => {
+        if (id === videoId) return { video: { ...video }, playlist: playlistWithNext };
+        await nextDetail.promise;
+        return { video: nextVideo, playlist: playlistWithNext };
+      },
+    });
+    const title = wrapper.get("[data-video-title]");
+    expect(title.text()).toBe(video.title);
+
+    await router.push(`/videos/${nextVideo.id}?list=${playlistId}`);
+    expect(title.text()).toBe("");
+
+    nextDetail.resolve();
+    await flushPromises();
+    expect(title.text()).toBe(nextVideo.title);
+    wrapper.unmount();
+  });
+
   it("persists the autoplay preference", async () => {
     const { wrapper } = await mountPlayer();
 

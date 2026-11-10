@@ -40,6 +40,7 @@ const hasPlaylist = computed(() => player.playlist.value !== null || player.play
         />
         <PlayerVideoDetails
           :current-time="player.currentTime.value"
+          :loading="player.loading.value"
           :video="player.video.value"
           :resetting="player.resetting.value"
           :regenerating="player.regenerating.value"
@@ -50,7 +51,7 @@ const hasPlaylist = computed(() => player.playlist.value !== null || player.play
       </div>
     </section>
     <PlayerPlaylistSidebar
-      :active-video-id="player.video.value?.id"
+      :active-video-id="player.activeVideoId.value"
       :autoplay-next="player.autoplayNext.value"
       :playlist="player.playlist.value"
       :loading="player.playlistLoading.value"
