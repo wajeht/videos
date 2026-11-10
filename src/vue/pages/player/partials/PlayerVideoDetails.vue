@@ -18,6 +18,7 @@ import PlayerProgressMenu from "@/pages/player/partials/PlayerProgressMenu.vue";
 
 const props = defineProps<{
   currentTime: number;
+  loading?: boolean;
   video: VideoDetailDto | null;
   resetting: boolean;
   regenerating?: boolean;
@@ -143,5 +144,14 @@ onBeforeUnmount(() => descriptionObserver?.disconnect());
         />
       </svg>
     </AppButton>
+  </section>
+  <section v-else-if="loading" class="mt-4" aria-label="Video details" aria-busy="true">
+    <div class="flex items-start justify-between gap-3" aria-hidden="true">
+      <div class="min-w-0 flex-1">
+        <div class="h-9 w-3/4 max-w-96 animate-pulse bg-mist motion-reduce:animate-none" />
+        <div class="mt-2 h-[1lh] w-28 animate-pulse bg-mist motion-reduce:animate-none" />
+      </div>
+      <div class="size-9 shrink-0 animate-pulse bg-mist motion-reduce:animate-none" />
+    </div>
   </section>
 </template>

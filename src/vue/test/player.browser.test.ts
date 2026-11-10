@@ -27,10 +27,12 @@ async function expectPlaylistLoadingLayout(
   videoTitle: string,
 ): Promise<void> {
   const loadingPlaylist = page.getByRole("complementary", { name: "Loading playlist…" });
+  const loadingDetails = page.getByRole("region", { name: "Video details" });
   const loadingFrames = new Map<number, { x: number; width: number }>();
   for (const width of [1800, 1000, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await expect(loadingPlaylist).toBeVisible();
+    await expect(loadingDetails).toBeVisible();
     await expect(page.getByText("Preparing video…", { exact: true })).toBeVisible();
     await expect(loadingPlaylist.getByRole("button")).toHaveCount(0);
     const frame = await page.locator("video").boundingBox();
@@ -46,6 +48,7 @@ async function expectPlaylistLoadingLayout(
   releasePlayback();
   await expect(page.getByRole("heading", { name: videoTitle })).toBeVisible();
   await expect(loadingPlaylist).toHaveCount(0);
+  await expect(loadingDetails).toHaveCount(0);
   for (const [width, loadingFrame] of loadingFrames) {
     await page.setViewportSize({ width, height: 900 });
     const frame = await page.locator("video").boundingBox();
@@ -86,7 +89,10 @@ test("uses responsive video details and places the playlist below them on mobile
     title: videoTitle,
   };
 
-  let detailReady = Promise.resolve();
+  let releaseDetail!: () => void;
+  let detailReady = new Promise<void>((resolve) => {
+    releaseDetail = resolve;
+  });
   let playbackReady = Promise.resolve();
   await page.route(`**/api/videos/${videoId}`, async (route) => {
     await detailReady;
@@ -133,10 +139,15 @@ test("uses responsive video details and places the playlist below them on mobile
   const autoplay = page.getByRole("menuitemcheckbox", { name: /Autoplay next video/ });
 
   await page.goto(`/videos/${videoId}`);
+  const loadingDetails = page.getByRole("region", { name: "Video details" });
+  await expect(loadingDetails).toBeVisible();
+  await expect(loadingDetails).toHaveAttribute("aria-busy", "true");
+  await expect(page.getByRole("button", { name: "Video actions" })).toHaveCount(0);
+  releaseDetail();
   await expect(title).toBeVisible();
+  await expect(loadingDetails).toHaveCount(0);
   await expect(playlistPanel).toHaveCount(0);
 
-  let releaseDetail!: () => void;
   let releasePlayback!: () => void;
   detailReady = new Promise<void>((resolve) => {
     releaseDetail = resolve;
