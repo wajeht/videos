@@ -33,7 +33,7 @@
     "@hono/zod-validator": "0.9.1",
     "@tanstack/vue-query": "5.107.1",
     "bcryptjs": "3.0.3",
-    "better-sqlite3": "13.0.3",
+    "better-sqlite3": "13.1.1",
     "hls.js": "1.7.4",
     "hono": "4.13.18",
     "knex": "3.3.0",
