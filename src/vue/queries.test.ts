@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { LibraryDto, LibraryFilters } from "@/api.js";
+import type { LibraryDto } from "@/api.js";
 import {
   createVideosQueryClient,
   libraryQueryOptions,
@@ -39,19 +39,20 @@ describe("videos query client", () => {
     expect(settingsQueryOptions().staleTime).toBe(Infinity);
   });
 
-  it("normalizes global video searches into their exact library query", async () => {
-    let requestedFilters: LibraryFilters | undefined;
+  it("reuses the normalized global search query", async () => {
+    const requests: string[] = [];
     const client = {
-      async getLibrary(filters: LibraryFilters = {}) {
-        requestedFilters = filters;
-        return library();
+      async searchVideos(query: string) {
+        requests.push(query);
+        return [];
       },
     };
     const queryClient = createVideosQueryClient();
 
     await queryClient.fetchQuery(videoSearchQueryOptions("  memory  ", true, client));
+    await queryClient.fetchQuery(videoSearchQueryOptions("memory", true, client));
 
-    expect(requestedFilters).toEqual({ page: 1, pageSize: 20, query: "memory" });
+    expect(requests).toEqual(["memory"]);
     expect(videoSearchQueryOptions("m", true, client).enabled).toBe(false);
     expect(videoSearchQueryOptions("memory", false, client).enabled).toBe(false);
     queryClient.clear();

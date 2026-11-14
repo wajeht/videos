@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import type { VideoDto } from "@/api.js";
+import type { VideoSearchResult } from "@/api.js";
 import IntentRouterLink from "@/components/IntentRouterLink.vue";
 import ThumbnailLabel from "@/components/ThumbnailLabel.vue";
 import VideoCoverPlaceholder from "@/components/VideoCoverPlaceholder.vue";
@@ -18,12 +18,12 @@ const props = defineProps<{
   loading: boolean;
   query: string;
   started: boolean;
-  videos: VideoDto[];
+  videos: VideoSearchResult[];
 }>();
 const emit = defineEmits<{ activate: [index: number]; close: [] }>();
 const prefetch = useRoutePrefetch();
 
-function videoContext(video: VideoDto): string {
+function videoContext(video: VideoSearchResult): string {
   return [
     ...new Set([...video.authors, ...(video.playlistTitle ? [video.playlistTitle] : [])]),
   ].join(" · ");
@@ -63,7 +63,7 @@ const results = computed(() =>
   }),
 );
 
-function videoOptionLabel(video: VideoDto): string {
+function videoOptionLabel(video: VideoSearchResult): string {
   let progress = "";
   if (video.completed) progress = "Completed";
   else if (video.progressPercent > 0) progress = `${video.progressPercent}% watched`;

@@ -61,6 +61,19 @@ export const videoDetailResponseSchema = videoResponseSchema.extend({
   chapters: z.array(chapterResponseSchema),
 });
 
+export const videoSearchQuerySchema = z.object({
+  query: z.string().trim().min(2).max(200),
+});
+
+export const videoSearchResponseSchema = z.array(
+  videoResponseSchema.omit({
+    playlistSectionId: true,
+    playlistSectionTitle: true,
+    positionSeconds: true,
+    source: true,
+  }),
+);
+
 export const playlistResponseSchema = z.object({
   id: identifierSchema,
   title: z.string(),

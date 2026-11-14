@@ -94,6 +94,7 @@ export interface LibraryService {
     continueWatching: VideoDto[];
     pagination: LibraryPaginationDto;
   }>;
+  searchVideos(query: string): Promise<VideoDto[]>;
   getVideo(videoId: string): Promise<{
     video: VideoDetailDto;
     playlist: PlaylistDetailDto | null;
@@ -287,6 +288,13 @@ export function createLibraryService(
   }
 
   return {
+    async searchVideos(query) {
+      const [result, thumbnailLookup] = await Promise.all([
+        repository.searchVideos({ query }, { limit: 20, offset: 0 }),
+        thumbnails.listThumbnailIndex(),
+      ]);
+      return result.videos.map((row) => videoDto(row, thumbnailLookup));
+    },
     async getLibrary(filters) {
       const {
         page: requestedPage = 1,

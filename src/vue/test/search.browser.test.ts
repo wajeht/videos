@@ -27,37 +27,24 @@ test("searches videos globally with Command K", async ({ page }) => {
       body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90"><rect width="160" height="90" fill="#29313c"/><circle cx="80" cy="45" r="24" fill="#d58b3b"/></svg>',
     });
   });
-  await page.route("**/api/library**", async (route) => {
-    const requestUrl = new URL(route.request().url());
-    if (requestUrl.searchParams.has("query")) searchRequest = requestUrl;
+  await page.route("**/api/library/search?*", async (route) => {
+    searchRequest = new URL(route.request().url());
     await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        authors: [],
-        continueWatching: [],
-        pagination: { page: 1, pageSize: 20, totalPages: 1, totalVideos: 1 },
-        playlists: [],
-        tags: [],
-        videos: [
-          {
-            authors: ["Example Author"],
-            completed: false,
-            coverUrl: "/covers/search.jpg",
-            description: "",
-            durationSeconds: 120,
-            id: videoId,
-            playlistId: null,
-            playlistSectionId: null,
-            playlistSectionTitle: null,
-            playlistTitle: null,
-            positionSeconds: 30,
-            progressPercent: 25,
-            source: null,
-            tags: [],
-            title: "Memory optimization",
-          },
-        ],
-      }),
+      json: [
+        {
+          authors: ["Example Author"],
+          completed: false,
+          coverUrl: "/covers/search.jpg",
+          description: "",
+          durationSeconds: 120,
+          id: videoId,
+          playlistId: null,
+          playlistTitle: null,
+          progressPercent: 25,
+          tags: [],
+          title: "Memory optimization",
+        },
+      ],
     });
   });
 
@@ -94,9 +81,7 @@ test("searches videos globally with Command K", async ({ page }) => {
   expect(thumbnailBox).not.toBeNull();
   expect(titleBox).not.toBeNull();
   expect(thumbnailBox!.x + thumbnailBox!.width).toBeLessThan(titleBox!.x);
-  expect(searchRequest?.searchParams.get("query")).toBe("memory");
-  expect(searchRequest?.searchParams.get("page")).toBe("1");
-  expect(searchRequest?.searchParams.get("pageSize")).toBe("20");
+  expect(searchRequest?.search).toBe("?query=memory");
 
   await expect(result).toHaveAttribute("aria-selected", "false");
   await expect(result).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");

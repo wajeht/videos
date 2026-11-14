@@ -291,6 +291,25 @@ describe("profiles", () => {
     expect(await (await other.request(`/api/videos/${firstVideo}`)).json()).toMatchObject({
       video: { positionSeconds: 10, completed: false },
     });
+    const search = await other.request("/api/library/search?query=Video");
+    expect(search.status).toBe(200);
+    expect(search.headers.get("cache-control")).toBe("private, no-store");
+    expect(await search.json()).toEqual([
+      {
+        authors: [],
+        completed: false,
+        coverUrl: null,
+        description: "",
+        durationSeconds: 100,
+        id: firstVideo,
+        playlistId,
+        playlistTitle: "Playlist",
+        progressPercent: 10,
+        tags: [],
+        title: "Video 0",
+      },
+      expect.objectContaining({ id: secondVideo, progressPercent: 0 }),
+    ]);
     await other.request(`/api/progress/playlists/${playlistId}`, "DELETE");
     expect(await (await other.request("/api/library")).json()).toMatchObject({
       continueWatching: [],

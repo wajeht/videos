@@ -11,7 +11,7 @@ import {
 } from "vue";
 import { useRouter } from "vue-router";
 
-import { api, apiErrorMessage } from "@/api.js";
+import { apiErrorMessage } from "@/api.js";
 import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
 import { videoSearchQueryOptions } from "@/queries.js";
 import { playerLocation } from "@/router.js";
@@ -29,11 +29,11 @@ export function useVideoSearchPalette() {
     () => searchStarted.value && debouncedQuery.value === searchTerm.value,
   );
   const request = useQuery(
-    computed(() => videoSearchQueryOptions(debouncedQuery.value, open.value, api)),
+    computed(() => videoSearchQueryOptions(debouncedQuery.value, open.value)),
   );
   const suggestions = computed(() => {
     if (!searchReady.value) return [];
-    return request.data.value?.videos ?? [];
+    return request.data.value ?? [];
   });
   const activeResultId = computed(() => {
     const selected = suggestions.value[activeIndex.value];

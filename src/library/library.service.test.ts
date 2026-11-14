@@ -211,13 +211,16 @@ describe("library service", () => {
       modified_at: "2026-08-21T00:00:00.000Z",
     });
 
-    const exact = await createService().getLibrary({ query: "close", pageSize: 20 });
-    const typo = await createService().getLibrary({ query: "gaurd", pageSize: 20 });
+    const service = createService();
+    const exact = await service.getLibrary({ query: "close", pageSize: 20 });
+    const typo = await service.getLibrary({ query: "gaurd", pageSize: 20 });
 
     expect(exact.videos[0]?.title).toBe("Close");
     expect(exact.videos).toHaveLength(20);
     expect(exact.pagination.totalVideos).toBe(22);
     expect(typo.videos.map((result) => result.title)).toEqual(["Guard Study"]);
+    await expect(service.searchVideos("close")).resolves.toEqual(exact.videos);
+    await expect(service.searchVideos("gaurd")).resolves.toEqual(typo.videos);
   });
 
   it("includes every video by default", async () => {
