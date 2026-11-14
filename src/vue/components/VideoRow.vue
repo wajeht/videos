@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PlaylistVideoDto } from "@/api.js";
 import IntentRouterLink from "@/components/IntentRouterLink.vue";
+import ThumbnailLabel from "@/components/ThumbnailLabel.vue";
 import VideoCoverPlaceholder from "@/components/VideoCoverPlaceholder.vue";
 import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
 import { playerLocation } from "@/router.js";
@@ -26,11 +27,7 @@ const prefetch = useRoutePrefetch();
         loading="lazy"
       />
       <VideoCoverPlaceholder v-else class="h-full w-full" :title="video.title" compact />
-      <span
-        class="absolute right-0.5 bottom-0.5 border border-line bg-surface/95 px-1 py-0.5 text-xs leading-none whitespace-nowrap text-ink tabular-nums"
-      >
-        {{ timestampText(video.durationSeconds) }}
-      </span>
+      <ThumbnailLabel compact>{{ timestampText(video.durationSeconds) }}</ThumbnailLabel>
     </span>
     <span class="ml-2 line-clamp-2 min-w-0 text-sm leading-snug wrap-anywhere">{{
       video.title

@@ -4,6 +4,7 @@ import { computed, type DeepReadonly } from "vue";
 import type { LibraryDto } from "@/api.js";
 import AuthorLinks from "@/components/AuthorLinks.vue";
 import IntentRouterLink from "@/components/IntentRouterLink.vue";
+import ThumbnailLabel from "@/components/ThumbnailLabel.vue";
 import VideoCoverPlaceholder from "@/components/VideoCoverPlaceholder.vue";
 import ProgressBar from "@/components/ui/ProgressBar.vue";
 import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
@@ -31,9 +32,7 @@ const to = computed(() => playerLocation(props.playlist.nextVideoId, props.playl
         loading="lazy"
       />
       <VideoCoverPlaceholder v-else class="h-full w-full" :title="playlist.title" />
-      <span class="absolute right-2 bottom-2 bg-black/80 px-2 py-1 text-white">
-        {{ countText(playlist.videoCount, "video") }}
-      </span>
+      <ThumbnailLabel>{{ countText(playlist.videoCount, "video") }}</ThumbnailLabel>
       <ProgressBar
         v-if="playlist.progressPercent > 0"
         class="absolute right-0 bottom-0 left-0"

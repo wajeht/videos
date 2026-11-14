@@ -3,12 +3,13 @@ import { computed } from "vue";
 
 import type { VideoDto } from "@/api.js";
 import IntentRouterLink from "@/components/IntentRouterLink.vue";
+import ThumbnailLabel from "@/components/ThumbnailLabel.vue";
 import VideoCoverPlaceholder from "@/components/VideoCoverPlaceholder.vue";
 import HighlightedText from "@/components/ui/HighlightedText.vue";
 import ProgressBar from "@/components/ui/ProgressBar.vue";
 import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
 import { playerLocation } from "@/router.js";
-import { durationText } from "@/utils.js";
+import { durationText, timestampText } from "@/utils.js";
 import { matchVideoSearch, type TextRange } from "../../library/video-search.js";
 
 const props = defineProps<{
@@ -114,9 +115,7 @@ function videoOptionLabel(video: VideoDto): string {
               loading="lazy"
             />
             <VideoCoverPlaceholder v-else class="h-full w-full" compact :title="video.title" />
-            <span class="absolute right-1 bottom-1 bg-black/80 px-1 py-0.5 text-white">
-              {{ durationText(video.durationSeconds) }}
-            </span>
+            <ThumbnailLabel>{{ timestampText(video.durationSeconds) }}</ThumbnailLabel>
             <ProgressBar
               v-if="video.progressPercent > 0"
               class="absolute right-0 bottom-0 left-0"
