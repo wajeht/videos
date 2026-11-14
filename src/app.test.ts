@@ -221,7 +221,18 @@ describe("application", () => {
       progress: 50,
     });
     await fs.mkdir(videoHlsDirectory, { recursive: true });
-    await fs.writeFile(path.join(videoHlsDirectory, conversionPlaylistFilename), "#EXTM3U");
+    const eventPlaylist = "#EXTM3U\n#EXT-X-PLAYLIST-TYPE:EVENT\n#EXTINF:6.000,\nsegment-00000.ts\n";
+    await fs.writeFile(path.join(videoHlsDirectory, conversionPlaylistFilename), eventPlaylist);
+    const conversionStatus = await app.request(`/api/playback/${"b".repeat(24)}/conversion`, {
+      headers: { cookie: cookie!, "x-profile-selection": selectionKey },
+    });
+    expect(conversionStatus.status).toBe(200);
+    await expect(conversionStatus.json()).resolves.toMatchObject({
+      kind: "hls",
+      status: "converting",
+      availableSeconds: 6,
+    });
+    logInfo.mockClear();
     const hls = await app.request(
       `/hls/${"b".repeat(24)}/${generation}/${conversionPlaylistFilename}`,
       {
@@ -229,7 +240,7 @@ describe("application", () => {
       },
     );
     expect(hls.status).toBe(200);
-    expect(await hls.text()).toBe("#EXTM3U");
+    expect(await hls.text()).toBe(eventPlaylist);
     expect(logInfo).not.toHaveBeenCalled();
     const obsoleteHls = await app.request(
       `/hls/${"b".repeat(24)}/${"d".repeat(24)}/${conversionPlaylistFilename}`,

@@ -64,6 +64,7 @@ describe("useVideoPlayback", () => {
         url: "/hls/ready.m3u8",
         status: "converting",
         progress: 5,
+        availableSeconds: 6,
       });
     const playback = useVideoPlayback(ref(element), client);
     const requestId = playback.startRequest();
@@ -93,7 +94,7 @@ describe("useVideoPlayback", () => {
     vi.useFakeTimers();
     const client = playbackClient({ kind: "converting", status: "queued", progress: 0 });
     client.getConversionStatus.mockRejectedValueOnce(new Error("Conversion record missing"));
-    const playback = useVideoPlayback(ref(videoElement()), client, 100);
+    const playback = useVideoPlayback(ref(videoElement()), client, { queuedPollMilliseconds: 100 });
     const requestId = playback.startRequest();
 
     await playback.applyPlayback(
@@ -111,7 +112,7 @@ describe("useVideoPlayback", () => {
     const element = videoElement();
     const client = playbackClient();
     client.getConversionStatus.mockRejectedValueOnce(new Error("Offline"));
-    const playback = useVideoPlayback(ref(element), client, 100);
+    const playback = useVideoPlayback(ref(element), client, { queuedPollMilliseconds: 100 });
     await playback.applyPlayback(
       { kind: "converting", status: "queued", progress: 0 },
       "video",
