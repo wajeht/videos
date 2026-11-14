@@ -66,11 +66,18 @@ export const videoSearchQuerySchema = z.object({
 });
 
 export const videoSearchResponseSchema = z.array(
-  videoResponseSchema.omit({
-    playlistSectionId: true,
-    playlistSectionTitle: true,
-    positionSeconds: true,
-    source: true,
+  videoResponseSchema.pick({
+    id: true,
+    playlistId: true,
+    title: true,
+    coverUrl: true,
+    durationSeconds: true,
+    completed: true,
+    progressPercent: true,
+    playlistTitle: true,
+    description: true,
+    authors: true,
+    tags: true,
   }),
 );
 
