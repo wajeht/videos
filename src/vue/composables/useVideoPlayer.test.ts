@@ -102,6 +102,7 @@ async function mountPlayer(options: MountPlayerOptions & { path?: string } = {})
   vi.spyOn(api, "regenerateVideoThumbnail").mockImplementation(
     options.regenerateVideoThumbnail ?? (async () => undefined),
   );
+  vi.spyOn(api, "openVideo").mockResolvedValue();
   vi.spyOn(api, "completeVideo").mockImplementation(
     options.completeVideo ?? (async () => undefined),
   );
@@ -541,10 +542,8 @@ describe("useVideoPlayer", () => {
 
     expect(wrapper.get("[data-video-title]").text()).toBe("Next video");
     expect(media.getAttribute("src")).toBe(`/media/${nextVideoId}`);
-    expect(preparePlayback.mock.calls).toEqual([
-      [videoId, "test-selection"],
-      [nextVideoId, "test-selection"],
-    ]);
+    expect(api.openVideo).toHaveBeenCalledTimes(1);
+    expect(api.openVideo).toHaveBeenCalledWith(nextVideoId, "test-selection");
     wrapper.unmount();
   });
 });

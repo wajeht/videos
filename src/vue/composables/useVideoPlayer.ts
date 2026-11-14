@@ -279,11 +279,11 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
       prepareAutoplay(videoId);
       const [detail, playbackResult] = await Promise.all([
         queryClient.fetchQuery(videoQueryOptions(videoId)),
-        api.preparePlayback(videoId, selectionKey).then(async (result) => {
-          await invalidateLibrary();
-          return result;
-        }),
+        api.preparePlayback(videoId),
       ]);
+      if (!playback.isCurrentRequest(requestId)) return;
+      await api.openVideo(videoId, selectionKey);
+      await invalidateLibrary();
       if (!playback.isCurrentRequest(requestId)) return;
       video.value = detail.video;
       loadedPlaylist.value = detail.playlist;
