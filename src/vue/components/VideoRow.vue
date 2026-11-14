@@ -29,9 +29,10 @@ const prefetch = useRoutePrefetch();
       <VideoCoverPlaceholder v-else class="h-full w-full" :title="video.title" compact />
       <ThumbnailLabel compact>{{ timestampText(video.durationSeconds) }}</ThumbnailLabel>
     </span>
-    <span class="ml-2 line-clamp-2 min-w-0 text-sm leading-snug wrap-anywhere">{{
-      video.title
-    }}</span>
+    <span
+      class="ml-2 line-clamp-2 min-w-0 text-sm leading-snug wrap-anywhere max-[860px]:line-clamp-none"
+      >{{ video.title }}</span
+    >
     <span
       v-if="video.completed || video.positionSeconds > 0"
       class="ml-2 text-right text-sm whitespace-nowrap text-muted tabular-nums"
