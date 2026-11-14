@@ -50,8 +50,8 @@ export interface ThumbnailChapter {
 }
 
 export interface ThumbnailIndex {
-  revisions: Map<string, number>;
-  chapterStartsByVideo: Map<string, number[]>;
+  readonly revisions: ReadonlyMap<string, number>;
+  readonly chapterStartsByVideo: ReadonlyMap<string, readonly number[]>;
 }
 
 export type ThumbnailRegenerationStatus =
@@ -177,6 +177,12 @@ export function createThumbnailCache({
   const jobs = new Map<string, ThumbnailRegenerationStatus>();
   let loaded = false;
   let loading: Promise<void> | null = null;
+  let index: ThumbnailIndex | undefined;
+
+  function storeMeta(videoId: string, meta: ThumbnailMeta): void {
+    metas.set(videoId, meta);
+    index = undefined;
+  }
 
   function metaPath(videoId: string): string {
     return path.join(videoThumbnailDirectory(directory, videoId), "current.json");
@@ -243,7 +249,7 @@ export function createThumbnailCache({
         .filter((entry) => entry.isDirectory() && videoIdPattern.test(entry.name))
         .map(async (entry) => {
           const meta = await readMeta(entry.name);
-          if (meta && (await hasCompleteRevision(entry.name, meta))) metas.set(entry.name, meta);
+          if (meta && (await hasCompleteRevision(entry.name, meta))) storeMeta(entry.name, meta);
         }),
     );
     loaded = true;
@@ -279,7 +285,7 @@ export function createThumbnailCache({
 
   async function removeVideoThumbnails(videoId: string): Promise<void> {
     await fs.rm(videoThumbnailDirectory(directory, videoId), { recursive: true, force: true });
-    metas.delete(videoId);
+    if (metas.delete(videoId)) index = undefined;
     jobs.delete(videoId);
   }
 
@@ -377,7 +383,7 @@ export function createThumbnailCache({
       };
       await fs.writeFile(temporaryMeta, JSON.stringify(meta));
       await fs.rename(temporaryMeta, metaPath(video.id));
-      metas.set(video.id, meta);
+      storeMeta(video.id, meta);
       await cleanupRevisions(video.id, revision, previousRevision);
       return revision;
     } catch (error) {
@@ -402,7 +408,8 @@ export function createThumbnailCache({
   return {
     async listThumbnailIndex() {
       await ensureIndex();
-      return snapshot();
+      index ??= snapshot();
+      return index;
     },
 
     async synchronize(videos, chapters) {

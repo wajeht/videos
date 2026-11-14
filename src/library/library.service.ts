@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { ThumbnailCache } from "../media/thumbnails.js";
 import type {
   ChapterRow,
   FilterCountRow,
@@ -105,12 +106,7 @@ export interface LibrarySettings {
   getLibraryPageSize(): Promise<number>;
 }
 
-export interface ThumbnailLookup {
-  listThumbnailIndex(): Promise<{
-    revisions: Map<string, number>;
-    chapterStartsByVideo: Map<string, number[]>;
-  }>;
-}
+export type ThumbnailLookup = Pick<ThumbnailCache, "listThumbnailIndex">;
 
 export interface PlaylistCoverLookup {
   listPlaylistCoverIndex(): Promise<{ revisions: Map<string, number> }>;
@@ -159,7 +155,7 @@ function videoCoverUrl(
     : `/covers/videos/${videoId}/chapters/${chapterStart}?t=${revision}`;
 }
 
-function videoPosterUrl(videoId: string, revisions: Map<string, number>): string | null {
+function videoPosterUrl(videoId: string, revisions: ReadonlyMap<string, number>): string | null {
   const revision = revisions.get(videoId);
   return revision === undefined ? null : `/covers/videos/${videoId}?t=${revision}`;
 }
@@ -196,7 +192,7 @@ function videoDto(row: VideoRow, thumbnails: ThumbnailLookupIndex): VideoDto {
 
 function playlistCoverUrl(
   row: PlaylistRow,
-  thumbnailRevisions: Map<string, number>,
+  thumbnailRevisions: ReadonlyMap<string, number>,
   playlistCoverRevisions: Map<string, number>,
 ): string | null {
   const playlistRevision = playlistCoverRevisions.get(row.id);
@@ -211,7 +207,7 @@ function playlistCoverUrl(
 
 function playlistDto(
   row: PlaylistRow,
-  thumbnailRevisions: Map<string, number>,
+  thumbnailRevisions: ReadonlyMap<string, number>,
   playlistCoverRevisions: Map<string, number>,
 ): PlaylistDto {
   const videoCount = Number(row.video_count);

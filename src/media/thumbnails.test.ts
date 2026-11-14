@@ -213,9 +213,18 @@ describe("thumbnails", () => {
     const chapters = [{ videoId: videoA, startSeconds: 30, sortOrder: 0 }];
 
     await cache.synchronize([video], chapters);
-    await cache.regenerate(video, chapters);
+    const before = await cache.listThumbnailIndex();
+    const revision = await cache.regenerate(video, [
+      ...chapters,
+      { videoId: videoA, startSeconds: 45, sortOrder: 1 },
+    ]);
+    const after = await cache.listThumbnailIndex();
 
-    expect(generate).toHaveBeenCalledTimes(4);
+    expect(generate).toHaveBeenCalledTimes(5);
+    expect(after.revisions.get(videoA)).toBe(revision);
+    expect(after.chapterStartsByVideo.get(videoA)).toEqual([30, 45]);
+    expect(before.revisions.get(videoA)).toBeLessThan(revision);
+    expect(before.chapterStartsByVideo.get(videoA)).toEqual([30]);
   });
 
   it("keeps the current revision when replacement generation fails", async () => {
@@ -237,7 +246,7 @@ describe("thumbnails", () => {
     await expect(cache.regenerate(video, chapters)).rejects.toThrow("FFmpeg failed");
 
     const after = await cache.listThumbnailIndex();
-    expect(after).toEqual(before);
+    expect(after).toBe(before);
     await expect(
       fs.readFile(
         thumbnailPath(
@@ -302,13 +311,20 @@ describe("thumbnails", () => {
 
   it("serves repeated index reads from its in-memory snapshot", async () => {
     const { cache } = await createCache();
-    await cache.synchronize([videoRecord(videoA, "A.mp4")], []);
+    const video = videoRecord(videoA, "A.mp4");
+    const empty = await cache.listThumbnailIndex();
+    await cache.synchronize([video], []);
+    const index = await cache.listThumbnailIndex();
     const readDirectory = vi.spyOn(fs, "readdir");
 
-    await cache.listThumbnailIndex();
-    await cache.listThumbnailIndex();
-
+    await expect(cache.listThumbnailIndex()).resolves.toBe(index);
     expect(readDirectory).not.toHaveBeenCalled();
+    readDirectory.mockRestore();
+    expect(index.revisions.has(videoA)).toBe(true);
+    expect(empty.revisions.size).toBe(0);
+
+    await cache.synchronize([video], []);
+    await expect(cache.listThumbnailIndex()).resolves.toBe(index);
   });
 
   it("prunes thumbnails for videos that left the library", async () => {
@@ -319,6 +335,8 @@ describe("thumbnails", () => {
 
     const thumbnails = await cache.listThumbnailIndex();
     expect(new Set(thumbnails.revisions.keys())).toEqual(new Set([videoA]));
+    expect(thumbnails.chapterStartsByVideo.has(videoB)).toBe(false);
+    expect(before.revisions.has(videoB)).toBe(true);
     await expect(
       fs.access(
         thumbnailPath(
