@@ -5,7 +5,7 @@ import { DOMWrapper, flushPromises, mount, type VueWrapper } from "@vue/test-uti
 import { createMemoryHistory, createRouter } from "vue-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { api, type LibraryDto } from "@/api.js";
+import { api, type VideoSearchResult } from "@/api.js";
 
 import VideoSearchPalette from "./VideoSearchPalette.vue";
 
@@ -18,18 +18,7 @@ function dialogElement<T extends Element>(selector: string): DOMWrapper<T> {
   return new DOMWrapper(element);
 }
 
-function library(videos: LibraryDto["videos"] = [video()]): LibraryDto {
-  return {
-    authors: [],
-    continueWatching: [],
-    pagination: { page: 1, pageSize: 20, totalPages: 1, totalVideos: videos.length },
-    playlists: [],
-    tags: [],
-    videos,
-  };
-}
-
-function video(): LibraryDto["videos"][number] {
+function video(): VideoSearchResult {
   return {
     authors: ["Example Author"],
     completed: false,
@@ -38,22 +27,25 @@ function video(): LibraryDto["videos"][number] {
     durationSeconds: 120,
     id: videoId,
     playlistId: "3".repeat(24),
-    playlistSectionId: null,
-    playlistSectionTitle: null,
     playlistTitle: "Example Playlist",
-    positionSeconds: 30,
     progressPercent: 25,
-    source: null,
     tags: [],
     title: "Memory optimization",
   };
 }
 
-async function mountPalette(response = library()) {
-  vi.spyOn(api, "getLibrary").mockResolvedValue(response);
+async function mountPalette(response = [video()]) {
+  vi.spyOn(api, "searchVideos").mockResolvedValue(response);
   vi.spyOn(api, "getVideo").mockResolvedValue({
     playlist: null,
-    video: { ...video(), chapters: [] },
+    video: {
+      ...video(),
+      chapters: [],
+      playlistSectionId: null,
+      playlistSectionTitle: null,
+      positionSeconds: 30,
+      source: null,
+    },
   });
   const router = createRouter({
     history: createMemoryHistory(),
@@ -87,7 +79,7 @@ describe("VideoSearchPalette", () => {
       id: (index + 1).toString(16).padStart(24, "0"),
       title: `Result ${index + 1}`,
     }));
-    await mountPalette(library(videos));
+    await mountPalette(videos);
 
     document.dispatchEvent(
       new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true, cancelable: true }),
@@ -129,10 +121,7 @@ describe("VideoSearchPalette", () => {
     expect(selected.attributes("aria-label")).toBe(
       "Memory optimization, Example Author · Example Playlist, 2m, 25% watched",
     );
-    expect(api.getLibrary).toHaveBeenCalledWith(
-      { page: 1, pageSize: 20, query: "memory" },
-      expect.any(AbortSignal),
-    );
+    expect(api.searchVideos).toHaveBeenCalledWith("memory", expect.any(AbortSignal));
 
     expect(api.getVideo).not.toHaveBeenCalled();
 
@@ -159,7 +148,7 @@ describe("VideoSearchPalette", () => {
   });
 
   it("sends a query without matches to the Videos page", async () => {
-    const { router } = await mountPalette(library([]));
+    const { router } = await mountPalette([]);
     document.dispatchEvent(
       new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true, cancelable: true }),
     );

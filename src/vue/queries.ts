@@ -17,6 +17,7 @@ export interface LibraryQueryClient {
 export const queryKeys = {
   library: ["library"] as const,
   libraryList: (filters: LibraryFilters) => ["library", "list", filters] as const,
+  videoSearch: (query: string) => ["library", "search", query] as const,
   videos: ["videos"] as const,
   video: (videoId: string) => ["videos", videoId] as const,
   scanStatus: ["scan-status"] as const,
@@ -53,13 +54,14 @@ export function libraryQueryOptions(
 export function videoSearchQueryOptions(
   query: string,
   active: boolean,
-  client: Pick<LibraryQueryClient, "getLibrary"> = api,
+  client: Pick<typeof api, "searchVideos"> = api,
 ) {
   const normalizedQuery = query.trim();
   return queryOptions({
-    ...libraryQueryOptions({ query: normalizedQuery, pageSize: 20 }, client),
+    queryKey: queryKeys.videoSearch(normalizedQuery),
+    queryFn: ({ signal }) => client.searchVideos(normalizedQuery, signal),
     enabled: active && normalizedQuery.length >= 2,
-    placeholderData: undefined,
+    staleTime: 5 * 60_000,
   });
 }
 

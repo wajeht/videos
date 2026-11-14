@@ -8,6 +8,8 @@ import {
   thumbnailRegenerationResponseSchema,
   videoDetailEnvelopeSchema,
   videoParametersSchema,
+  videoSearchQuerySchema,
+  videoSearchResponseSchema,
 } from "./library.schema.js";
 
 export function createLibraryRouter(context: AppContext) {
@@ -17,6 +19,15 @@ export function createLibraryRouter(context: AppContext) {
       c.json(
         libraryResponseSchema.parse(
           await context.forProfile(c.get("profile").id).library.getLibrary(c.req.valid("query")),
+        ),
+      ),
+    )
+    .get("/search", zValidator("query", videoSearchQuerySchema), async (c) =>
+      c.json(
+        videoSearchResponseSchema.parse(
+          await context
+            .forProfile(c.get("profile").id)
+            .library.searchVideos(c.req.valid("query").query),
         ),
       ),
     );

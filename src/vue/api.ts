@@ -8,6 +8,7 @@ import { hc } from "hono/client";
 import { z } from "zod";
 
 import type { AppType } from "../app";
+import type { videoSearchResponseSchema } from "../library/library.schema";
 import type {
   ChapterDto,
   LibraryFilters,
@@ -57,6 +58,7 @@ export interface AuthStateDto {
 }
 
 export type LibraryDto = Awaited<ReturnType<LibraryService["getLibrary"]>>;
+export type VideoSearchResult = z.infer<typeof videoSearchResponseSchema>[number];
 export interface VideoPlayerDetailDto {
   video: VideoDetailDto;
   playlist: PlaylistDetailDto | null;
@@ -231,6 +233,11 @@ export const api = {
   async getVideo(videoId: string, signal?: AbortSignal): Promise<VideoPlayerDetailDto> {
     return expectProtectedJson<VideoPlayerDetailDto>(
       await apiClient.api.videos[":videoId"].$get({ param: { videoId } }, { init: { signal } }),
+    );
+  },
+  async searchVideos(query: string, signal?: AbortSignal): Promise<VideoSearchResult[]> {
+    return expectProtectedJson<VideoSearchResult[]>(
+      await apiClient.api.library.search.$get({ query: { query } }, { init: { signal } }),
     );
   },
   async regenerateVideoThumbnail(videoId: string, signal?: AbortSignal): Promise<void> {
