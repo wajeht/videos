@@ -109,8 +109,12 @@ export function useVideoPlayback(
     if (!startAt || !video.value?.canPlayType("application/vnd.apple.mpegurl")) return true;
 
     // Native live playback may have no seekable range until the conversion finishes.
-    const { default: Hls } = await import("hls.js/light");
-    return Hls.isSupported();
+    try {
+      const { default: Hls } = await import("hls.js/light");
+      return Hls.isSupported();
+    } catch {
+      return false;
+    }
   }
 
   async function applyPlayback(

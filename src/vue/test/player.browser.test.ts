@@ -480,3 +480,60 @@ test("resumes and autoplays once a growing HLS playlist reaches the saved positi
   expect(start).toBeCloseTo(5, 1);
   expect(nextManifestRequests).toBeGreaterThan(0);
 });
+
+test("waits for a native HLS source after the HLS.js chunk fails to load", async ({ page }) => {
+  await authenticate(page);
+  await page.addInitScript(() => {
+    const canPlayType = HTMLVideoElement.prototype.canPlayType;
+    HTMLVideoElement.prototype.canPlayType = function (type) {
+      return type === "application/vnd.apple.mpegurl" ? "maybe" : canPlayType.call(this, type);
+    };
+  });
+  await page.route("**/assets/hls.light-*.js", (route) => route.abort());
+  const video: VideoDetailDto = {
+    id: videoId,
+    title: "Converted lesson",
+    durationSeconds: 8,
+    positionSeconds: 5,
+    progressPercent: 63,
+    completed: false,
+    coverUrl: null,
+    playlistId: null,
+    playlistTitle: null,
+    playlistSectionId: null,
+    playlistSectionTitle: null,
+    description: "",
+    authors: [],
+    tags: [],
+    source: null,
+    chapters: [],
+  };
+  await page.route(`**/api/videos/${videoId}`, (route) =>
+    route.fulfill({ json: { video, playlist: null } }),
+  );
+  await page.route(`**/api/progress/videos/${videoId}/open`, (route) =>
+    route.fulfill({ json: {} }),
+  );
+  const url = "/hls-fixture/converted.m3u8";
+  let ready = false;
+  await page.route("**/api/playback/**", (route) => {
+    if (!route.request().url().endsWith("/conversion")) {
+      return route.fulfill({ json: { kind: "converting", status: "converting", progress: 0 } });
+    }
+    const result: PlaybackResult = ready
+      ? { kind: "hls", status: "ready", progress: 100, url }
+      : { kind: "hls", status: "converting", progress: 50, availableSeconds: 6, url };
+    return route.fulfill({ json: result });
+  });
+  await page.route(`**${url}`, (route) => route.fulfill({ status: 204 }));
+
+  const chunkFailed = page.waitForEvent("requestfailed", (request) =>
+    request.url().includes("/assets/hls.light-"),
+  );
+  await page.goto(`/videos/${videoId}`);
+  await chunkFailed;
+  ready = true;
+
+  await expect(page.locator("video")).toHaveAttribute("src", url);
+  await expect(page.getByRole("heading", { name: "Video unavailable" })).toHaveCount(0);
+});
