@@ -255,9 +255,14 @@ export const api = {
     }
     throw new ApiError("Thumbnail regeneration timed out", 408);
   },
-  async preparePlayback(videoId: string, selectionKey: string): Promise<PlaybackResult> {
+  async preparePlayback(videoId: string): Promise<PlaybackResult> {
     return expectProtectedJson<PlaybackResult>(
-      await apiClient.api.playback[":videoId"].$post(
+      await apiClient.api.playback[":videoId"].$post({ param: { videoId } }),
+    );
+  },
+  async openVideo(videoId: string, selectionKey: string): Promise<void> {
+    await expectProtectedJson(
+      await apiClient.api.progress.videos[":videoId"].open.$post(
         { param: { videoId } },
         { headers: { "x-profile-selection": selectionKey } },
       ),

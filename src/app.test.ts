@@ -354,40 +354,6 @@ describe("application", () => {
     expect(await player.json()).toEqual({ kind: "direct", url: `/media/${"b".repeat(24)}` });
     expect(await context.database.connection("progress")).toEqual([]);
 
-    const progress = () => context.database.connection("progress");
-    const admin = await context.database.connection("profiles").where({ role: "admin" }).first();
-    const lastWatched = "2020-01-01T00:00:00.000Z";
-    await progress().insert({
-      profile_id: admin.id,
-      video_id: videoId,
-      position_seconds: 5,
-      completed: false,
-      updated_at: lastWatched,
-    });
-    const playbackPath = `/api/playback/${videoId}`;
-    const playerHeaders = {
-      cookie: cookie!,
-      "x-profile-selection": selectionKey,
-      origin: "http://localhost",
-    };
-    expect((await app.request(playbackPath, { headers: playerHeaders })).status).toBe(200);
-    expect(
-      (
-        await app.request(playbackPath, {
-          method: "POST",
-          headers: { ...playerHeaders, "x-profile-selection": "stale-selection" },
-        })
-      ).status,
-    ).toBe(409);
-    expect((await progress().first()).updated_at).toBe(lastWatched);
-
-    expect(
-      (await app.request(playbackPath, { method: "POST", headers: playerHeaders })).status,
-    ).toBe(200);
-    const reopened = await progress().first();
-    expect(reopened).toMatchObject({ position_seconds: 5, completed: 0 });
-    expect(reopened.updated_at).not.toBe(lastWatched);
-
     const apiNotFound = await app.request("/api/does-not-exist", {
       headers: { cookie: cookie!, "x-profile-selection": selectionKey },
     });
