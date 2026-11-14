@@ -9,8 +9,8 @@ import {
   isLibraryResourceNotFound,
   type PlaybackResult,
   type PlaylistDetailDto,
+  type PlaylistVideoDto,
   type VideoDetailDto,
-  type VideoDto,
 } from "@/api.js";
 import { useAsyncAction } from "@/composables/useAsyncAction.js";
 import { useConfirm } from "@/composables/useConfirm.js";
@@ -214,7 +214,7 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
       queryClient.invalidateQueries({ queryKey: queryKeys.videos, refetchType: "none" }),
     ]);
   }
-  function navigate(target: VideoDto | undefined) {
+  function navigate(target: PlaylistVideoDto | undefined) {
     if (target) void router.push(playerLocation(target.id, target.playlistId));
   }
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTemplateRef } from "vue";
 
-import type { PlaybackResult, VideoDto } from "@/api.js";
+import type { PlaybackResult, PlaylistVideoDto } from "@/api.js";
 import IntentRouterLink from "@/components/IntentRouterLink.vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
@@ -11,7 +11,7 @@ defineProps<{
   ended: boolean;
   error: string;
   loading: boolean;
-  nextVideo?: VideoDto;
+  nextVideo?: PlaylistVideoDto;
   playback: PlaybackResult | null;
   poster?: string;
   retrying: boolean;
