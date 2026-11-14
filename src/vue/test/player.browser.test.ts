@@ -1,5 +1,6 @@
 import { selectBrowserAdmin, setupBrowserAdmin } from "./profiles.helpers.js";
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import type { PlaylistVideoDto, VideoDetailDto } from "../api.js";
 
 const videoId = "c".repeat(24);
 const playlistId = "d".repeat(24);
@@ -58,7 +59,11 @@ async function expectPlaylistLoadingLayout(
   await page.setViewportSize({ width: 1800, height: 900 });
 }
 
-async function expectPlaylistRowLayout(page: Page, playlistPanel: Locator): Promise<void> {
+async function expectPlaylistRowLayout(
+  page: Page,
+  playlistPanel: Locator,
+  videoTitle: string,
+): Promise<void> {
   const duration = playlistPanel.getByText("17:57", { exact: true });
   const progress = playlistPanel.getByText("100%", { exact: true });
   for (const width of [1800, 320]) {
@@ -92,6 +97,11 @@ async function expectPlaylistRowLayout(page: Page, playlistPanel: Locator): Prom
       await page.locator("html").evaluate((element) => element.scrollWidth <= element.clientWidth),
     ).toBe(true);
   }
+  const title = playlistPanel.getByText(videoTitle, { exact: true });
+  await expect(title).toBeVisible();
+  expect(await title.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(
+    true,
+  );
   await page.setViewportSize({ width: 1800, height: 900 });
 }
 
@@ -101,7 +111,18 @@ test("uses responsive video details and places the playlist below them on mobile
   await authenticate(page);
 
   const videoTitle = "Basics of computer's memory and Getting started - C Programming Tutorial 02";
-  const video = {
+  const playlistVideo = {
+    completed: false,
+    coverUrl: null,
+    durationSeconds: 1077,
+    id: videoId,
+    playlistId,
+    positionSeconds: 1076.75,
+    progressPercent: 100,
+    title: videoTitle,
+  } satisfies PlaylistVideoDto;
+  const video: VideoDetailDto = {
+    ...playlistVideo,
     authors: ["Example Author"],
     chapters: [
       { startSeconds: 0, title: "Introduction", thumbnailUrl: null },
@@ -109,21 +130,13 @@ test("uses responsive video details and places the playlist below them on mobile
       { startSeconds: 180, title: "Pointers", thumbnailUrl: null },
       { startSeconds: 270, title: "Summary", thumbnailUrl: null },
     ],
-    completed: false,
-    coverUrl: null,
     description:
       "A complete introduction to programming, computer memory, and the ideas used throughout this playlist.",
-    durationSeconds: 1077,
-    id: videoId,
-    playlistId,
     playlistSectionId: null,
     playlistSectionTitle: null,
     playlistTitle: "Saved Collection",
-    positionSeconds: 1076.75,
-    progressPercent: 100,
     source: null,
     tags: [],
-    title: videoTitle,
   };
 
   let releaseDetail!: () => void;
@@ -146,7 +159,7 @@ test("uses responsive video details and places the playlist below them on mobile
           id: playlistId,
           nextVideoId: videoId,
           progressPercent: 0,
-          sections: [{ id: null, title: "Videos", videos: [video] }],
+          sections: [{ id: null, title: "Videos", videos: [playlistVideo] }],
           source: null,
           tags: [],
           title: "Saved Collection",
@@ -204,7 +217,7 @@ test("uses responsive video details and places the playlist below them on mobile
   expect((await title.boundingBox())?.width).toBeGreaterThan(1000);
   const playlistVideos = playlistPanel.locator(":scope > div");
   await expect(playlistPanel).toBeVisible();
-  await expectPlaylistRowLayout(page, playlistPanel);
+  await expectPlaylistRowLayout(page, playlistPanel, videoTitle);
   await playlistActions.click();
   await expect(autoplay).toBeVisible();
   await expect(autoplay).toHaveAttribute("aria-checked", "false");
