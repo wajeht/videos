@@ -23,8 +23,8 @@ const prefetch = useRoutePrefetch();
     class="grid items-center border-b border-line py-2 transition-colors last:border-b-0 hover:bg-mist"
     :class="[
       sidebar
-        ? 'min-h-14 grid-cols-[72px_minmax(0,1fr)_30px] gap-2 px-3'
-        : 'min-h-[62px] grid-cols-[42px_minmax(0,1fr)_auto_42px] gap-3 px-4 max-[600px]:grid-cols-[31px_minmax(0,1fr)_32px] max-[600px]:gap-[7px] max-[600px]:px-[10px]',
+        ? 'min-h-14 grid-cols-[72px_minmax(0,1fr)_auto] gap-2 px-3'
+        : 'min-h-[62px] grid-cols-[42px_minmax(0,1fr)_auto_auto] gap-3 px-4 max-[600px]:grid-cols-[31px_minmax(0,1fr)_auto] max-[600px]:gap-[7px] max-[600px]:px-[10px]',
       active && 'bg-mist shadow-[inset_4px_0_var(--color-link)]',
     ]"
   >
@@ -50,11 +50,8 @@ const prefetch = useRoutePrefetch();
     <span v-if="!sidebar" class="max-[600px]:hidden">
       {{ durationText(video.durationSeconds) }}
     </span>
-    <span
-      class="grid h-[27px] w-[27px] place-items-center justify-self-end border"
-      :class="video.completed ? 'border-line bg-pine text-ink' : 'border-line text-muted'"
-    >
-      <span v-if="video.completed" aria-label="Completed">✓</span>
+    <span class="min-w-[5ch] text-right text-sm whitespace-nowrap text-muted tabular-nums">
+      <span v-if="video.completed" class="text-ink" aria-label="Completed">✓</span>
       <span v-else-if="video.positionSeconds > 0">{{ video.progressPercent }}%</span>
       <span v-else aria-hidden="true">›</span>
     </span>
