@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { VideoDto } from "@/api.js";
+import type { PlaylistVideoDto } from "@/api.js";
 import IntentRouterLink from "@/components/IntentRouterLink.vue";
 import VideoCoverPlaceholder from "@/components/VideoCoverPlaceholder.vue";
 import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
@@ -7,7 +7,7 @@ import { playerLocation } from "@/router.js";
 import { durationText } from "@/utils.js";
 
 withDefaults(
-  defineProps<{ video: VideoDto; index: number; active?: boolean; sidebar?: boolean }>(),
+  defineProps<{ video: PlaylistVideoDto; index: number; active?: boolean; sidebar?: boolean }>(),
   {
     active: false,
     sidebar: false,

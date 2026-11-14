@@ -14,6 +14,7 @@ import type {
   LibraryView,
   LibraryService,
   PlaylistDetailDto,
+  PlaylistVideoDto,
   VideoDto,
   VideoDetailDto,
 } from "../library/library.service";
@@ -68,6 +69,7 @@ export type {
   LibraryView,
   PlaybackResult,
   PlaylistDetailDto,
+  PlaylistVideoDto,
   ScanStatus,
   SettingsDto,
   VideoDetailDto,

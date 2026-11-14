@@ -30,22 +30,25 @@ export const thumbnailRegenerationResponseSchema = z.discriminatedUnion("status"
 
 const sourceResponseSchema = z.object({ provider: z.string(), url: z.url() }).nullable();
 
-export const videoResponseSchema = z.object({
+const playlistVideoResponseSchema = z.object({
   id: identifierSchema,
   playlistId: identifierSchema.nullable(),
-  playlistTitle: z.string().nullable(),
-  playlistSectionId: identifierSchema.nullable(),
-  playlistSectionTitle: z.string().nullable(),
   title: z.string(),
-  description: z.string(),
-  authors: z.array(z.string()),
-  tags: z.array(z.string()),
-  source: sourceResponseSchema,
   coverUrl: z.string().nullable(),
   durationSeconds: z.number().nonnegative(),
   positionSeconds: z.number().nonnegative(),
   completed: z.boolean(),
   progressPercent: z.number().int().min(0).max(100),
+});
+
+export const videoResponseSchema = playlistVideoResponseSchema.extend({
+  playlistTitle: z.string().nullable(),
+  playlistSectionId: identifierSchema.nullable(),
+  playlistSectionTitle: z.string().nullable(),
+  description: z.string(),
+  authors: z.array(z.string()),
+  tags: z.array(z.string()),
+  source: sourceResponseSchema,
 });
 
 export const chapterResponseSchema = z.object({
@@ -78,7 +81,7 @@ export const playlistDetailResponseSchema = playlistResponseSchema.extend({
     z.object({
       id: identifierSchema.nullable(),
       title: z.string(),
-      videos: z.array(videoResponseSchema),
+      videos: z.array(playlistVideoResponseSchema),
     }),
   ),
 });

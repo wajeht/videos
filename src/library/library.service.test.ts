@@ -333,13 +333,26 @@ describe("library service", () => {
       sort_order: 0,
     });
 
-    await expect(createService().getVideo(videoA)).resolves.toMatchObject({
+    const detail = await createService().getVideo(videoA);
+    expect(detail).toMatchObject({
       video: {
         title: "Guard Study",
         chapters: [{ title: "Introduction", startSeconds: 0, thumbnailUrl: null }],
       },
       playlist: { title: "Saved Collection", sections: [{ title: "Videos" }] },
     });
+    expect(detail?.playlist?.sections[0]?.videos).toEqual([
+      {
+        id: videoA,
+        playlistId: playlistA,
+        title: "Guard Study",
+        coverUrl: null,
+        durationSeconds: 100,
+        positionSeconds: 0,
+        completed: false,
+        progressPercent: 0,
+      },
+    ]);
     await expect(createService().getVideo(standaloneVideo)).resolves.toMatchObject({
       video: { title: "Standalone Song" },
       playlist: null,

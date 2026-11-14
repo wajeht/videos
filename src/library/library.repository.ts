@@ -47,6 +47,18 @@ export interface VideoRow {
   playlist_section_sort_order: number | null;
 }
 
+export type PlaylistVideoRow = Pick<
+  VideoRow,
+  | "id"
+  | "playlist_id"
+  | "playlist_section_id"
+  | "playlist_section_title"
+  | "title"
+  | "duration_seconds"
+  | "position_seconds"
+  | "completed"
+>;
+
 export interface ChapterRow {
   id: string;
   video_id: string;
@@ -90,7 +102,7 @@ export interface LibraryRepository {
   listTags(scope?: LibraryFacetScope): Promise<FilterCountRow[]>;
   listContinueWatching(): Promise<VideoRow[]>;
   findPlaylist(playlistId: string): Promise<PlaylistRow | undefined>;
-  listPlaylistVideos(playlistId: string): Promise<VideoRow[]>;
+  listPlaylistVideos(playlistId: string): Promise<PlaylistVideoRow[]>;
   findVideo(videoId: string): Promise<VideoRow | undefined>;
   listVideoChapters(videoId: string): Promise<ChapterRow[]>;
 }
@@ -469,7 +481,21 @@ export function createLibraryApiRepository(database: Knex, profileId: string): L
     },
 
     listPlaylistVideos(playlistId) {
-      return createVideosQuery()
+      return database<PlaylistVideoRow>("videos")
+        .leftJoin("playlist_sections", "playlist_sections.id", "videos.playlist_section_id")
+        .leftJoin("progress", (join) => {
+          join.on("progress.video_id", "videos.id").andOnVal("progress.profile_id", profileId);
+        })
+        .select(
+          "videos.id",
+          "videos.playlist_id",
+          "videos.playlist_section_id",
+          "playlist_sections.title as playlist_section_title",
+          "videos.title",
+          "videos.duration_seconds",
+          "progress.position_seconds",
+          "progress.completed",
+        )
         .where("videos.playlist_id", playlistId)
         .orderBy("videos.sort_order");
     },

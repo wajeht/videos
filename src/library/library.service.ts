@@ -6,26 +6,30 @@ import type {
   LibraryFacetScope,
   LibraryRepository,
   PlaylistRow,
+  PlaylistVideoRow,
   VideoFilters,
   VideoRow,
 } from "./library.repository.js";
 
-export interface VideoDto {
+export interface PlaylistVideoDto {
   id: string;
   playlistId: string | null;
-  playlistTitle: string | null;
-  playlistSectionId: string | null;
-  playlistSectionTitle: string | null;
   title: string;
-  description: string;
-  authors: string[];
-  tags: string[];
-  source: { provider: string; url: string } | null;
   coverUrl: string | null;
   durationSeconds: number;
   positionSeconds: number;
   completed: boolean;
   progressPercent: number;
+}
+
+export interface VideoDto extends PlaylistVideoDto {
+  playlistTitle: string | null;
+  playlistSectionId: string | null;
+  playlistSectionTitle: string | null;
+  description: string;
+  authors: string[];
+  tags: string[];
+  source: { provider: string; url: string } | null;
 }
 
 export interface ChapterDto {
@@ -57,7 +61,7 @@ export interface PlaylistDetailDto extends PlaylistDto {
   sections: Array<{
     id: string | null;
     title: string;
-    videos: VideoDto[];
+    videos: PlaylistVideoDto[];
   }>;
 }
 
@@ -159,24 +163,33 @@ function videoPosterUrl(videoId: string, revisions: Map<string, number>): string
   return revision === undefined ? null : `/covers/videos/${videoId}?t=${revision}`;
 }
 
-function videoDto(row: VideoRow, thumbnails: ThumbnailLookupIndex): VideoDto {
+function playlistVideoDto(
+  row: PlaylistVideoRow,
+  thumbnails: ThumbnailLookupIndex,
+): PlaylistVideoDto {
   const position = row.completed ? Number(row.duration_seconds) : Number(row.position_seconds ?? 0);
   return {
     id: row.id,
     playlistId: row.playlist_id,
-    playlistTitle: row.playlist_title,
-    playlistSectionId: row.playlist_section_id,
-    playlistSectionTitle: row.playlist_section_title,
     title: row.title,
-    description: row.description,
-    authors: mergeNames(stringList(row.authors_json), stringList(row.playlist_authors_json)),
-    tags: mergeNames(stringList(row.tags_json), stringList(row.playlist_tags_json)),
-    source: sourceDto(row.source_provider, row.source_url),
     coverUrl: videoCoverUrl(row.id, position, thumbnails),
     durationSeconds: Number(row.duration_seconds),
     positionSeconds: position,
     completed: Boolean(row.completed),
     progressPercent: Math.min(100, Math.round((position / Number(row.duration_seconds)) * 100)),
+  };
+}
+
+function videoDto(row: VideoRow, thumbnails: ThumbnailLookupIndex): VideoDto {
+  return {
+    ...playlistVideoDto(row, thumbnails),
+    playlistTitle: row.playlist_title,
+    playlistSectionId: row.playlist_section_id,
+    playlistSectionTitle: row.playlist_section_title,
+    description: row.description,
+    authors: mergeNames(stringList(row.authors_json), stringList(row.playlist_authors_json)),
+    tags: mergeNames(stringList(row.tags_json), stringList(row.playlist_tags_json)),
+    source: sourceDto(row.source_provider, row.source_url),
   };
 }
 
@@ -264,7 +277,7 @@ export function createLibraryService(
         title: row.playlist_section_title ?? "Videos",
         videos: [],
       };
-      section.videos.push(videoDto(row, thumbnailLookup));
+      section.videos.push(playlistVideoDto(row, thumbnailLookup));
       sectionMap.set(key, section);
     }
     return {
