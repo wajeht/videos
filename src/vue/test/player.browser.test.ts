@@ -82,8 +82,8 @@ test("uses responsive video details and places the playlist below them on mobile
     playlistSectionId: null,
     playlistSectionTitle: null,
     playlistTitle: "Saved Collection",
-    positionSeconds: 0,
-    progressPercent: 0,
+    positionSeconds: 119.75,
+    progressPercent: 100,
     source: null,
     tags: [],
     title: videoTitle,
@@ -168,6 +168,25 @@ test("uses responsive video details and places the playlist below them on mobile
   const playlistVideos = playlistPanel.locator(":scope > div");
   await expect(playlistPanel).toBeVisible();
   await expect(playlistPanel.getByText("2m", { exact: true })).toBeVisible();
+  const progress = playlistPanel.getByText("100%", { exact: true });
+  for (const width of [1800, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(progress).toBeVisible();
+    expect(
+      await progress.evaluate((element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const text = range.getBoundingClientRect();
+        const row = element.closest("a")!.getBoundingClientRect();
+        const status = element.parentElement!.getBoundingClientRect();
+        return text.left >= status.left && text.right <= Math.min(status.right, row.right - 8);
+      }),
+    ).toBe(true);
+    expect(
+      await page.locator("html").evaluate((element) => element.scrollWidth <= element.clientWidth),
+    ).toBe(true);
+  }
+  await page.setViewportSize({ width: 1800, height: 900 });
   await playlistActions.click();
   await expect(autoplay).toBeVisible();
   await expect(autoplay).toHaveAttribute("aria-checked", "false");
