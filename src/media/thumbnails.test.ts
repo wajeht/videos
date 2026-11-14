@@ -203,8 +203,13 @@ describe("thumbnails", () => {
     ).resolves.toBeUndefined();
   });
 
-  it("forces regeneration of the poster and all chapter thumbnails", async () => {
+  it("keeps serving the current index until regeneration publishes all thumbnails", async () => {
+    let finishGeneration: () => void = () => {};
+    const blocked = new Promise<void>((resolve) => {
+      finishGeneration = resolve;
+    });
     const generate = vi.fn<ThumbnailGenerator>(async (_source, destination) => {
+      if (path.basename(destination) === "chapter-45.jpg") await blocked;
       await fs.mkdir(path.dirname(destination), { recursive: true });
       await fs.writeFile(destination, `thumb-${generate.mock.calls.length}`);
     });
@@ -214,10 +219,18 @@ describe("thumbnails", () => {
 
     await cache.synchronize([video], chapters);
     const before = await cache.listThumbnailIndex();
-    const revision = await cache.regenerate(video, [
+    const regeneration = cache.regenerate(video, [
       ...chapters,
       { videoId: videoA, startSeconds: 45, sortOrder: 1 },
     ]);
+    let revision: number;
+    try {
+      await vi.waitFor(() => expect(generate).toHaveBeenCalledTimes(5));
+      await expect(cache.listThumbnailIndex()).resolves.toBe(before);
+    } finally {
+      finishGeneration();
+      revision = await regeneration;
+    }
     const after = await cache.listThumbnailIndex();
 
     expect(generate).toHaveBeenCalledTimes(5);
