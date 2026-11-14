@@ -52,12 +52,20 @@ describe("useVideoPlayback", () => {
     expect(element.load).not.toHaveBeenCalled();
   });
 
-  it("polls a conversion until playback is available", async () => {
+  it("polls an active conversion sooner than a queued conversion", async () => {
     vi.useFakeTimers();
     const element = videoElement();
-    const client = playbackClient({ kind: "converting", status: "queued", progress: 0 });
-    client.getConversionStatus.mockResolvedValueOnce({ kind: "direct", url: "/media/ready" });
-    const playback = useVideoPlayback(ref(element), client, 100);
+    vi.mocked(element.canPlayType).mockReturnValue("probably");
+    const client = playbackClient();
+    client.getConversionStatus
+      .mockResolvedValueOnce({ kind: "converting", status: "converting", progress: 0 })
+      .mockResolvedValueOnce({
+        kind: "hls",
+        url: "/hls/ready.m3u8",
+        status: "converting",
+        progress: 5,
+      });
+    const playback = useVideoPlayback(ref(element), client);
     const requestId = playback.startRequest();
 
     await playback.applyPlayback(
@@ -65,11 +73,20 @@ describe("useVideoPlayback", () => {
       "video",
       requestId,
     );
-    await vi.advanceTimersByTimeAsync(100);
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(client.getConversionStatus).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(client.getConversionStatus).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(499);
+    expect(client.getConversionStatus).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(1);
     await nextTick();
 
     expect(client.getConversionStatus).toHaveBeenCalledWith("video");
-    expect(element.getAttribute("src")).toBe("/media/ready");
+    expect(client.getConversionStatus).toHaveBeenCalledTimes(2);
+    expect(element.getAttribute("src")).toBe("/hls/ready.m3u8");
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(client.getConversionStatus).toHaveBeenCalledTimes(2);
   });
 
   it("hides technical errors when conversion status cannot be checked", async () => {

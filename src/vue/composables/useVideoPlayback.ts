@@ -7,10 +7,12 @@ interface PlaybackClient {
   retryConversion(videoId: string): Promise<PlaybackResult>;
 }
 
+const activeConversionPollMilliseconds = 500;
+
 export function useVideoPlayback(
   video: Ref<HTMLVideoElement | null>,
   client: PlaybackClient,
-  pollMilliseconds = 2_000,
+  queuedConversionPollMilliseconds = 2_000,
 ) {
   const playback = shallowRef<PlaybackResult | null>(null);
   const error = shallowRef("");
@@ -97,7 +99,12 @@ export function useVideoPlayback(
       error.value = result.message;
       return;
     }
+    const delay =
+      result.status === "converting"
+        ? activeConversionPollMilliseconds
+        : queuedConversionPollMilliseconds;
     pollTimer = setTimeout(async () => {
+      if (!isCurrentRequest(requestId)) return;
       try {
         const conversion = await client.getConversionStatus(videoId);
         await applyPlayback(conversion, videoId, requestId);
@@ -105,7 +112,7 @@ export function useVideoPlayback(
         if (!isCurrentRequest(requestId)) return;
         error.value = "We couldn't check the video status. Try again.";
       }
-    }, pollMilliseconds);
+    }, delay);
   }
 
   async function retryPlayback(videoId: string): Promise<void> {
