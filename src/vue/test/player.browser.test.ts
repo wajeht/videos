@@ -125,9 +125,6 @@ test("uses responsive video details and places the playlist below them on mobile
       body: JSON.stringify({ kind: "direct", url: "/media/example.mp4" }),
     });
   });
-  await page.route(`**/api/progress/videos/${videoId}/open`, async (route) => {
-    await route.fulfill({ contentType: "application/json", body: JSON.stringify({}) });
-  });
   await page.route("**/media/example.mp4", async (route) => {
     await route.fulfill({ contentType: "video/mp4", body: "" });
   });
@@ -273,9 +270,6 @@ test("does not collapse a short wrapped video description", async ({ page }) => 
       contentType: "application/json",
       body: JSON.stringify({ kind: "direct", url: "/media/short-description.mp4" }),
     });
-  });
-  await page.route(`**/api/progress/videos/${shortDescriptionVideoId}/open`, async (route) => {
-    await route.fulfill({ contentType: "application/json", body: JSON.stringify({}) });
   });
   await page.route("**/media/short-description.mp4", async (route) => {
     await route.fulfill({ contentType: "video/mp4", body: "" });

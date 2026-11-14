@@ -21,10 +21,12 @@ export function createPlaybackRouter(context: AppContext) {
   return new Hono()
     .basePath("/playback")
     .post("/:videoId", zValidator("param", playbackParametersSchema), async (c) => {
-      const playback = await context.playback.preparePlayback(c.req.valid("param").videoId);
-      return playback
-        ? c.json(playbackResponseSchema.parse(playback))
-        : c.json({ message: "Video not found" }, 404);
+      const { videoId } = c.req.valid("param");
+      const playback = await context.playback.preparePlayback(videoId);
+      if (!playback) return c.json({ message: "Video not found" }, 404);
+      const response = playbackResponseSchema.parse(playback);
+      const opened = await context.forProfile(c.get("profile").id).progress.openVideo(videoId);
+      return opened ? c.json(response) : c.json({ message: "Video not found" }, 404);
     })
     .get(
       "/:videoId",
