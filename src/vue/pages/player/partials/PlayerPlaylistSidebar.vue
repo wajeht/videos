@@ -50,12 +50,10 @@ const titleId = `playlist-title-${useId()}`;
             {{ section.title }}
           </h3>
           <VideoRow
-            v-for="(video, index) in section.videos"
+            v-for="video in section.videos"
             :key="video.id"
             :video="video"
-            :index="index"
             :active="video.id === activeVideoId"
-            sidebar
           />
         </section>
       </div>

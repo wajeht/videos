@@ -3,6 +3,7 @@ import { computed } from "vue";
 
 import type { ChapterDto } from "@/api.js";
 import AppButton from "@/components/ui/AppButton.vue";
+import { timestampText } from "@/utils.js";
 
 const props = withDefaults(
   defineProps<{ chapters: ChapterDto[]; collapsed?: boolean; currentTime: number }>(),
@@ -18,15 +19,6 @@ const activeIndex = computed(() => {
   }
   return active;
 });
-
-function timestampText(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = seconds % 60;
-  return hours > 0
-    ? `${hours}:${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`
-    : `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
-}
 </script>
 
 <template>

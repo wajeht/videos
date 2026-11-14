@@ -1,5 +1,5 @@
 import { selectBrowserAdmin, setupBrowserAdmin } from "./profiles.helpers.js";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const videoId = "c".repeat(24);
 const playlistId = "d".repeat(24);
@@ -58,6 +58,43 @@ async function expectPlaylistLoadingLayout(
   await page.setViewportSize({ width: 1800, height: 900 });
 }
 
+async function expectPlaylistRowLayout(page: Page, playlistPanel: Locator): Promise<void> {
+  const duration = playlistPanel.getByText("17:57", { exact: true });
+  const progress = playlistPanel.getByText("100%", { exact: true });
+  for (const width of [1800, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(duration).toBeVisible();
+    expect(
+      await duration.evaluate((element) => {
+        const badge = element.getBoundingClientRect();
+        const thumbnail = element.parentElement!.getBoundingClientRect();
+        return (
+          badge.left > thumbnail.left &&
+          badge.right < thumbnail.right &&
+          badge.top > thumbnail.top &&
+          badge.bottom < thumbnail.bottom &&
+          badge.height < thumbnail.height / 2
+        );
+      }),
+    ).toBe(true);
+    await expect(progress).toBeVisible();
+    expect(
+      await progress.evaluate((element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const text = range.getBoundingClientRect();
+        const row = element.closest("a")!.getBoundingClientRect();
+        const status = element.parentElement!.getBoundingClientRect();
+        return text.left >= status.left && text.right <= Math.min(status.right, row.right - 8);
+      }),
+    ).toBe(true);
+    expect(
+      await page.locator("html").evaluate((element) => element.scrollWidth <= element.clientWidth),
+    ).toBe(true);
+  }
+  await page.setViewportSize({ width: 1800, height: 900 });
+}
+
 test("uses responsive video details and places the playlist below them on mobile", async ({
   page,
 }) => {
@@ -76,13 +113,13 @@ test("uses responsive video details and places the playlist below them on mobile
     coverUrl: null,
     description:
       "A complete introduction to programming, computer memory, and the ideas used throughout this playlist.",
-    durationSeconds: 120,
+    durationSeconds: 1077,
     id: videoId,
     playlistId,
     playlistSectionId: null,
     playlistSectionTitle: null,
     playlistTitle: "Saved Collection",
-    positionSeconds: 119.75,
+    positionSeconds: 1076.75,
     progressPercent: 100,
     source: null,
     tags: [],
@@ -105,7 +142,7 @@ test("uses responsive video details and places the playlist below them on mobile
           completedCount: 0,
           coverUrl: null,
           description: "",
-          durationSeconds: 120,
+          durationSeconds: video.durationSeconds,
           id: playlistId,
           nextVideoId: videoId,
           progressPercent: 0,
@@ -167,26 +204,7 @@ test("uses responsive video details and places the playlist below them on mobile
   expect((await title.boundingBox())?.width).toBeGreaterThan(1000);
   const playlistVideos = playlistPanel.locator(":scope > div");
   await expect(playlistPanel).toBeVisible();
-  await expect(playlistPanel.getByText("2m", { exact: true })).toBeVisible();
-  const progress = playlistPanel.getByText("100%", { exact: true });
-  for (const width of [1800, 320]) {
-    await page.setViewportSize({ width, height: 900 });
-    await expect(progress).toBeVisible();
-    expect(
-      await progress.evaluate((element) => {
-        const range = document.createRange();
-        range.selectNodeContents(element);
-        const text = range.getBoundingClientRect();
-        const row = element.closest("a")!.getBoundingClientRect();
-        const status = element.parentElement!.getBoundingClientRect();
-        return text.left >= status.left && text.right <= Math.min(status.right, row.right - 8);
-      }),
-    ).toBe(true);
-    expect(
-      await page.locator("html").evaluate((element) => element.scrollWidth <= element.clientWidth),
-    ).toBe(true);
-  }
-  await page.setViewportSize({ width: 1800, height: 900 });
+  await expectPlaylistRowLayout(page, playlistPanel);
   await playlistActions.click();
   await expect(autoplay).toBeVisible();
   await expect(autoplay).toHaveAttribute("aria-checked", "false");

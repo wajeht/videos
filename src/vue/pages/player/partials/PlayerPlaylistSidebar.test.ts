@@ -65,14 +65,12 @@ describe("PlayerPlaylistSidebar", () => {
 
     expect(panel.attributes("aria-labelledby")).toBe(wrapper.get("h2").attributes("id"));
     expect(wrapper.find('[aria-label="Close playlist"]').exists()).toBe(false);
-    expect(wrapper.get(`a[href="/videos/${videoId}?list=${playlistId}"]`).text()).toContain(
-      "Example video",
-    );
+    const row = wrapper.get(`a[href="/videos/${videoId}?list=${playlistId}"]`);
+    expect(row.text()).toMatch(/^2:00\s*Example video$/);
     expect(wrapper.get("img").attributes()).toMatchObject({
       alt: "",
       src: "/covers/videos/example.jpg",
     });
-    expect(wrapper.get("img + span").text()).toBe("2m");
   });
 
   it("keeps the playlist reset action in an overflow menu", async () => {
