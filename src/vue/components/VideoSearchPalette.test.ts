@@ -121,7 +121,7 @@ describe("VideoSearchPalette", () => {
     expect(dialogElement<HTMLElement>("mark").text()).toBe("Memory");
     expect(document.body.textContent).toContain("Example Author");
     expect(document.body.textContent).toContain("Example Playlist");
-    expect(document.body.textContent).toContain("2m");
+    expect(document.body.textContent).toContain("2:00");
     expect(document.body.textContent).toContain("Video progress: 25%");
     expect(document.body.querySelector('img[src="/covers/memory.jpg"]')).toBeTruthy();
     const selected = dialogElement<HTMLElement>('[role="option"]');

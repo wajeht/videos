@@ -81,6 +81,9 @@ test("uses responsive library filters and a mobile drawer", async ({ page }) => 
   await expect(actions).toBeVisible();
   await expect(authorButton).toBeVisible();
   await expect(viewButton).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("link", { name: "Play Example video" }).getByText("2:00"),
+  ).toBeVisible();
   await expect(filterColumn).toHaveCSS("position", "sticky");
   await expect(filterColumn).toHaveCSS("top", "66px");
   await expect(filterColumn).toHaveCSS("background-color", "rgb(255, 255, 255)");
@@ -150,6 +153,9 @@ test("uses responsive library filters and a mobile drawer", async ({ page }) => 
 
   await page.locator('input[name="library-desktop-view"][value="playlists"]').check();
   await expect(page).toHaveURL(/view=playlists/);
+  await expect(
+    page.getByRole("link", { name: "Open Saved Collection" }).getByText("1 video"),
+  ).toBeVisible();
   await expect(desktopAuthors.getByRole("checkbox", { name: "Example Author (2)" })).toBeVisible();
   await expect(desktopTags.getByRole("checkbox", { name: "Example Tag (3)" })).toBeVisible();
 });

@@ -85,7 +85,7 @@ test("searches videos globally with Command K", async ({ page }) => {
   const thumbnail = result.locator('img[src="/covers/search.jpg"]');
   await expect(thumbnail).toBeVisible();
   await expect(thumbnail).toHaveCSS("width", "96px");
-  await expect(result.getByText("2m", { exact: true })).toBeVisible();
+  await expect(result.getByText("2:00", { exact: true })).toBeVisible();
   await expect(result.getByText("Video progress: 25%", { exact: true })).toHaveText(
     "Video progress: 25%",
   );

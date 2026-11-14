@@ -4,11 +4,12 @@ import { computed, type DeepReadonly } from "vue";
 import type { LibraryDto } from "@/api.js";
 import AuthorLinks from "@/components/AuthorLinks.vue";
 import IntentRouterLink from "@/components/IntentRouterLink.vue";
+import ThumbnailLabel from "@/components/ThumbnailLabel.vue";
 import VideoCoverPlaceholder from "@/components/VideoCoverPlaceholder.vue";
 import ProgressBar from "@/components/ui/ProgressBar.vue";
 import { useRoutePrefetch } from "@/composables/useRoutePrefetch.js";
 import { playerLocation } from "@/router.js";
-import { durationText } from "@/utils.js";
+import { timestampText } from "@/utils.js";
 
 const props = defineProps<{ video: DeepReadonly<LibraryDto["videos"][number]> }>();
 const prefetch = useRoutePrefetch();
@@ -31,9 +32,7 @@ const to = computed(() => playerLocation(props.video.id, props.video.playlistId)
         loading="lazy"
       />
       <VideoCoverPlaceholder v-else class="h-full w-full" :title="video.title" />
-      <span class="absolute right-2 bottom-2 bg-black/80 px-1.5 py-0.5 text-white">
-        {{ durationText(video.durationSeconds) }}
-      </span>
+      <ThumbnailLabel>{{ timestampText(video.durationSeconds) }}</ThumbnailLabel>
       <ProgressBar
         v-if="video.progressPercent > 0"
         class="absolute right-0 bottom-0 left-0"
