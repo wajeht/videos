@@ -66,9 +66,11 @@ export interface LibraryRepository {
     playlistId: string,
   ): Promise<{ id: string; cover_path: string | null; first_video_id: string | null } | undefined>;
   getPlaylists(): Promise<PlaylistRecord[]>;
-  getVideos(): Promise<VideoRecord[]>;
+  getVideos(videoIds?: string[]): Promise<VideoRecord[]>;
   getVideo(videoId: string): Promise<VideoRecord | undefined>;
-  getChapters(): Promise<Array<{ videoId: string; startSeconds: number; sortOrder: number }>>;
+  getChapters(
+    videoIds?: string[],
+  ): Promise<Array<{ videoId: string; startSeconds: number; sortOrder: number }>>;
   getLibraryCounts(): Promise<LibraryCounts>;
 }
 
@@ -161,8 +163,10 @@ export function createLibraryRepository(database: Knex): LibraryRepository {
       ];
     },
 
-    async getVideos() {
-      const rows = await database<StoredVideoRow>("videos").select();
+    async getVideos(videoIds) {
+      const query = database<StoredVideoRow>("videos").select();
+      if (videoIds) query.whereIn("id", videoIds);
+      const rows = await query;
       return rows.map(videoRecord);
     },
 
@@ -188,8 +192,10 @@ export function createLibraryRepository(database: Knex): LibraryRepository {
       return row ? videoRecord(row) : undefined;
     },
 
-    async getChapters() {
-      const rows = await database("chapters").select("video_id", "start_seconds", "sort_order");
+    async getChapters(videoIds) {
+      const query = database("chapters").select("video_id", "start_seconds", "sort_order");
+      if (videoIds) query.whereIn("video_id", videoIds);
+      const rows = await query;
       return rows.map((row) => ({
         videoId: String(row.video_id),
         startSeconds: Number(row.start_seconds),
