@@ -65,7 +65,7 @@ export interface LibraryRepository {
   getPlaylistCover(
     playlistId: string,
   ): Promise<{ id: string; cover_path: string | null; first_video_id: string | null } | undefined>;
-  getPlaylists(playlistIds?: string[]): Promise<PlaylistRecord[]>;
+  getPlaylists(): Promise<PlaylistRecord[]>;
   getVideos(videoIds?: string[]): Promise<VideoRecord[]>;
   getVideo(videoId: string): Promise<VideoRecord | undefined>;
   getChapters(
@@ -182,10 +182,8 @@ export function createLibraryRepository(database: Knex): LibraryRepository {
         )
         .first();
     },
-    async getPlaylists(playlistIds) {
-      const query = database<StoredPlaylistRow>("playlists").select();
-      if (playlistIds) query.whereIn("id", playlistIds);
-      const rows = await query;
+    async getPlaylists() {
+      const rows = await database<StoredPlaylistRow>("playlists").select();
       return rows.map(playlistRecord);
     },
 

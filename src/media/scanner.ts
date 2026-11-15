@@ -84,11 +84,6 @@ interface BuiltLibrarySnapshot {
   rootOrder: RootEntryOrder[];
 }
 
-interface ScanImageScope {
-  videoIds: string[];
-  playlistIds: string[];
-}
-
 function identifier(value: string): string {
   return createHash("sha256").update(value).digest("hex").slice(0, 24);
 }
@@ -143,7 +138,7 @@ export function createScanner({
     scanWarnings: ScanWarning[],
     existingVideos: VideoRecord[],
     entries: LibraryEntry[],
-  ): Promise<ScanImageScope | undefined> {
+  ): Promise<string[] | undefined> {
     if (!entryPaths) {
       const built = await buildLibrarySnapshot(
         configuration,
@@ -182,11 +177,7 @@ export function createScanner({
     for (const video of existingVideos) {
       if (entryIds.has(video.playlistId ?? video.id)) videoIds.add(video.id);
     }
-    const playlistIds = new Set(built.snapshot.playlists.map((playlist) => playlist.id));
-    for (const entry of storedEntries) {
-      if (entry.kind === "playlist" && entryIds.has(entry.id)) playlistIds.add(entry.id);
-    }
-    return { videoIds: [...videoIds], playlistIds: [...playlistIds] };
+    return [...videoIds];
   }
 
   async function synchronizeThumbnails(videoIds?: string[]): Promise<void> {
@@ -202,10 +193,10 @@ export function createScanner({
     }
   }
 
-  async function synchronizePlaylistCovers(playlistIds?: string[]): Promise<void> {
-    if (!playlistCovers || playlistIds?.length === 0) return;
+  async function synchronizePlaylistCovers(): Promise<void> {
+    if (!playlistCovers) return;
     try {
-      await playlistCovers.synchronize(await repository.getPlaylists(playlistIds), playlistIds);
+      await playlistCovers.synchronize(await repository.getPlaylists());
     } catch (error) {
       logger.warn("Playlist cover synchronization failed", { error: logCause(error) });
     }
@@ -230,16 +221,14 @@ export function createScanner({
         readLibraryEntries(configuration),
         repository.getVideos(),
       ]);
-      const imageScope = await synchronizeSnapshot(
+      const affectedVideoIds = await synchronizeSnapshot(
         entryPaths,
         scanWarnings,
         existingVideos,
         entries,
       );
-      await Promise.all([
-        synchronizePlaylistCovers(imageScope?.playlistIds),
-        synchronizeThumbnails(imageScope?.videoIds),
-      ]);
+      // A cover can resolve to a file in another playlist.
+      await Promise.all([synchronizePlaylistCovers(), synchronizeThumbnails(affectedVideoIds)]);
 
       const counts = await repository.getLibraryCounts();
       if (conversions) {

@@ -408,6 +408,8 @@ describe("media scanner", () => {
     const playlistDirectory = path.join(root, "Existing Playlist");
     await fs.mkdir(playlistDirectory);
     await fs.writeFile(path.join(playlistDirectory, "01 - Existing.mp4"), "existing");
+    const sourceCover = path.join(playlistDirectory, "cover.jpg");
+    await fs.writeFile(sourceCover, "cover");
     const standalone = path.join(root, "Standalone.mp4");
     await fs.writeFile(standalone, "standalone");
 
@@ -478,19 +480,41 @@ describe("media scanner", () => {
     const addedPlaylist = path.join(root, "Added Playlist");
     await fs.mkdir(addedPlaylist);
     await fs.writeFile(path.join(addedPlaylist, "01 - Added.mp4"), "added");
-    await fs.writeFile(path.join(addedPlaylist, "cover.jpg"), "cover");
+    await fs.writeFile(
+      path.join(addedPlaylist, "playlist.json"),
+      JSON.stringify({ version: 1, cover: "shared.jpg" }),
+    );
+    await fs.symlink(
+      path.relative(addedPlaylist, sourceCover),
+      path.join(addedPlaylist, "shared.jpg"),
+    );
     emitWatchEvent("Added Playlist/01 - Added.mp4");
     await waitUntil(
       async () =>
         scanner.scanStatus().status === "complete" && scanner.scanStatus().playlistCount === 2,
     );
     expect((await thumbnails.listThumbnailIndex()).revisions.size).toBe(3);
-    expect((await playlistCovers.listPlaylistCoverIndex()).revisions.size).toBe(1);
+    const previousCovers = (await playlistCovers.listPlaylistCoverIndex()).revisions;
+    expect(previousCovers.size).toBe(2);
     await expect(fs.stat(standalonePoster)).rejects.toMatchObject({ code: "ENOENT" });
     expect((await thumbnails.listThumbnailIndex()).revisions.get(standaloneRow.id)).toBe(
       standaloneRevision,
     );
     expect(probeCalls).toEqual(["01 - Existing.mp4", "Standalone.mp4", "01 - Added.mp4"]);
+
+    await fs.writeFile(sourceCover, "updated shared cover");
+    emitWatchEvent("Existing Playlist/cover.jpg");
+    await waitUntil(async () => {
+      const { revisions } = await playlistCovers.listPlaylistCoverIndex();
+      return (
+        scanner.scanStatus().status === "complete" &&
+        [...revisions].some(([id, revision]) => revision !== previousCovers.get(id))
+      );
+    });
+    const updatedCovers = (await playlistCovers.listPlaylistCoverIndex()).revisions;
+    for (const [id, revision] of previousCovers) {
+      expect(updatedCovers.get(id)).toBeGreaterThan(revision);
+    }
 
     await fs.rm(addedPlaylist, { recursive: true });
     emitWatchEvent("Added Playlist");
@@ -499,7 +523,7 @@ describe("media scanner", () => {
         scanner.scanStatus().status === "complete" && scanner.scanStatus().playlistCount === 1,
     );
     expect((await thumbnails.listThumbnailIndex()).revisions.size).toBe(2);
-    expect((await playlistCovers.listPlaylistCoverIndex()).revisions.size).toBe(0);
+    expect((await playlistCovers.listPlaylistCoverIndex()).revisions.size).toBe(1);
     await scanner.scanLibrary();
     expect((await thumbnails.listThumbnailIndex()).revisions.get(standaloneRow.id)).toBeGreaterThan(
       standaloneRevision,
