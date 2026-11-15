@@ -65,10 +65,12 @@ export interface LibraryRepository {
   getPlaylistCover(
     playlistId: string,
   ): Promise<{ id: string; cover_path: string | null; first_video_id: string | null } | undefined>;
-  getPlaylists(): Promise<PlaylistRecord[]>;
-  getVideos(): Promise<VideoRecord[]>;
+  getPlaylists(playlistIds?: string[]): Promise<PlaylistRecord[]>;
+  getVideos(videoIds?: string[]): Promise<VideoRecord[]>;
   getVideo(videoId: string): Promise<VideoRecord | undefined>;
-  getChapters(): Promise<Array<{ videoId: string; startSeconds: number; sortOrder: number }>>;
+  getChapters(
+    videoIds?: string[],
+  ): Promise<Array<{ videoId: string; startSeconds: number; sortOrder: number }>>;
   getLibraryCounts(): Promise<LibraryCounts>;
 }
 
@@ -161,8 +163,10 @@ export function createLibraryRepository(database: Knex): LibraryRepository {
       ];
     },
 
-    async getVideos() {
-      const rows = await database<StoredVideoRow>("videos").select();
+    async getVideos(videoIds) {
+      const query = database<StoredVideoRow>("videos").select();
+      if (videoIds) query.whereIn("id", videoIds);
+      const rows = await query;
       return rows.map(videoRecord);
     },
 
@@ -178,8 +182,10 @@ export function createLibraryRepository(database: Knex): LibraryRepository {
         )
         .first();
     },
-    async getPlaylists() {
-      const rows = await database<StoredPlaylistRow>("playlists").select();
+    async getPlaylists(playlistIds) {
+      const query = database<StoredPlaylistRow>("playlists").select();
+      if (playlistIds) query.whereIn("id", playlistIds);
+      const rows = await query;
       return rows.map(playlistRecord);
     },
 
@@ -188,8 +194,10 @@ export function createLibraryRepository(database: Knex): LibraryRepository {
       return row ? videoRecord(row) : undefined;
     },
 
-    async getChapters() {
-      const rows = await database("chapters").select("video_id", "start_seconds", "sort_order");
+    async getChapters(videoIds) {
+      const query = database("chapters").select("video_id", "start_seconds", "sort_order");
+      if (videoIds) query.whereIn("video_id", videoIds);
+      const rows = await query;
       return rows.map((row) => ({
         videoId: String(row.video_id),
         startSeconds: Number(row.start_seconds),

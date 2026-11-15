@@ -84,6 +84,11 @@ interface BuiltLibrarySnapshot {
   rootOrder: RootEntryOrder[];
 }
 
+interface ScanImageScope {
+  videoIds: string[];
+  playlistIds: string[];
+}
+
 function identifier(value: string): string {
   return createHash("sha256").update(value).digest("hex").slice(0, 24);
 }
@@ -138,7 +143,7 @@ export function createScanner({
     scanWarnings: ScanWarning[],
     existingVideos: VideoRecord[],
     entries: LibraryEntry[],
-  ): Promise<void> {
+  ): Promise<ScanImageScope | undefined> {
     if (!entryPaths) {
       const built = await buildLibrarySnapshot(
         configuration,
@@ -170,31 +175,37 @@ export function createScanner({
       entries,
       synchronizedPaths,
     );
-    await repository.synchronizeEntries(
-      built.snapshot,
-      [...synchronizedPaths].map(identifier),
-      built.rootOrder,
-    );
+    const entryIds = new Set([...synchronizedPaths].map(identifier));
+    await repository.synchronizeEntries(built.snapshot, [...entryIds], built.rootOrder);
     replaceEntryWarnings(synchronizedPaths, scanWarnings);
+    const videoIds = new Set(built.snapshot.videos.map((video) => video.id));
+    for (const video of existingVideos) {
+      if (entryIds.has(video.playlistId ?? video.id)) videoIds.add(video.id);
+    }
+    const playlistIds = new Set(built.snapshot.playlists.map((playlist) => playlist.id));
+    for (const entry of storedEntries) {
+      if (entry.kind === "playlist" && entryIds.has(entry.id)) playlistIds.add(entry.id);
+    }
+    return { videoIds: [...videoIds], playlistIds: [...playlistIds] };
   }
 
-  async function synchronizeThumbnails(): Promise<void> {
-    if (!thumbnails) return;
+  async function synchronizeThumbnails(videoIds?: string[]): Promise<void> {
+    if (!thumbnails || videoIds?.length === 0) return;
     try {
       const [videos, chapters] = await Promise.all([
-        repository.getVideos(),
-        repository.getChapters(),
+        repository.getVideos(videoIds),
+        repository.getChapters(videoIds),
       ]);
-      await thumbnails.synchronize(videos, chapters);
+      await thumbnails.synchronize(videos, chapters, videoIds);
     } catch (error) {
       logger.warn("Thumbnail synchronization failed", { error: logCause(error) });
     }
   }
 
-  async function synchronizePlaylistCovers(): Promise<void> {
-    if (!playlistCovers) return;
+  async function synchronizePlaylistCovers(playlistIds?: string[]): Promise<void> {
+    if (!playlistCovers || playlistIds?.length === 0) return;
     try {
-      await playlistCovers.synchronize(await repository.getPlaylists());
+      await playlistCovers.synchronize(await repository.getPlaylists(playlistIds), playlistIds);
     } catch (error) {
       logger.warn("Playlist cover synchronization failed", { error: logCause(error) });
     }
@@ -219,8 +230,16 @@ export function createScanner({
         readLibraryEntries(configuration),
         repository.getVideos(),
       ]);
-      await synchronizeSnapshot(entryPaths, scanWarnings, existingVideos, entries);
-      await Promise.all([synchronizePlaylistCovers(), synchronizeThumbnails()]);
+      const imageScope = await synchronizeSnapshot(
+        entryPaths,
+        scanWarnings,
+        existingVideos,
+        entries,
+      );
+      await Promise.all([
+        synchronizePlaylistCovers(imageScope?.playlistIds),
+        synchronizeThumbnails(imageScope?.videoIds),
+      ]);
 
       const counts = await repository.getLibraryCounts();
       if (conversions) {

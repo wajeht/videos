@@ -61,7 +61,11 @@ export type ThumbnailRegenerationStatus =
 
 export interface ThumbnailCache {
   listThumbnailIndex(): Promise<ThumbnailIndex>;
-  synchronize(videos: VideoRecord[], chapters: ThumbnailChapter[]): Promise<void>;
+  synchronize(
+    videos: VideoRecord[],
+    chapters: ThumbnailChapter[],
+    affectedVideoIds?: string[],
+  ): Promise<void>;
   regenerate(video: VideoRecord, chapters: ThumbnailChapter[]): Promise<number>;
   startRegeneration(video: VideoRecord, chapters: ThumbnailChapter[]): ThumbnailRegenerationStatus;
   regenerationStatus(videoId: string): ThumbnailRegenerationStatus;
@@ -412,11 +416,11 @@ export function createThumbnailCache({
       return index;
     },
 
-    async synchronize(videos, chapters) {
+    async synchronize(videos, chapters, affectedVideoIds) {
       await fs.mkdir(directory, { recursive: true });
       await ensureIndex();
       const retained = new Set(videos.map((video) => video.id));
-      const stored = await storedVideoIds();
+      const stored = affectedVideoIds ?? (await storedVideoIds());
       await Promise.all(
         [...stored]
           .filter((videoId) => !retained.has(videoId))

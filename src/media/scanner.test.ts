@@ -419,13 +419,20 @@ describe("media scanner", () => {
     const database = await createTestDatabase(configuration);
     await seedTestProfile(database);
     const probeCalls: string[] = [];
+    const logger = createLogger();
+    const generate = (_source: string, destination: string) =>
+      fs.writeFile(destination, "generated image");
+    const thumbnails = createThumbnailCache({ configuration, logger, generate });
+    const playlistCovers = createPlaylistCoverCache({ configuration, logger, generate });
     let emitWatchEvent = (_filename: string): void => {
       throw new Error("Library monitoring has not started");
     };
     const scanner = createScanner({
       configuration,
       repository: createLibraryRepository(database.connection),
-      logger: createLogger(),
+      logger,
+      thumbnails,
+      playlistCovers,
       watchDirectory: (_directory, _options, listener) => {
         emitWatchEvent = (filename) => listener("change", filename);
         return {
@@ -442,6 +449,10 @@ describe("media scanner", () => {
     });
 
     await scanner.scanLibrary();
+    const standaloneRow = await database
+      .connection("videos")
+      .where("path", "Standalone.mp4")
+      .first();
     monitorStops.push(scanner.startMonitoring());
     await fs.writeFile(
       `${standalone}.json`,
@@ -449,18 +460,35 @@ describe("media scanner", () => {
     );
     emitWatchEvent("Standalone.mp4.json");
     await waitUntil(
-      async () => (await database.connection("chapters").pluck("title"))[0] === "Saved point",
+      async () =>
+        (await thumbnails.listThumbnailIndex()).chapterStartsByVideo.get(standaloneRow.id)?.[0] ===
+        5,
     );
+    const standaloneRevision = (await thumbnails.listThumbnailIndex()).revisions.get(
+      standaloneRow.id,
+    )!;
+    const standalonePoster = thumbnailPath(
+      thumbnailsDirectory(dataDirectory),
+      standaloneRow.id,
+      standaloneRevision,
+    );
+    await fs.rm(standalonePoster);
     expect(probeCalls).toEqual(["01 - Existing.mp4", "Standalone.mp4"]);
 
     const addedPlaylist = path.join(root, "Added Playlist");
     await fs.mkdir(addedPlaylist);
     await fs.writeFile(path.join(addedPlaylist, "01 - Added.mp4"), "added");
+    await fs.writeFile(path.join(addedPlaylist, "cover.jpg"), "cover");
     emitWatchEvent("Added Playlist/01 - Added.mp4");
     await waitUntil(
       async () =>
-        Number((await database.connection("playlists").count({ count: "id" }).first())?.count) ===
-        2,
+        scanner.scanStatus().status === "complete" && scanner.scanStatus().playlistCount === 2,
+    );
+    expect((await thumbnails.listThumbnailIndex()).revisions.size).toBe(3);
+    expect((await playlistCovers.listPlaylistCoverIndex()).revisions.size).toBe(1);
+    await expect(fs.stat(standalonePoster)).rejects.toMatchObject({ code: "ENOENT" });
+    expect((await thumbnails.listThumbnailIndex()).revisions.get(standaloneRow.id)).toBe(
+      standaloneRevision,
     );
     expect(probeCalls).toEqual(["01 - Existing.mp4", "Standalone.mp4", "01 - Added.mp4"]);
 
@@ -468,8 +496,13 @@ describe("media scanner", () => {
     emitWatchEvent("Added Playlist");
     await waitUntil(
       async () =>
-        Number((await database.connection("playlists").count({ count: "id" }).first())?.count) ===
-        1,
+        scanner.scanStatus().status === "complete" && scanner.scanStatus().playlistCount === 1,
+    );
+    expect((await thumbnails.listThumbnailIndex()).revisions.size).toBe(2);
+    expect((await playlistCovers.listPlaylistCoverIndex()).revisions.size).toBe(0);
+    await scanner.scanLibrary();
+    expect((await thumbnails.listThumbnailIndex()).revisions.get(standaloneRow.id)).toBeGreaterThan(
+      standaloneRevision,
     );
     expect(probeCalls).toEqual(["01 - Existing.mp4", "Standalone.mp4", "01 - Added.mp4"]);
   });

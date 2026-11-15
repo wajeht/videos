@@ -39,7 +39,7 @@ export type PlaylistCoverGenerator = (source: string, destination: string) => Pr
 
 export interface PlaylistCoverCache {
   listPlaylistCoverIndex(): Promise<{ revisions: Map<string, number> }>;
-  synchronize(playlists: PlaylistRecord[]): Promise<void>;
+  synchronize(playlists: PlaylistRecord[], affectedPlaylistIds?: string[]): Promise<void>;
 }
 
 function playlistCoverDirectory(directory: string, playlistId: string): string {
@@ -281,12 +281,12 @@ export function createPlaylistCoverCache({
       return { revisions: new Map([...metas].map(([id, meta]) => [id, meta.revision])) };
     },
 
-    async synchronize(playlists) {
+    async synchronize(playlists, affectedPlaylistIds) {
       await fs.mkdir(directory, { recursive: true });
       await ensureIndex();
       const withCovers = playlists.filter((playlist) => playlist.coverPath);
       const retained = new Set(withCovers.map((playlist) => playlist.id));
-      const stored = await storedPlaylistIds();
+      const stored = affectedPlaylistIds ?? (await storedPlaylistIds());
       await Promise.all(
         [...stored]
           .filter((playlistId) => !retained.has(playlistId))
