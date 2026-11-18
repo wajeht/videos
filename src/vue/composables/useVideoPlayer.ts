@@ -7,7 +7,6 @@ import {
   api,
   apiErrorMessage,
   isLibraryResourceNotFound,
-  type PlaybackResult,
   type PlaylistDetailDto,
   type PlaylistVideoDto,
   type VideoDetailDto,
@@ -39,7 +38,10 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
   const autoplayNext = shallowRef(localStorage.getItem(autoplayNextStorageKey) === "true");
   const confirmation = useConfirm();
   const toast = useToast();
-  const playback = useVideoPlayback(element, api);
+  const playback = useVideoPlayback(element, api, {
+    startPosition: playbackStartPosition,
+    onSourceAttached: startAutoplay,
+  });
   const progress = usePlaybackProgress(async (videoId, positionSeconds) => {
     await api.saveProgress(videoId, positionSeconds, selectionKey);
     await invalidateProgress();
@@ -224,19 +226,14 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
     else localStorage.removeItem(autoplayNextStorageKey);
   }
 
-  function prepareAutoplay(videoId: string): void {
+  function prepareAutoplay(videoId: string, waitForResume: boolean): void {
     const shouldAutoplay = autoplayVideoId === videoId;
     if (autoplayVideoId && !shouldAutoplay) autoplayVideoId = null;
-    if (element.value) element.value.autoplay = shouldAutoplay;
+    if (element.value) element.value.autoplay = shouldAutoplay && !waitForResume;
   }
 
-  async function startAutoplay(videoId: string, result: PlaybackResult): Promise<void> {
-    if (
-      autoplayVideoId !== videoId ||
-      !element.value ||
-      (result.kind !== "direct" && result.kind !== "hls")
-    )
-      return;
+  async function startAutoplay(videoId: string): Promise<void> {
+    if (autoplayVideoId !== videoId || !element.value) return;
     autoplayVideoId = null;
     await element.value.play().catch(() => undefined);
   }
@@ -254,6 +251,15 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
     if (!timestamp?.trim()) return null;
     const seconds = Number(timestamp);
     return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
+  }
+  function playbackStartPosition(): number {
+    const detail = video.value;
+    if (!detail) return 0;
+    const timestamp = queryTimestamp();
+    if (timestamp !== null) return Math.min(timestamp, Math.max(0, detail.durationSeconds - 0.001));
+    return detail.completed
+      ? 0
+      : Math.min(detail.positionSeconds, Math.max(0, detail.durationSeconds - 1));
   }
   function seek(seconds: number) {
     if (!element.value) return;
@@ -276,7 +282,6 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
     currentTime.value = 0;
     try {
       const videoId = String(route.params.videoId);
-      prepareAutoplay(videoId);
       const [detail, playbackResult] = await Promise.all([
         queryClient.fetchQuery(videoQueryOptions(videoId)),
         api.preparePlayback(videoId),
@@ -291,8 +296,12 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
       currentTime.value = timestamp ?? (!detail.video.completed ? detail.video.positionSeconds : 0);
       setPageTitle(detail.video.title);
       progress.startSession(detail.video.id, detail.video.positionSeconds);
+      prepareAutoplay(
+        videoId,
+        playbackResult.kind === "converting" ||
+          (playbackResult.kind === "hls" && playbackResult.status === "converting"),
+      );
       await playback.applyPlayback(playbackResult, videoId, requestId);
-      await startAutoplay(videoId, playbackResult);
     } catch (caught) {
       if (!playback.isCurrentRequest(requestId)) return;
       if (isLibraryResourceNotFound(caught)) {
@@ -309,13 +318,26 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
     playback.applyMetadata((media) => {
       if (!video.value || !progress.isSessionFor(video.value.id)) return;
       const timestamp = queryTimestamp();
-      if (timestamp !== null)
+      const result = playback.playback.value;
+      if (result?.kind === "hls" && result.status === "converting") {
+        const position = playbackStartPosition();
+        if (position > 0 && Math.abs(media.currentTime - position) > 0.01)
+          media.currentTime = position;
+        else startAutoplayAfterResume();
+      } else if (timestamp !== null)
         media.currentTime = Math.min(timestamp, Math.max(0, media.duration - 0.001));
       else if (!video.value.completed && video.value.positionSeconds > 0)
         media.currentTime = Math.min(video.value.positionSeconds, Math.max(0, media.duration - 1));
       currentTime.value = media.currentTime;
       progress.activateSession(media.currentTime);
     });
+  }
+  function startAutoplayAfterResume(): void {
+    const detail = currentVideo.value;
+    const result = playback.playback.value;
+    if (detail && result?.kind === "hls" && result.status === "converting") {
+      void startAutoplay(detail.id);
+    }
   }
   function onTimeUpdate() {
     currentTime.value = element.value?.currentTime ?? 0;
@@ -434,6 +456,7 @@ export function useVideoPlayer(element: Ref<HTMLVideoElement | null>) {
   return {
     activeVideoId: computed(() => video.value?.id),
     applyResume,
+    startAutoplayAfterResume,
     autoplayNext: computed(() => autoplayNext.value),
     currentTime: computed(() => currentTime.value),
     ended: computed(() => ended.value),

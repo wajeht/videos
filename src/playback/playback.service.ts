@@ -15,7 +15,13 @@ export interface PlaybackService {
 
 export type PlaybackResult =
   | { kind: "direct"; url: string }
-  | { kind: "hls"; url: string; status: "converting" | "ready"; progress: number }
+  | {
+      kind: "hls";
+      url: string;
+      status: "converting" | "ready";
+      progress: number;
+      availableSeconds?: number;
+    }
   | { kind: "converting"; status: "queued" | "converting"; progress: number }
   | { kind: "error"; message: string };
 
@@ -28,12 +34,22 @@ async function resolveConversionPlayback(
   if (record.status === "failed")
     return { kind: "error", message: "We couldn't prepare this video. Try again." };
   try {
-    await fs.access(record.playlistPath);
+    let availableSeconds: number | undefined;
+    if (record.status === "ready") {
+      await fs.access(record.playlistPath);
+    } else {
+      const playlist = await fs.readFile(record.playlistPath, "utf8");
+      availableSeconds = 0;
+      for (const match of playlist.matchAll(/^#EXTINF:(\d+(?:\.\d+)?),/gm)) {
+        availableSeconds += Number(match[1]);
+      }
+    }
     return {
       kind: "hls",
       url: `/hls/${record.videoId}/${record.generation}/${conversionPlaylistFilename}`,
       status: record.status === "ready" ? "ready" : "converting",
       progress: record.progress,
+      availableSeconds,
     };
   } catch {
     // The playlist may not exist until FFmpeg writes its first segment.

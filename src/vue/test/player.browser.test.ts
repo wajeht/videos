@@ -1,6 +1,12 @@
+import { readFile } from "node:fs/promises";
 import { selectBrowserAdmin, setupBrowserAdmin } from "./profiles.helpers.js";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import type { PlaylistVideoDto, VideoDetailDto } from "../api.js";
+import type {
+  PlaybackResult,
+  PlaylistDetailDto,
+  PlaylistVideoDto,
+  VideoDetailDto,
+} from "../api.js";
 
 const videoId = "c".repeat(24);
 const playlistId = "d".repeat(24);
@@ -336,4 +342,198 @@ test("does not collapse a short wrapped video description", async ({ page }) => 
 
   await expect(page.getByText(description)).toBeVisible();
   await expect(page.locator("button[aria-controls^='video-details-']")).toHaveCount(0);
+});
+
+test("resumes and autoplays once a growing HLS playlist reaches the saved position", async ({
+  page,
+}) => {
+  await authenticate(page);
+  const nextId = "f".repeat(24);
+  const first: PlaylistVideoDto = {
+    id: videoId,
+    playlistId,
+    title: "First lesson",
+    durationSeconds: 2,
+    positionSeconds: 0,
+    progressPercent: 0,
+    completed: false,
+    coverUrl: null,
+  };
+  const next: PlaylistVideoDto = {
+    ...first,
+    id: nextId,
+    title: "Converted lesson",
+    durationSeconds: 8,
+    positionSeconds: 5,
+    progressPercent: 63,
+  };
+  const playlist: PlaylistDetailDto = {
+    id: playlistId,
+    title: "Saved Collection",
+    description: "",
+    authors: [],
+    tags: [],
+    source: null,
+    coverUrl: null,
+    durationSeconds: 10,
+    videoCount: 2,
+    completedCount: 0,
+    progressPercent: 0,
+    nextVideoId: videoId,
+    sections: [{ id: null, title: "Videos", videos: [first, next] }],
+  };
+
+  await page.route("**/api/videos/*", async (route) => {
+    const video: VideoDetailDto = {
+      ...(route.request().url().endsWith(nextId) ? next : first),
+      playlistTitle: playlist.title,
+      playlistSectionId: null,
+      playlistSectionTitle: null,
+      description: "",
+      authors: [],
+      tags: [],
+      source: null,
+      chapters: [],
+    };
+    await route.fulfill({ json: { video, playlist } });
+  });
+  await page.route("**/api/progress/**", (route) => route.fulfill({ json: {} }));
+  let availableSegments = 1;
+  let nextManifestRequests = 0;
+  await page.route("**/api/playback/**", async (route) => {
+    const firstVideo = route.request().url().endsWith(videoId);
+    const result: PlaybackResult = firstVideo
+      ? { kind: "hls", status: "ready", progress: 100, url: "/hls-fixture/first.m3u8" }
+      : {
+          kind: "hls",
+          status: "converting",
+          progress: 50,
+          availableSeconds: availableSegments * 2,
+          url: "/hls-fixture/next.m3u8",
+        };
+    await route.fulfill({ json: result });
+  });
+  await page.route("**/hls-fixture/*.m3u8", async (route) => {
+    const firstVideo = route.request().url().endsWith("first.m3u8");
+    if (!firstVideo) nextManifestRequests++;
+    const count = firstVideo ? 1 : availableSegments;
+    const segments = Array.from(
+      { length: count },
+      (_, index) => `#EXTINF:2.000000,\nsegment-${index}.bin`,
+    );
+    await route.fulfill({
+      contentType: "application/vnd.apple.mpegurl",
+      body: [
+        "#EXTM3U",
+        "#EXT-X-VERSION:6",
+        "#EXT-X-TARGETDURATION:2",
+        "#EXT-X-MEDIA-SEQUENCE:0",
+        "#EXT-X-PLAYLIST-TYPE:EVENT",
+        "#EXT-X-INDEPENDENT-SEGMENTS",
+        ...segments,
+        ...(firstVideo ? ["#EXT-X-ENDLIST"] : []),
+        "",
+      ].join("\n"),
+    });
+  });
+  await page.route("**/hls-fixture/*.bin", async (route) => {
+    const name = new URL(route.request().url()).pathname.split("/").at(-1);
+    await route.fulfill({
+      contentType: "video/mp2t",
+      body: await readFile(new URL(`./fixtures/hls/${name}`, import.meta.url)),
+    });
+  });
+
+  await page.goto(`/videos/${videoId}?list=${playlistId}`);
+  const media = page.locator("video");
+  await expect
+    .poll(() =>
+      media.evaluate((video) => video instanceof HTMLVideoElement && video.readyState >= 2),
+    )
+    .toBe(true);
+  await page.getByRole("button", { name: "Playlist actions" }).click();
+  await page.getByRole("menuitemcheckbox", { name: /Autoplay next video/ }).click();
+  const poll = page.waitForResponse(`**/api/playback/${nextId}/conversion`);
+  await media.evaluate((video) => {
+    if (!(video instanceof HTMLVideoElement)) throw new Error("Missing player video");
+    video.muted = true;
+    video.dispatchEvent(new Event("ended"));
+  });
+  await expect(page).toHaveURL(`/videos/${nextId}?list=${playlistId}`);
+  await expect(page.getByRole("heading", { name: "Preparing this video" })).toBeVisible();
+  const response = await poll;
+  expect(await response.json()).toMatchObject({ availableSeconds: 2 });
+  expect(nextManifestRequests).toBe(0);
+
+  availableSegments = 3;
+  await expect
+    .poll(() =>
+      media.evaluate((element) => {
+        if (!(element instanceof HTMLVideoElement)) throw new Error("Missing player video");
+        return { played: element.played.length, paused: element.paused };
+      }),
+    )
+    .toMatchObject({ played: 1, paused: false });
+  const start = await media.evaluate((video) =>
+    video instanceof HTMLVideoElement && video.played.length ? video.played.start(0) : -1,
+  );
+  expect(start).toBeCloseTo(5, 1);
+  expect(nextManifestRequests).toBeGreaterThan(0);
+});
+
+test("waits for a native HLS source after the HLS.js chunk fails to load", async ({ page }) => {
+  await authenticate(page);
+  await page.addInitScript(() => {
+    const canPlayType = HTMLVideoElement.prototype.canPlayType;
+    HTMLVideoElement.prototype.canPlayType = function (type) {
+      return type === "application/vnd.apple.mpegurl" ? "maybe" : canPlayType.call(this, type);
+    };
+  });
+  await page.route("**/assets/hls.light-*.js", (route) => route.abort());
+  const video: VideoDetailDto = {
+    id: videoId,
+    title: "Converted lesson",
+    durationSeconds: 8,
+    positionSeconds: 5,
+    progressPercent: 63,
+    completed: false,
+    coverUrl: null,
+    playlistId: null,
+    playlistTitle: null,
+    playlistSectionId: null,
+    playlistSectionTitle: null,
+    description: "",
+    authors: [],
+    tags: [],
+    source: null,
+    chapters: [],
+  };
+  await page.route(`**/api/videos/${videoId}`, (route) =>
+    route.fulfill({ json: { video, playlist: null } }),
+  );
+  await page.route(`**/api/progress/videos/${videoId}/open`, (route) =>
+    route.fulfill({ json: {} }),
+  );
+  const url = "/hls-fixture/converted.m3u8";
+  let ready = false;
+  await page.route("**/api/playback/**", (route) => {
+    if (!route.request().url().endsWith("/conversion")) {
+      return route.fulfill({ json: { kind: "converting", status: "converting", progress: 0 } });
+    }
+    const result: PlaybackResult = ready
+      ? { kind: "hls", status: "ready", progress: 100, url }
+      : { kind: "hls", status: "converting", progress: 50, availableSeconds: 6, url };
+    return route.fulfill({ json: result });
+  });
+  await page.route(`**${url}`, (route) => route.fulfill({ status: 204 }));
+
+  const chunkFailed = page.waitForEvent("requestfailed", (request) =>
+    request.url().includes("/assets/hls.light-"),
+  );
+  await page.goto(`/videos/${videoId}`);
+  await chunkFailed;
+  ready = true;
+
+  await expect(page.locator("video")).toHaveAttribute("src", url);
+  await expect(page.getByRole("heading", { name: "Video unavailable" })).toHaveCount(0);
 });
