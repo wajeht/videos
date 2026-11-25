@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { shallowRef } from "vue";
+import { onMounted, shallowRef, useTemplateRef } from "vue";
 import type { ProfileDto } from "@/api.js";
 import AppInput from "@/components/ui/AppInput.vue";
 import FormField from "@/components/ui/FormField.vue";
@@ -9,6 +9,8 @@ import AlertMessage from "@/components/ui/AlertMessage.vue";
 defineProps<{ profile: ProfileDto; busy: boolean; passwordError: string; error: string }>();
 const emit = defineEmits<{ unlock: [password: string]; cancel: [] }>();
 const password = shallowRef("");
+const passwordInput = useTemplateRef("passwordInput");
+onMounted(() => passwordInput.value?.focus());
 </script>
 <template>
   <form class="mx-auto max-w-[420px] text-left" @submit.prevent="emit('unlock', password)">
@@ -17,6 +19,7 @@ const password = shallowRef("");
     <FormSection title="Details" class="mt-6">
       <FormField v-slot="field" label="Profile password" :error="passwordError" required>
         <AppInput
+          ref="passwordInput"
           :id="field.inputId"
           v-model="password"
           :aria-describedby="field.describedBy"
@@ -26,7 +29,6 @@ const password = shallowRef("");
           autocomplete="current-password"
           maxlength="72"
           required
-          autofocus
         />
       </FormField>
       <div class="mt-6 grid gap-3 min-[400px]:grid-cols-2">

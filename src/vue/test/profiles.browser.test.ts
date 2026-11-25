@@ -45,10 +45,12 @@ test("selects locked profiles and limits profile management to admins", async ({
   await page.getByRole("button", { name: "Admin Admin · Locked", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Who’s watching?" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Unlock Admin" })).toBeVisible();
+  await expect(page.getByLabel(/^Profile password/)).toBeFocused();
   await page.goBack();
   await expect(page.getByRole("heading", { name: "Who’s watching?" })).toBeVisible();
   await page.goForward();
   await expect(page.getByRole("heading", { name: "Unlock Admin" })).toBeVisible();
+  await expect(page.getByLabel(/^Profile password/)).toBeFocused();
   await page.getByLabel(/^Profile password/).fill("unsent-password");
   const unlockUrl = page.url();
   expect(new URL(unlockUrl).pathname).toBe("/settings/profiles");
