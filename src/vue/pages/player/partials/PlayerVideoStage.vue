@@ -19,6 +19,7 @@ defineProps<{
 const emit = defineEmits<{
   ended: [];
   loadedMetadata: [];
+  seeked: [];
   pause: [];
   retry: [];
   timeUpdate: [];
@@ -39,6 +40,7 @@ defineExpose({ video });
       playsinline
       :poster="poster"
       @loadedmetadata="emit('loadedMetadata')"
+      @seeked="emit('seeked')"
       @timeupdate="emit('timeUpdate')"
       @pause="emit('pause')"
       @ended="emit('ended')"

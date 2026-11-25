@@ -11,6 +11,7 @@ export const playbackResponseSchema = z.discriminatedUnion("kind", [
     url: z.string(),
     status: z.enum(["converting", "ready"]),
     progress: z.number().min(0).max(100),
+    availableSeconds: z.number().nonnegative().optional(),
   }),
   z.object({
     kind: z.literal("converting"),

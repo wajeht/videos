@@ -34,6 +34,7 @@ const hasPlaylist = computed(() => player.playlist.value !== null || player.play
           :retrying="player.retrying.value"
           @ended="player.markComplete"
           @loaded-metadata="player.applyResume"
+          @seeked="player.startAutoplayAfterResume"
           @pause="player.onPause"
           @retry="player.retryConversion"
           @time-update="player.onTimeUpdate"
