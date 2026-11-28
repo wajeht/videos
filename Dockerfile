@@ -1,4 +1,4 @@
-FROM node:24-bookworm-slim@sha256:873f586f3794f52281bd039bf02c048a0be08fde619338f9941bad1eb6b34530 AS build
+FROM node:26-bookworm-slim@sha256:0042e17d232a87a2cd485be1da7900fca4d10a4ad11b29e9285da1d2e54798c9 AS build
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ ARG APP_VERSION
 RUN npm run build \
   && npm prune --omit=dev
 
-FROM node:24-bookworm-slim@sha256:873f586f3794f52281bd039bf02c048a0be08fde619338f9941bad1eb6b34530 AS runtime
+FROM node:26-bookworm-slim@sha256:0042e17d232a87a2cd485be1da7900fca4d10a4ad11b29e9285da1d2e54798c9 AS runtime
 
 ENV APP_ENV=production \
   APP_HOST=0.0.0.0 \
